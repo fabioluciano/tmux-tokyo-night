@@ -31,7 +31,7 @@ function generate_inactive_window_string() {
   local separator_internal="#[bg=${PALLETE['gray1']},fg=${PALLETE['gray']}]${left_separator}#[none]"
   local separator_end="#[bg=${PALLETE[lesslessdark]},fg=${PALLETE['gray1']}]${left_separator}#[none]"
 
-  echo "${separator_start}#[fg=${PALLETE[white]}]#I${separator_internal}#[fg=${PALLETE[white]}] #W ${separator_end}"
+  echo "${separator_start}#[fg=${PALLETE[white]}]#I${separator_internal}#[fg=${PALLETE[white]}]  #W ${separator_end}"
 }
 
 function generate_active_window_string() {
@@ -39,7 +39,7 @@ function generate_active_window_string() {
   local separator_internal="#[bg=${PALLETE['darkerpurple']},fg=${PALLETE['purple']}]${left_separator}#[none]"
   local separator_end="#[bg=${PALLETE[lesslessdark]},fg=${PALLETE['darkerpurple']}]${left_separator}#[none]"
 
-  echo  "${separator_start}#[fg=${PALLETE[white]},bold]#I${separator_internal}#[fg=${PALLETE[white]},bold]  #W ${separator_end}"
+  echo  "${separator_start}#[fg=${PALLETE[white]}]#I${separator_internal}#[fg=${PALLETE[white]}]  #W ${separator_end}#[none]"
 }
 
 tmux set-option -g status-left-length 100
@@ -67,15 +67,48 @@ tmux set-window-option -g window-status-current-format "$(generate_active_window
 
 ### Right side
 tmux set-option -g status-right ""
+last_plugin="${plugins[-1]}"
+is_last_plugin=0
 
 for plugin in "${plugins[@]}"; do
-  
+
   if [ ! -f "${CURRENT_DIR}/plugin/${plugin}.sh" ]; then
     tmux display-message " #[bold]ERROR:#[none] The plugin #[bold]${plugin}#[none] does not exists!" 
   else
+    if [ "$plugin" == "$last_plugin" ];then 
+      is_last_plugin=1
+    fi 
+
     . "${CURRENT_DIR}/plugin/${plugin}.sh"
-    tmux set-option -ga status-right "$(load_plugin)"
+
+    icon_var="plugin_${plugin}_icon"
+    accent_color_var="plugin_${plugin}_accent_color"
+    accent_color_icon_var="plugin_${plugin}_accent_color_icon"
+
+    plugin_icon="${!icon_var}"
+    accent_color="${!accent_color_var}"
+    accent_color_icon="${!accent_color_icon_var}"
+
+    separator_start="#[fg=${PALLETE[$accent_color]},bg=${PALLETE[lesslessdark]}]${right_separator}#[none]"
+    separator_end="#[fg=${PALLETE[lesslessdark]},bg=${PALLETE[$accent_color]}]${right_separator}#[none]"
+    separator_icon_start="#[fg=${PALLETE[$accent_color_icon]},bg=${PALLETE[lesslessdark]}]${right_separator}#[none]"
+    separator_icon_end="#[fg=${PALLETE[$accent_color]},bg=${PALLETE[$accent_color_icon]}]${right_separator}#[none]"
+
+    plugin_output="#[fg=${PALLETE[dark]},bg=${PALLETE[$accent_color]}]$(load_plugin)#[none]"
+    plugin_output_string=""
+
+
+    plugin_icon_output="${separator_icon_start}#[fg=${PALLETE[dark]},bg=${PALLETE[$accent_color_icon]}]${plugin_icon} ${separator_icon_end}"
+
+    if [ ! $is_last_plugin -eq 1 ];then
+      plugin_output_string="${plugin_icon_output}${plugin_output}${separator_end}"
+    else
+      plugin_output_string="${plugin_icon_output}${plugin_output}"
+    fi
+
+    tmux set-option -ga status-right "$plugin_output_string"
   fi 
+
 done
 
 

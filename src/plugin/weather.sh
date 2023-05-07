@@ -1,11 +1,9 @@
 #!/usr/bin/env bash
 
+plugin_weather_icon=$(get_tmux_option "@theme_plugin_weather_icon" "󰖐")
+plugin_weather_accent_color=$(get_tmux_option "@theme_plugin_weather_accent_color" "red")
+plugin_weather_accent_color_icon=$(get_tmux_option "@theme_plugin_weather_accent_color_icon" "othergreen")
+
 function load_plugin() {
-  local accent_color="orange"
-
-  local separator_start="#[fg=${PALLETE[$accent_color]},bg=${PALLETE[lesslessdark]}]${right_separator}#[none]"
-  local separator_end="#[fg=${PALLETE[lesslessdark]},bg=${PALLETE[$accent_color]}]${right_separator}#[none]"
-  local output_string="#[fg=${PALLETE[dark]},bg=${PALLETE[$accent_color]}] teste #[none]"
-
-  echo "${separator_start}${output_string}${separator_end}"
+ echo "teste"
 } 
