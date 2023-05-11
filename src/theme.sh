@@ -3,13 +3,15 @@ set -euxo pipefail
 
 export LC_ALL=en_US.UTF-8
 
-readonly CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 . "$CURRENT_DIR/utils.sh"
-. "$CURRENT_DIR/palletes.sh"
+
+theme_variation=$(get_tmux_option "@theme_variation" "night")
+. "$CURRENT_DIR/palletes/$theme_variation.sh"
 
 ### Load Options
-border_style_active_pane=$(get_tmux_option "@theme_active_pane_border_style" "fg=${PALLETE[gray1]}")
-border_style_inactive_pane=$(get_tmux_option "@theme_active_pane_border_style" "fg=${PALLETE[lesslessdark]}")
+border_style_active_pane=$(get_tmux_option "@theme_active_pane_border_style" "fg=${PALLETE['dark5']}")
+border_style_inactive_pane=$(get_tmux_option "@theme_active_pane_border_style" "fg=${PALLETE[bg_highlight]}")
 left_separator=$(get_tmux_option "@theme_left_separator" "")
 right_separator=$(get_tmux_option "@theme_right_separator" "")
 
@@ -17,42 +19,19 @@ right_separator=$(get_tmux_option "@theme_right_separator" "")
 window_with_activity_style=$(get_tmux_option "@theme_window_with_activity_style" "italics")
 window_status_bell_style=$(get_tmux_option "@theme_status_bell_style" "bold")
 
-IFS=' ' read -r -a plugins <<< "$(get_tmux_option "@theme-plugins" "datetime git kubernetes weather")"
-
-
-function generate_left_side_string() {
-  local separator_end="#[bg=${PALLETE[lesslessdark]}]#{?client_prefix,#[fg=${PALLETE[green]}],#[fg=${PALLETE[yellow]}]}${left_separator}#[none]"
-
-  echo "#[fg=${PALLETE[white]},bold]#{?client_prefix,#[bg=${PALLETE[green]}],#[bg=${PALLETE[yellow]}]}  #S ${separator_end}"
-}
-
-function generate_inactive_window_string() {
-  local separator_start="#[bg=${PALLETE['gray']},fg=${PALLETE['lesslessdark']}]${left_separator}#[none]"
-  local separator_internal="#[bg=${PALLETE['gray1']},fg=${PALLETE['gray']}]${left_separator}#[none]"
-  local separator_end="#[bg=${PALLETE[lesslessdark]},fg=${PALLETE['gray1']}]${left_separator}#[none]"
-
-  echo "${separator_start}#[fg=${PALLETE[white]}]#I${separator_internal}#[fg=${PALLETE[white]}]  #W ${separator_end}"
-}
-
-function generate_active_window_string() {
-  local separator_start="#[bg=${PALLETE['purple']},fg=${PALLETE['lesslessdark']}]${left_separator}#[none]"
-  local separator_internal="#[bg=${PALLETE['darkerpurple']},fg=${PALLETE['purple']}]${left_separator}#[none]"
-  local separator_end="#[bg=${PALLETE[lesslessdark]},fg=${PALLETE['darkerpurple']}]${left_separator}#[none]"
-
-  echo  "${separator_start}#[fg=${PALLETE[white]}]#I${separator_internal}#[fg=${PALLETE[white]}]  #W ${separator_end}#[none]"
-}
+IFS=' ' read -r -a plugins <<< "$(get_tmux_option "@theme-plugins" "datetime memory")"
 
 tmux set-option -g status-left-length 100
-tmux set-option -g status-right-length 1000
+tmux set-option -g status-right-length 100
 
 tmux set-window-option -g window-status-activity-style "$window_with_activity_style"
 tmux set-window-option -g window-status-bell-style "${window_status_bell_style}"
 
 # message styling
-tmux set-option -g message-style "bg=${PALLETE[red]},fg=${PALLETE[dark]}"
+tmux set-option -g message-style "bg=${PALLETE[red]},fg=${PALLETE[bg_dark]}"
 
 # status bar
-tmux set-option -g status-style "bg=${PALLETE[lesslessdark]},fg=${PALLETE[white]}"
+tmux set-option -g status-style "bg=${PALLETE[bg_highlight]},fg=${PALLETE[white]}"
 
 # border color
 tmux set-option -g pane-active-border-style "$border_style_active_pane"
@@ -89,16 +68,15 @@ for plugin in "${plugins[@]}"; do
     accent_color="${!accent_color_var}"
     accent_color_icon="${!accent_color_icon_var}"
 
-    separator_start="#[fg=${PALLETE[$accent_color]},bg=${PALLETE[lesslessdark]}]${right_separator}#[none]"
-    separator_end="#[fg=${PALLETE[lesslessdark]},bg=${PALLETE[$accent_color]}]${right_separator}#[none]"
-    separator_icon_start="#[fg=${PALLETE[$accent_color_icon]},bg=${PALLETE[lesslessdark]}]${right_separator}#[none]"
+    separator_start="#[fg=${PALLETE[$accent_color]},bg=${PALLETE[bg_highlight]}]${right_separator}#[none]"
+    separator_end="#[fg=${PALLETE[bg_highlight]},bg=${PALLETE[$accent_color]}]${right_separator}#[none]"
+    separator_icon_start="#[fg=${PALLETE[$accent_color_icon]},bg=${PALLETE[bg_highlight]}]${right_separator}#[none]"
     separator_icon_end="#[fg=${PALLETE[$accent_color]},bg=${PALLETE[$accent_color_icon]}]${right_separator}#[none]"
 
-    plugin_output="#[fg=${PALLETE[dark]},bg=${PALLETE[$accent_color]}]$(load_plugin)#[none]"
+    plugin_output="#[fg=${PALLETE[white]},bg=${PALLETE[$accent_color]}]$(load_plugin)#[none]"
     plugin_output_string=""
 
-
-    plugin_icon_output="${separator_icon_start}#[fg=${PALLETE[dark]},bg=${PALLETE[$accent_color_icon]}]${plugin_icon} ${separator_icon_end}"
+    plugin_icon_output="${separator_icon_start}#[fg=${PALLETE[white]},bg=${PALLETE[$accent_color_icon]}]${plugin_icon}${separator_icon_end}"
 
     if [ ! $is_last_plugin -eq 1 ];then
       plugin_output_string="${plugin_icon_output}${plugin_output}${separator_end}"
@@ -108,8 +86,6 @@ for plugin in "${plugins[@]}"; do
 
     tmux set-option -ga status-right "$plugin_output_string"
   fi 
-
 done
-
 
 tmux set-window-option -g window-status-separator ''
