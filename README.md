@@ -39,11 +39,20 @@ Hit <kbd>prefix</kbd> + <kbd>I</kbd> to fetch the plugin and source it. You can 
 | `@theme_status_bell_style` | | | |
 | `@theme-plugins` | | | |
 
+## Plugins
+### Datetime
+
+| Configuration | Description | Avaliable Options | Default |
+|---------------- | --------------- | --------------- | --------------- |
+| `@theme_plugin_datetime_icon`| | | |
+| `@theme_plugin_datetime_accent_color`| | | |
+| `@theme_plugin_datetime_accent_color_icon`| | | |
+| `@theme_plugin_datetime_format`| | | |
+
 ### Example configuration
 
 tmux.conf
 ```
-
 set -g @plugin 'tmux-plugins/tpm'
 
 set -g @plugin 'tmux-plugins/tmux-pain-control'
@@ -59,13 +68,3 @@ set -g @theme_right_separator ''
 
 run '~/.tmux/plugins/tpm/tpm'
 ```
-
-## Plugins
-### Datetime
-
-| Configuration | Description | Avaliable Options | Default |
-|---------------- | --------------- | --------------- | --------------- |
-| `@theme_plugin_datetime_icon`| | | |
-| `@theme_plugin_datetime_accent_color`| | | |
-| `@theme_plugin_datetime_accent_color_icon`| | | |
-| `@theme_plugin_datetime_format`| | | |
