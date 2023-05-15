@@ -32,6 +32,12 @@ Hit <kbd>prefix</kbd> + <kbd>I</kbd> to fetch the plugin and source it. You can 
 | Configuration | Description | Avaliable Options | Default |
 |---------------- | --------------- | --------------- | --------------- |
 | `@theme_variation`| The tokyo night theme variation to be use | `night`, `storm`, `moon` | `night` |
+| `@theme_active_pane_border_style`| | | |
+| `@theme_left_separator`| | | |
+| `@theme_right_separator` | | | |
+| `@theme_window_with_activity_style` | | | |
+| `@theme_status_bell_style` | | | |
+| `@theme-plugins` | | | |
 
 ### Example configuration
 
@@ -46,12 +52,20 @@ set -g @plugin 'tmux-plugins/tmux-logging'
 
 set -g @plugin 'fabioluciano/tmux-tokyo-night'
 
-### Plugins Options
-set -g @extrakto_popup_size 70%
-
-############################
+### Tokyo Night Theme configuration
+set -g @theme_variation 'moon'
+set -g @theme_left_separator ''
+set -g @theme_right_separator ''
 
 run '~/.tmux/plugins/tpm/tpm'
 ```
-## Plugins
 
+## Plugins
+### Datetime
+
+| Configuration | Description | Avaliable Options | Default |
+|---------------- | --------------- | --------------- | --------------- |
+| `@theme_plugin_datetime_icon`| | | |
+| `@theme_plugin_datetime_accent_color`| | | |
+| `@theme_plugin_datetime_accent_color_icon`| | | |
+| `@theme_plugin_datetime_format`| | | |

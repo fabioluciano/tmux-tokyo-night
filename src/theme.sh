@@ -11,7 +11,7 @@ theme_variation=$(get_tmux_option "@theme_variation" "night")
 
 ### Load Options
 border_style_active_pane=$(get_tmux_option "@theme_active_pane_border_style" "fg=${PALLETE['dark5']}")
-border_style_inactive_pane=$(get_tmux_option "@theme_active_pane_border_style" "fg=${PALLETE[bg_highlight]}")
+border_style_inactive_pane=$(get_tmux_option "@theme_inactive_pane_border_style" "fg=${PALLETE[bg_highlight]}")
 left_separator=$(get_tmux_option "@theme_left_separator" "")
 right_separator=$(get_tmux_option "@theme_right_separator" "")
 
