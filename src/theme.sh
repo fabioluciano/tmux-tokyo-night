@@ -4,9 +4,11 @@ set -euxo pipefail
 export LC_ALL=en_US.UTF-8
 
 CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# shellcheck source=src/utils.sh
 . "$CURRENT_DIR/utils.sh"
 
 theme_variation=$(get_tmux_option "@theme_variation" "night")
+# shellcheck source=src/palletes/night.sh
 . "$CURRENT_DIR/palletes/$theme_variation.sh"
 
 ### Load Options
@@ -58,6 +60,7 @@ for plugin in "${plugins[@]}"; do
       is_last_plugin=1
     fi 
 
+    # shellcheck source=src/plugin/datetime.sh
     . "${CURRENT_DIR}/plugin/${plugin}.sh"
 
     icon_var="plugin_${plugin}_icon"
