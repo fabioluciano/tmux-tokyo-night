@@ -8,6 +8,8 @@ CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 . "$CURRENT_DIR/utils.sh"
 
 theme_variation=$(get_tmux_option "@theme_variation" "night")
+theme_enable_icons=$(get_tmux_option "@theme_variation" 1)
+
 # shellcheck source=src/palletes/night.sh
 . "$CURRENT_DIR/palletes/$theme_variation.sh"
 
@@ -81,7 +83,7 @@ for plugin in "${plugins[@]}"; do
 
     plugin_icon_output="${separator_icon_start}#[fg=${PALLETE[white]},bg=${PALLETE[$accent_color_icon]}]${plugin_icon}${separator_icon_end}"
 
-    if [ ! $is_last_plugin -eq 1 ];then
+    if [ ! $is_last_plugin -eq 1 ] || [ "${#plugins[@]}" -gt 1 ];then
       plugin_output_string="${plugin_icon_output}${plugin_output}${separator_end}"
     else
       plugin_output_string="${plugin_icon_output}${plugin_output}"
