@@ -50,13 +50,14 @@ tmux set-window-option -g window-status-current-format "$(generate_active_window
 
 ### Right side
 tmux set-option -g status-right ""
+
 last_plugin="${plugins[-1]}"
 is_last_plugin=0
 
 for plugin in "${plugins[@]}"; do
 
   if [ ! -f "${CURRENT_DIR}/plugin/${plugin}.sh" ]; then
-    tmux display-message " #[bold]ERROR:#[none] The plugin #[bold]${plugin}#[none] does not exists!" 
+    tmux set-option -ga status-right "${plugin}"
   else
     if [ "$plugin" == "$last_plugin" ];then 
       is_last_plugin=1
