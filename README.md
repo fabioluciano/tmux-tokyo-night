@@ -47,6 +47,7 @@ Hit <kbd>prefix</kbd> + <kbd>I</kbd> to fetch the plugin and source it. You can 
 | `@theme_window_with_activity_style` | | | |
 | `@theme_status_bell_style` | | | |
 | `@theme-plugins` | | | |
+| `@theme_disable_plugins` | Disables plugins | 1, 0 | 0 |
 
 ## Plugins
 

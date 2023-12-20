@@ -9,6 +9,7 @@ CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 theme_variation=$(get_tmux_option "@theme_variation" "night")
 theme_enable_icons=$(get_tmux_option "@theme_variation" 1)
+theme_disable_plugins=$(get_tmux_option "@theme_disable_plugins" 0)
 
 # shellcheck source=src/palletes/night.sh
 . "$CURRENT_DIR/palletes/$theme_variation.sh"
@@ -51,47 +52,50 @@ tmux set-window-option -g window-status-current-format "$(generate_active_window
 ### Right side
 tmux set-option -g status-right ""
 
-last_plugin="${plugins[-1]}"
-is_last_plugin=0
+# Check if plugins array is empty before proceeding
+if [ "$theme_disable_plugins" -ne 1 ]; then
+  last_plugin="${plugins[-1]}"
+  is_last_plugin=0
 
-for plugin in "${plugins[@]}"; do
+  for plugin in "${plugins[@]}"; do
 
-  if [ ! -f "${CURRENT_DIR}/plugin/${plugin}.sh" ]; then
-    tmux set-option -ga status-right "${plugin}"
-  else
-    if [ "$plugin" == "$last_plugin" ];then 
-      is_last_plugin=1
-    fi 
-
-    # shellcheck source=src/plugin/datetime.sh
-    . "${CURRENT_DIR}/plugin/${plugin}.sh"
-
-    icon_var="plugin_${plugin}_icon"
-    accent_color_var="plugin_${plugin}_accent_color"
-    accent_color_icon_var="plugin_${plugin}_accent_color_icon"
-
-    plugin_icon="${!icon_var}"
-    accent_color="${!accent_color_var}"
-    accent_color_icon="${!accent_color_icon_var}"
-
-    separator_start="#[fg=${PALLETE[$accent_color]},bg=${PALLETE[bg_highlight]}]${right_separator}#[none]"
-    separator_end="#[fg=${PALLETE[bg_highlight]},bg=${PALLETE[$accent_color]}]${right_separator}#[none]"
-    separator_icon_start="#[fg=${PALLETE[$accent_color_icon]},bg=${PALLETE[bg_highlight]}]${right_separator}#[none]"
-    separator_icon_end="#[fg=${PALLETE[$accent_color]},bg=${PALLETE[$accent_color_icon]}]${right_separator}#[none]"
-
-    plugin_output="#[fg=${PALLETE[white]},bg=${PALLETE[$accent_color]}]$(load_plugin)#[none]"
-    plugin_output_string=""
-
-    plugin_icon_output="${separator_icon_start}#[fg=${PALLETE[white]},bg=${PALLETE[$accent_color_icon]}]${plugin_icon}${separator_icon_end}"
-
-    if [ ! $is_last_plugin -eq 1 ] || [ "${#plugins[@]}" -gt 1 ];then
-      plugin_output_string="${plugin_icon_output}${plugin_output}${separator_end}"
+    if [ ! -f "${CURRENT_DIR}/plugin/${plugin}.sh" ]; then
+      tmux set-option -ga status-right "${plugin}"
     else
-      plugin_output_string="${plugin_icon_output}${plugin_output}"
-    fi
+      if [ "$plugin" == "$last_plugin" ];then 
+        is_last_plugin=1
+      fi 
 
-    tmux set-option -ga status-right "$plugin_output_string"
-  fi 
-done
+      # shellcheck source=src/plugin/datetime.sh
+      . "${CURRENT_DIR}/plugin/${plugin}.sh"
+
+      icon_var="plugin_${plugin}_icon"
+      accent_color_var="plugin_${plugin}_accent_color"
+      accent_color_icon_var="plugin_${plugin}_accent_color_icon"
+
+      plugin_icon="${!icon_var}"
+      accent_color="${!accent_color_var}"
+      accent_color_icon="${!accent_color_icon_var}"
+
+      separator_start="#[fg=${PALLETE[$accent_color]},bg=${PALLETE[bg_highlight]}]${right_separator}#[none]"
+      separator_end="#[fg=${PALLETE[bg_highlight]},bg=${PALLETE[$accent_color]}]${right_separator}#[none]"
+      separator_icon_start="#[fg=${PALLETE[$accent_color_icon]},bg=${PALLETE[bg_highlight]}]${right_separator}#[none]"
+      separator_icon_end="#[fg=${PALLETE[$accent_color]},bg=${PALLETE[$accent_color_icon]}]${right_separator}#[none]"
+
+      plugin_output="#[fg=${PALLETE[white]},bg=${PALLETE[$accent_color]}]$(load_plugin)#[none]"
+      plugin_output_string=""
+
+      plugin_icon_output="${separator_icon_start}#[fg=${PALLETE[white]},bg=${PALLETE[$accent_color_icon]}]${plugin_icon}${separator_icon_end}"
+
+      if [ ! $is_last_plugin -eq 1 ] || [ "${#plugins[@]}" -gt 1 ];then
+        plugin_output_string="${plugin_icon_output}${plugin_output}${separator_end}"
+      else
+        plugin_output_string="${plugin_icon_output}${plugin_output}"
+      fi
+
+      tmux set-option -ga status-right "$plugin_output_string"
+    fi 
+  done
+fi
 
 tmux set-window-option -g window-status-separator ''
