@@ -3,7 +3,7 @@ set -euxo pipefail
 
 export LC_ALL=en_US.UTF-8
 
-CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=src/utils.sh
 . "$CURRENT_DIR/utils.sh"
 
@@ -24,7 +24,7 @@ right_separator=$(get_tmux_option "@theme_right_separator" "")
 window_with_activity_style=$(get_tmux_option "@theme_window_with_activity_style" "italics")
 window_status_bell_style=$(get_tmux_option "@theme_status_bell_style" "bold")
 
-IFS=',' read -r -a plugins <<< "$(get_tmux_option "@theme-plugins" "datetime")"
+IFS=',' read -r -a plugins <<<"$(get_tmux_option "@theme-plugins" "datetime,weather")"
 
 tmux set-option -g status-left-length 100
 tmux set-option -g status-right-length 100
@@ -46,7 +46,7 @@ tmux set-option -g pane-border-style "$border_style_inactive_pane"
 tmux set-option -g status-left "$(generate_left_side_string)"
 
 ### Windows list
-tmux set-window-option -g window-status-format "$(generate_inactive_window_string)" 
+tmux set-window-option -g window-status-format "$(generate_inactive_window_string)"
 tmux set-window-option -g window-status-current-format "$(generate_active_window_string)"
 
 ### Right side
@@ -54,48 +54,48 @@ tmux set-option -g status-right ""
 
 # Check if plugins array is empty before proceeding
 if [ "$theme_disable_plugins" -ne 1 ]; then
-  last_plugin="${plugins[-1]}"
-  is_last_plugin=0
+	last_plugin="${plugins[-1]}"
+	is_last_plugin=0
 
-  for plugin in "${plugins[@]}"; do
+	for plugin in "${plugins[@]}"; do
 
-    if [ ! -f "${CURRENT_DIR}/plugin/${plugin}.sh" ]; then
-      tmux set-option -ga status-right "${plugin}"
-    else
-      if [ "$plugin" == "$last_plugin" ];then 
-        is_last_plugin=1
-      fi 
+		if [ ! -f "${CURRENT_DIR}/plugin/${plugin}.sh" ]; then
+			tmux set-option -ga status-right "${plugin}"
+		else
+			if [ "$plugin" == "$last_plugin" ]; then
+				is_last_plugin=1
+			fi
 
-      # shellcheck source=src/plugin/datetime.sh
-      . "${CURRENT_DIR}/plugin/${plugin}.sh"
+			# shellcheck source=src/plugin/datetime.sh
+			. "${CURRENT_DIR}/plugin/${plugin}.sh"
 
-      icon_var="plugin_${plugin}_icon"
-      accent_color_var="plugin_${plugin}_accent_color"
-      accent_color_icon_var="plugin_${plugin}_accent_color_icon"
+			icon_var="plugin_${plugin}_icon"
+			accent_color_var="plugin_${plugin}_accent_color"
+			accent_color_icon_var="plugin_${plugin}_accent_color_icon"
 
-      plugin_icon="${!icon_var}"
-      accent_color="${!accent_color_var}"
-      accent_color_icon="${!accent_color_icon_var}"
+			plugin_icon="${!icon_var}"
+			accent_color="${!accent_color_var}"
+			accent_color_icon="${!accent_color_icon_var}"
 
-      separator_start="#[fg=${PALLETE[$accent_color]},bg=${PALLETE[bg_highlight]}]${right_separator}#[none]"
-      separator_end="#[fg=${PALLETE[bg_highlight]},bg=${PALLETE[$accent_color]}]${right_separator}#[none]"
-      separator_icon_start="#[fg=${PALLETE[$accent_color_icon]},bg=${PALLETE[bg_highlight]}]${right_separator}#[none]"
-      separator_icon_end="#[fg=${PALLETE[$accent_color]},bg=${PALLETE[$accent_color_icon]}]${right_separator}#[none]"
+			separator_start="#[fg=${PALLETE[$accent_color]},bg=${PALLETE[bg_highlight]}]${right_separator}#[none]"
+			separator_end="#[fg=${PALLETE[bg_highlight]},bg=${PALLETE[$accent_color]}]${right_separator}#[none]"
+			separator_icon_start="#[fg=${PALLETE[$accent_color_icon]},bg=${PALLETE[bg_highlight]}]${right_separator}#[none]"
+			separator_icon_end="#[fg=${PALLETE[$accent_color]},bg=${PALLETE[$accent_color_icon]}]${right_separator}#[none]"
 
-      plugin_output="#[fg=${PALLETE[white]},bg=${PALLETE[$accent_color]}]$(load_plugin)#[none]"
-      plugin_output_string=""
+			plugin_output="#[fg=${PALLETE[white]},bg=${PALLETE[$accent_color]}]$(load_plugin)#[none]"
+			plugin_output_string=""
 
-      plugin_icon_output="${separator_icon_start}#[fg=${PALLETE[white]},bg=${PALLETE[$accent_color_icon]}]${plugin_icon}${separator_icon_end}"
+			plugin_icon_output="${separator_icon_start}#[fg=${PALLETE[white]},bg=${PALLETE[$accent_color_icon]}]${plugin_icon}${separator_icon_end}"
 
-      if [ ! $is_last_plugin -eq 1 ] || [ "${#plugins[@]}" -gt 1 ];then
-        plugin_output_string="${plugin_icon_output}${plugin_output}${separator_end}"
-      else
-        plugin_output_string="${plugin_icon_output}${plugin_output}"
-      fi
+			if [ ! $is_last_plugin -eq 1 ] || [ "${#plugins[@]}" -gt 1 ]; then
+				plugin_output_string="${plugin_icon_output}${plugin_output}${separator_end}"
+			else
+				plugin_output_string="${plugin_icon_output}${plugin_output}"
+			fi
 
-      tmux set-option -ga status-right "$plugin_output_string"
-    fi 
-  done
+			tmux set-option -ga status-right "$plugin_output_string"
+		fi
+	done
 fi
 
 tmux set-window-option -g window-status-separator ''
