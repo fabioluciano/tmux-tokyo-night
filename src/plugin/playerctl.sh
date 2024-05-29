@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$ROOT_DIR/../utils.sh"
+
 #
 # shellcheck disable=SC2005
 plugin_playerctl_icon=$(get_tmux_option "@theme_plugin_playerctl_icon" " ")
@@ -7,10 +10,11 @@ plugin_playerctl_accent_color_icon=$(get_tmux_option "@theme_plugin_playerctl_ac
 
 plugin_playerctl_format_string=$(get_tmux_option "@theme_plugin_playerctl_format_string" "{{artist}} - {{title}}")
 
-function load_plugin() {
-	playerctl=$(playerctl metadata --format "${plugin_playerctl_format_string}")
+export plugin_playerctl_icon plugin_playerctl_accent_color plugin_playerctl_accent_color_icon
 
+function load_plugin() {
+	playerctl=$(playerctl metadata --format "$plugin_playerctl_format_string")
 	echo "${playerctl}"
 }
 
-export plugin_playerctl_icon plugin_playerctl_accent_color plugin_playerctl_accent_color_icon
+load_plugin
