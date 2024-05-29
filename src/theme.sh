@@ -24,7 +24,7 @@ right_separator=$(get_tmux_option "@theme_right_separator" "")
 window_with_activity_style=$(get_tmux_option "@theme_window_with_activity_style" "italics")
 window_status_bell_style=$(get_tmux_option "@theme_status_bell_style" "bold")
 
-IFS=',' read -r -a plugins <<<"$(get_tmux_option "@theme-plugins" "datetime,weather")"
+IFS=',' read -r -a plugins <<<"$(get_tmux_option "@theme-plugins" "datetime,weather,playerctl")"
 
 tmux set-option -g status-left-length 100
 tmux set-option -g status-right-length 100
