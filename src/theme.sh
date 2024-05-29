@@ -67,7 +67,9 @@ if [ "$theme_disable_plugins" -ne 1 ]; then
 			fi
 
 			# shellcheck source=src/plugin/datetime.sh
-			. "${CURRENT_DIR}/plugin/${plugin}.sh"
+			plugin_script_path="${CURRENT_DIR}/plugin/${plugin}.sh"
+			plugin_execution_string="$(${plugin_script_path})"
+			. "$plugin_script_path"
 
 			icon_var="plugin_${plugin}_icon"
 			accent_color_var="plugin_${plugin}_accent_color"
@@ -82,7 +84,11 @@ if [ "$theme_disable_plugins" -ne 1 ]; then
 			separator_icon_start="#[fg=${PALLETE[$accent_color_icon]},bg=${PALLETE[bg_highlight]}]${right_separator}#[none]"
 			separator_icon_end="#[fg=${PALLETE[$accent_color]},bg=${PALLETE[$accent_color_icon]}]${right_separator}#[none]"
 
-			plugin_output="#[fg=${PALLETE[white]},bg=${PALLETE[$accent_color]}]$(load_plugin)#[none]"
+			if [ "$plugin" == "datetime" ]; then
+				plugin_output="#[fg=${PALLETE[white]},bg=${PALLETE[$accent_color]}]${plugin_execution_string}#[none]"
+			else
+				plugin_output="#[fg=${PALLETE[white]},bg=${PALLETE[$accent_color]}]#($plugin_script_path)#[none]"
+			fi
 			plugin_output_string=""
 
 			plugin_icon_output="${separator_icon_start}#[fg=${PALLETE[white]},bg=${PALLETE[$accent_color_icon]}]${plugin_icon}${separator_icon_end}"
