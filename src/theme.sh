@@ -87,10 +87,10 @@ if [ "$theme_disable_plugins" -ne 1 ]; then
 
 			plugin_icon_output="${separator_icon_start}#[fg=${PALLETE[white]},bg=${PALLETE[$accent_color_icon]}]${plugin_icon}${separator_icon_end}"
 
-			if [ ! $is_last_plugin -eq 1 ] || [ "${#plugins[@]}" -gt 1 ]; then
+			if [ ! $is_last_plugin -eq 1 ] && [ "${#plugins[@]}" -gt 1 ]; then
 				plugin_output_string="${plugin_icon_output}${plugin_output}${separator_end}"
 			else
-				plugin_output_string="${plugin_icon_output}${plugin_output}"
+				plugin_output_string="${plugin_icon_output}${plugin_output} "
 			fi
 
 			tmux set-option -ga status-right "$plugin_output_string"
