@@ -21,9 +21,9 @@
 
 ### Tokyo Night - Default Variation
 
-| Inactive  | Active   |
-|-------------- | -------------- |
-|![Tokyo Night tmux theme - Default Variation](./assets/tokyo-night.png "Tokyo Night tmux theme - Default Variation")| ![Tokyo Night tmux theme - Default Variation](./assets/tokyo-night-active.png "Tokyo Night tmux theme - Default Variation")|
+| Inactive                                                                                                             | Active                                                                                                                      |
+| -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| ![Tokyo Night tmux theme - Default Variation](./assets/tokyo-night.png "Tokyo Night tmux theme - Default Variation") | ![Tokyo Night tmux theme - Default Variation](./assets/tokyo-night-active.png "Tokyo Night tmux theme - Default Variation") |
 
 ## Install
 
@@ -37,28 +37,52 @@ Hit <kbd>prefix</kbd> + <kbd>I</kbd> to fetch the plugin and source it. You can 
 
 ## Available Configurations
 
-| Configuration | Description | Avaliable Options | Default |
-|---------------- | --------------- | --------------- | --------------- |
-| `@theme_variation`| The tokyo night theme variation to be use | `night`, `storm`, `moon` | `night` |
-| `@theme_enable_icons`| Switch icons in window list and plugins | `1`, `0` | `1` |
-| `@theme_active_pane_border_style`| | | |
-| `@theme_left_separator`| | | |
-| `@theme_right_separator` | | | |
-| `@theme_window_with_activity_style` | | | |
-| `@theme_status_bell_style` | | | |
-| `@theme-plugins` | | | |
-| `@theme_disable_plugins` | Disables plugins | 1, 0 | 0 |
+| Configuration                       | Description                               | Avaliable Options                  | Default            |
+| ----------------------------------- | ----------------------------------------- | ---------------------------------- | ------------------ |
+| `@theme_variation`                  | The tokyo night theme variation to be use | `night`, `storm`, `moon`           | `night`            |
+| `@theme_enable_icons`               | Switch icons in window list and plugins   | `1`, `0`                           | `1`                |
+| `@theme_active_pane_border_style`   |                                           |                                    |                    |
+| `@theme_left_separator`             |                                           |                                    |                    |
+| `@theme_right_separator`            |                                           |                                    |                    |
+| `@theme_window_with_activity_style` |                                           |                                    |                    |
+| `@theme_status_bell_style`          |                                           |                                    |                    |
+| `@theme_plugins`                    |                                           | `datetime`, `weather`, `playerctl` | `datetime,weather` |
+| `@theme_disable_plugins`            | Disables plugins                          | 1, 0                               | 0                  |
 
 ## Plugins
 
 ### Datetime
 
-| Configuration | Description | Avaliable Options | Default |
-|---------------- | --------------- | --------------- | --------------- |
-| `@theme_plugin_datetime_icon`| | | |
-| `@theme_plugin_datetime_accent_color`| | | |
-| `@theme_plugin_datetime_accent_color_icon`| | | |
-| `@theme_plugin_datetime_format`| | | |
+> Prints informations about the current date and time.
+
+| Configuration                              | Description | Avaliable Options | Default |
+| ------------------------------------------ | ----------- | ----------------- | ------- |
+| `@theme_plugin_datetime_icon`              |             |                   |         |
+| `@theme_plugin_datetime_accent_color`      |             |                   |         |
+| `@theme_plugin_datetime_accent_color_icon` |             |                   |         |
+| `@theme_plugin_datetime_format`            |             |                   |         |
+
+### Weather
+
+> Prints informations about the current weather. It uses `jq` to parse the response. Make shure to have it;
+
+| Configuration                              | Description | Avaliable Options | Default |
+| ------------------------------------------ | ----------- | ----------------- | ------- |
+| `@theme_plugin_datetime_icon`              |             |                   |         |
+| `@theme_plugin_datetime_accent_color`      |             |                   |         |
+| `@theme_plugin_datetime_accent_color_icon` |             |                   |         |
+| `@theme_plugin_datetime_format`            |             |                   |         |
+
+### Playerctl
+
+> Prints informations about the current song playing. Does not work in `MacOS`, because it uses `MPRIS`, and is only available in `Linux`.
+
+| Configuration                              | Description | Avaliable Options | Default |
+| ------------------------------------------ | ----------- | ----------------- | ------- |
+| `@theme_plugin_datetime_icon`              |             |                   |         |
+| `@theme_plugin_datetime_accent_color`      |             |                   |         |
+| `@theme_plugin_datetime_accent_color_icon` |             |                   |         |
+| `@theme_plugin_datetime_format`            |             |                   |         |
 
 ### Example configuration
 
@@ -81,8 +105,8 @@ set -g @theme_right_separator ''
 run '~/.tmux/plugins/tpm/tpm'
 ```
 
-[features]:#features
-[screenshots]:#screenshots
-[install]:#install
-[available-configurations]:#available-configurations
-[plugins]:#plugins
+[features]: #features
+[screenshots]: #screenshots
+[install]: #install
+[available-configurations]: #available-configurations
+[plugins]: #plugins
