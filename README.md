@@ -66,23 +66,23 @@ Hit <kbd>prefix</kbd> + <kbd>I</kbd> to fetch the plugin and source it. You can 
 
 > Prints informations about the current weather. It uses `jq` to parse the response. Make shure to have it;
 
-| Configuration                              | Description | Avaliable Options | Default |
-| ------------------------------------------ | ----------- | ----------------- | ------- |
-| `@theme_plugin_datetime_icon`              |             |                   |         |
-| `@theme_plugin_datetime_accent_color`      |             |                   |         |
-| `@theme_plugin_datetime_accent_color_icon` |             |                   |         |
-| `@theme_plugin_datetime_format`            |             |                   |         |
+| Configuration                             | Description | Avaliable Options | Default |
+| ----------------------------------------- | ----------- | ----------------- | ------- |
+| `@theme_plugin_weather_icon`              |             |                   |         |
+| `@theme_plugin_weather_accent_color`      |             |                   |         |
+| `@theme_plugin_weather_accent_color_icon` |             |                   |         |
+| `@theme_plugin_weather_format`            |             |                   |         |
 
 ### Playerctl
 
 > Prints informations about the current song playing. Does not work in `MacOS`, because it uses `MPRIS`, and is only available in `Linux`.
 
-| Configuration                              | Description | Avaliable Options | Default |
-| ------------------------------------------ | ----------- | ----------------- | ------- |
-| `@theme_plugin_datetime_icon`              |             |                   |         |
-| `@theme_plugin_datetime_accent_color`      |             |                   |         |
-| `@theme_plugin_datetime_accent_color_icon` |             |                   |         |
-| `@theme_plugin_datetime_format`            |             |                   |         |
+| Configuration                               | Description | Avaliable Options | Default |
+| ------------------------------------------- | ----------- | ----------------- | ------- |
+| `@theme_plugin_playerctl_icon`              |             |                   |         |
+| `@theme_plugin_playerctl_accent_color`      |             |                   |         |
+| `@theme_plugin_playerctl_accent_color_icon` |             |                   |         |
+| `@theme_plugin_playerctl_format`            |             |                   |         |
 
 ### Example configuration
 
