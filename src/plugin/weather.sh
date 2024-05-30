@@ -12,6 +12,10 @@ export plugin_weather_icon plugin_weather_accent_color plugin_weather_accent_col
 plugin_weather_format_string=$(get_tmux_option "@theme_plugin_weather_format_string" "%t+H:%h")
 
 function load_plugin() {
+	if ! command -v jq &>/dev/null; then
+		exit 1
+	fi
+
 	LOCATION=$(curl -s http://ip-api.com/json | jq -r '"\(.city), \(.country)"' 2>/dev/null)
 	WEATHER=$(curl -sL wttr.in/${LOCATION// /%20}\?format="${plugin_weather_format_string}" 2>/dev/null)
 
