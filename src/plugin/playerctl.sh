@@ -13,8 +13,17 @@ plugin_playerctl_format_string=$(get_tmux_option "@theme_plugin_playerctl_format
 export plugin_playerctl_icon plugin_playerctl_accent_color plugin_playerctl_accent_color_icon
 
 function load_plugin() {
-	playerctl=$(playerctl metadata --format "$plugin_playerctl_format_string")
-	echo "${playerctl}"
+	if ! command -v playerctl &>/dev/null; then
+		exit 1
+	fi
+
+	if [[ $(playerctl status) == "Playing" ]]; then
+		playerctl=$(playerctl metadata --format "$plugin_playerctl_format_string")
+		echo "${playerctl}"
+	else
+		echo "Not Playing"
+	fi
+
 }
 
 load_plugin
