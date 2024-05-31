@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.1.0...v1.2.0) (2024-05-31)
+
+
+### Features
+
+* **spt-plugin:** add spotify-tui plugin ([377248d](https://github.com/fabioluciano/tmux-tokyo-night/commit/377248de5784ba7da3a6c912a8005d4bdc403acb))
+
 # [1.1.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.0.0...v1.1.0) (2024-05-30)
 
 
