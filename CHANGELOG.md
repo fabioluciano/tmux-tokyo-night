@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.2.1...v1.3.0) (2024-05-31)
+
+
+### Features
+
+* adding the option to customize the session icon ([1f768eb](https://github.com/fabioluciano/tmux-tokyo-night/commit/1f768eb941840b778b8c2b68f1d3abfdfbed9fc3))
+
 ## [1.2.1](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.2.0...v1.2.1) (2024-05-31)
 
 
