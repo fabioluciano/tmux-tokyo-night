@@ -4,7 +4,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 #
 # shellcheck disable=SC2005
-plugin_playerctl_icon=$(get_tmux_option "@theme_plugin_playerctl_icon" " ")
+plugin_playerctl_icon=$(get_tmux_option "@theme_plugin_playerctl_icon" "󰝚 ")
 plugin_playerctl_accent_color=$(get_tmux_option "@theme_plugin_playerctl_accent_color" "blue7")
 plugin_playerctl_accent_color_icon=$(get_tmux_option "@theme_plugin_playerctl_accent_color_icon" "blue0")
 
@@ -23,7 +23,6 @@ function load_plugin() {
 	else
 		echo "Not Playing"
 	fi
-
 }
 
 load_plugin
