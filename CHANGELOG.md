@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.2.0...v1.2.1) (2024-05-31)
+
+
+### Bug Fixes
+
+* fixing [@theme-plugins](https://github.com/theme-plugins) parameter for [@theme](https://github.com/theme)_plugins ([d8b0253](https://github.com/fabioluciano/tmux-tokyo-night/commit/d8b0253288c4b101eddeaf4c879de3c9ee65184d))
+
 # [1.2.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.1.0...v1.2.0) (2024-05-31)
 
 
