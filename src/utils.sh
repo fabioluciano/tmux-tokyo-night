@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-get_tmux_option() {
+
+function get_tmux_option() {
 	local option=$1
 	local default_value=$2
 	local -r option_value=$(tmux show-option -gqv "$option")
@@ -12,9 +13,11 @@ get_tmux_option() {
 }
 
 function generate_left_side_string() {
+
+	session_icon=$(get_tmux_option "@theme_session_icon" "⋅")
 	local separator_end="#[bg=${PALLETE[bg_highlight]}]#{?client_prefix,#[fg=${PALLETE[yellow]}],#[fg=${PALLETE[green]}]}${left_separator:?}#[none]"
 
-	echo "#[fg=${PALLETE[fg_gutter]},bold]#{?client_prefix,#[bg=${PALLETE[yellow]}],#[bg=${PALLETE[green]}]}   #S ${separator_end}"
+	echo "#[fg=${PALLETE[fg_gutter]},bold]#{?client_prefix,#[bg=${PALLETE[yellow]}],#[bg=${PALLETE[green]}]} ${session_icon} #S ${separator_end}"
 }
 
 function generate_inactive_window_string() {
