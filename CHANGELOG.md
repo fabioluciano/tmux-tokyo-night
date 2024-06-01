@@ -1,3 +1,10 @@
+## [1.4.1](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.4.0...v1.4.1) (2024-06-01)
+
+
+### Bug Fixes
+
+* fixing typo ([5fa4885](https://github.com/fabioluciano/tmux-tokyo-night/commit/5fa4885bbf28bb743e54f46f0e999846d162d2b7))
+
 # [1.4.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.3.0...v1.4.0) (2024-06-01)
 
 
