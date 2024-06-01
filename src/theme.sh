@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -euxo pipefail
 
 export LC_ALL=en_US.UTF-8
 
@@ -20,7 +20,7 @@ border_style_inactive_pane=$(get_tmux_option "@theme_inactive_pane_border_style"
 left_separator=$(get_tmux_option "@theme_left_separator" "")
 right_separator=$(get_tmux_option "@theme_right_separator" "")
 
-window_with_activity_style=$(get_tmux_option "@theme_window_with_activity_style" "italics")
+window_with_activity_style=$(get_tmux_option "@theme_window_with_activity_style"alics")
 window_status_bell_style=$(get_tmux_option "@theme_status_bell_style" "bold")
 
 IFS=',' read -r -a plugins <<<"$(get_tmux_option "@theme_plugins" "datetime,weather")"
