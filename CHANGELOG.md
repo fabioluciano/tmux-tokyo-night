@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.3.0...v1.4.0) (2024-06-01)
+
+
+### Features
+
+* add homebrew plugin ([31d411c](https://github.com/fabioluciano/tmux-tokyo-night/commit/31d411c4c4d5a131142906f2d9bdf768e81b46f7))
+
 # [1.3.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.2.1...v1.3.0) (2024-05-31)
 
 
