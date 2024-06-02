@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.4.1...v1.5.0) (2024-06-02)
+
+
+### Features
+
+* add yay plugin ([6209478](https://github.com/fabioluciano/tmux-tokyo-night/commit/6209478e2df93d957e647a5c028ffaf2dc1c53c2))
+
 ## [1.4.1](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.4.0...v1.4.1) (2024-06-01)
 
 
