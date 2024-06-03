@@ -1,3 +1,10 @@
+## [1.5.1](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.5.0...v1.5.1) (2024-06-03)
+
+
+### Bug Fixes
+
+* yay and homebrew signals when there is no packages to update ([bf7b935](https://github.com/fabioluciano/tmux-tokyo-night/commit/bf7b935a4458b4ab2700255bb237661eff48c28f))
+
 # [1.5.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.4.1...v1.5.0) (2024-06-02)
 
 
