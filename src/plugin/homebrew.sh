@@ -16,7 +16,7 @@ function load_plugin() {
 		exit 1
 	fi
 
-	outdated_packages=$(brew outdated "${plugin_homebrew_additional_options}")
+	outdated_packages=$(brew outdated "${plugin_homebrew_additional_options}" || true)
 	outdated_packages_count=$(echo "${outdated_packages}" | wc -l | xargs)
 	if [[ "${outdated_packages_count}" -gt 1 ]]; then
 		echo "$outdated_packages_count outdated packages"
