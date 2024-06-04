@@ -8,15 +8,15 @@ CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$CURRENT_DIR/utils.sh"
 
 theme_variation=$(get_tmux_option "@theme_variation" "night")
-theme_enable_icons=$(get_tmux_option "@theme_variation" 1)
+theme_enable_icons=$(get_tmux_option "@theme_enable_icons" 1)
 theme_disable_plugins=$(get_tmux_option "@theme_disable_plugins" 0)
 
 # shellcheck source=src/palletes/night.sh
 . "$CURRENT_DIR/palletes/$theme_variation.sh"
 
 ### Load Options
-border_style_active_pane=$(get_tmux_option "@theme_active_pane_border_style" "fg=${PALLETE['dark5']}")
-border_style_inactive_pane=$(get_tmux_option "@theme_inactive_pane_border_style" "fg=${PALLETE[bg_highlight]}")
+border_style_active_pane=$(get_tmux_option "@theme_active_pane_border_style" "${PALLETE['dark5']}")
+border_style_inactive_pane=$(get_tmux_option "@theme_inactive_pane_border_style" "${PALLETE[bg_highlight]}")
 left_separator=$(get_tmux_option "@theme_left_separator" "")
 right_separator=$(get_tmux_option "@theme_right_separator" "")
 
@@ -38,8 +38,8 @@ tmux set-option -g message-style "bg=${PALLETE[red]},fg=${PALLETE[bg_dark]}"
 tmux set-option -g status-style "bg=${PALLETE[bg_highlight]},fg=${PALLETE[white]}"
 
 # border color
-tmux set-option -g pane-active-border-style "$border_style_active_pane"
-tmux set-option -g pane-border-style "$border_style_inactive_pane"
+tmux set-option -g pane-active-border-style "fg=$border_style_active_pane"
+tmux set-option -g pane-border-style "fg=$border_style_inactive_pane"
 
 ### Left side
 tmux set-option -g status-left "$(generate_left_side_string)"
@@ -93,7 +93,7 @@ if [ "$theme_disable_plugins" -ne 1 ]; then
 			plugin_icon_output="${separator_icon_start}#[fg=${PALLETE[white]},bg=${PALLETE[$accent_color_icon]}]${plugin_icon}${separator_icon_end}"
 
 			if [ ! $is_last_plugin -eq 1 ] && [ "${#plugins[@]}" -gt 1 ]; then
-				plugin_output_string="${plugin_icon_output}${plugin_output}${separator_end}"
+				plugin_output_string="${plugin_icon_output}${plugin_output} ${separator_end}"
 			else
 				plugin_output_string="${plugin_icon_output}${plugin_output} "
 			fi
