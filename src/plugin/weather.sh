@@ -9,7 +9,7 @@ plugin_weather_accent_color_icon=$(get_tmux_option "@theme_plugin_weather_accent
 
 export plugin_weather_icon plugin_weather_accent_color plugin_weather_accent_color_icon
 
-plugin_weather_format_string=$(get_tmux_option "@theme_plugin_weather_format_string" "%t+H:%h")
+plugin_weather_format_string=$(get_tmux_option "@theme_plugin_weather_format" "%t+H:%h")
 
 function load_plugin() {
 	if ! command -v jq &>/dev/null; then
