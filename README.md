@@ -25,6 +25,7 @@
 - **Spt** - Show Spotify;
 - **Homebrew** - Show Homebrew;
 - **yay** - Show yay;
+- **battery** - Show battery;
 
 ## Screenshots
 
@@ -93,6 +94,23 @@ Hit <kbd>prefix</kbd> + <kbd>I</kbd> to fetch the plugin and source it. You can 
 | `@theme_plugin_playerctl_accent_color`      |             |                   |         |
 | `@theme_plugin_playerctl_accent_color_icon` |             |                   |         |
 | `@theme_plugin_playerctl_format`            |             |                   |         |
+
+### Battery
+
+Shows battery charging status (charging or discharging) and battery percentage.
+
+| Configuration                                    | Description                        | Avaliable Options | Default  |
+| ------------------------------------------------ | ---------------------------------- | ----------------- | -------- |
+| `@theme_plugin_battery_charging_icon`            | Icon to display when charging      | Any character     |         |
+| `@theme_plugin_battery_discharging`              | Icon to display when on battery    | Any character     | 󰁹        |
+| `@theme_plugin_battery_red_threshold`            | Show in red when below this %      | 0-100             | 10       |
+| `@theme_plugin_battery_yellow_threshold`         | Show in yellow when below this %   | 0-100             | 30       |
+| `@theme_plugin_battery_red_accent_color`         | Color when < red threshold         | Palette color     | red      |
+| `@theme_plugin_battery_red_accent_color_icon`    | Icon color when < red threshold    | Palette color     | magenta2 |
+| `@theme_plugin_battery_yellow_accent_color`      | Color when < yellow threshold      | Palette color     | yellow   |
+| `@theme_plugin_battery_yellow_accent_color_icon` | Icon color when < yellow threshold | Palette color     | orange   |
+| `@theme_plugin_battery_green_accent_color`       | Color when > yellow threshold      | Palette color     | blue7    |
+| `@theme_plugin_battery_green_accent_color_icon`  | Icon color when > yellow threshold | Palette color     | blue0    |
 
 ### Example configuration
 
