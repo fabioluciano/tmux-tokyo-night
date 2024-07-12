@@ -39,7 +39,7 @@ tmux set-option -g status-style "bg=${PALLETE[bg_highlight]},fg=${PALLETE[white]
 
 # border color
 tmux set-option -g pane-active-border-style "fg=$border_style_active_pane"
-tmux set-option -g pane-border-style "fg=$border_style_inactive_pane"
+tmux set-option -g pane-border-style "#{?pane_synchronized,fg=$border_style_active_pane,fg=$border_style_inactive_pane}"
 
 ### Left side
 tmux set-option -g status-left "$(generate_left_side_string)"
