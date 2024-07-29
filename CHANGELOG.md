@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.5.2...v1.6.0) (2024-07-29)
+
+
+### Features
+
+* add synchronized panes indicator ([ecde261](https://github.com/fabioluciano/tmux-tokyo-night/commit/ecde2617a5eece581d9f78e07e53e36eea5980da))
+
 ## [1.5.2](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.5.1...v1.5.2) (2024-06-04)
 
 
