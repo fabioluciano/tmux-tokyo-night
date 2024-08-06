@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.6.0...v1.7.0) (2024-08-06)
+
+
+### Features
+
+* added additional icons customization options ([0b686ee](https://github.com/fabioluciano/tmux-tokyo-night/commit/0b686ee22f02ae1ac437b06a1bf8241861b3c07b))
+
 # [1.6.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.5.2...v1.6.0) (2024-07-29)
 
 
