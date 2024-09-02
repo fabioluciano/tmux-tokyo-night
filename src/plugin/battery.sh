@@ -114,28 +114,50 @@ print_battery_percentage() {
 }
 ##################################################
 
-battery_percentage=$(print_battery_percentage)
-charging_status=$(battery_status)
 
-if [ "$charging_status" ==  "charging" ] || [ "$charging_status" == "charged" ]; then
-    plugin_battery_icon=$(get_tmux_option "@theme_plugin_battery_charging_icon" " ")
+# When run with no args, return place holders to create a template that we'll replace with real
+# values when run by tmux
+if [ $# -eq 0 ]; then
+    plugin_battery_icon="_ICON_"
+    plugin_battery_accent_color="_ACCENT_COLOR_"
+    plugin_battery_accent_color_icon="_ACCENT_COLOR_ICON_"
+    export plugin_battery_icon plugin_battery_accent_color plugin_battery_accent_color_icon
+    echo "_BATTERY_"
 else
-    plugin_battery_icon=$(get_tmux_option "@theme_plugin_battery_discharging_icon" "󰁹 ")
+
+    # We have the template, replace the placeholders with real values now
+
+    battery_percentage=$(print_battery_percentage)
+    charging_status=$(battery_status)
+
+    if [ "$charging_status" ==  "charging" ] || [ "$charging_status" == "charged" ]; then
+        plugin_battery_icon=$(get_tmux_option "@theme_plugin_battery_charging_icon" " ")
+    else
+        plugin_battery_icon=$(get_tmux_option "@theme_plugin_battery_discharging_icon" "󰁹 ")
+    fi
+
+    battery_number="${battery_percentage//%/}"
+
+    # load palette
+    theme_variation=$(get_tmux_option "@theme_variation" "night")
+    . "$ROOT_DIR/../palletes/$theme_variation.sh"
+
+    if [ "$battery_number" -lt $(get_tmux_option "@theme_plugin_battery_red_threshold" "10") ]; then
+        plugin_battery_accent_color=$(get_tmux_option "@theme_plugin_battery_red_accent_color" "red")
+        plugin_battery_accent_color_icon=$(get_tmux_option "@theme_plugin_battery_red_accent_color_icon" "magenta2")
+    elif [ "$battery_number" -lt $(get_tmux_option "@theme_plugin_battery_yellow_threshold" "30") ]; then
+        plugin_battery_accent_color=$(get_tmux_option "@theme_plugin_battery_yellow_accent_color" "yellow")
+        plugin_battery_accent_color_icon=$(get_tmux_option "@theme_plugin_battery_yellow_accent_color_icon" "orange")
+    else
+        plugin_battery_accent_color=$(get_tmux_option "@theme_plugin_battery_green_accent_color" "blue7")
+        plugin_battery_accent_color_icon=$(get_tmux_option "@theme_plugin_battery_green_accent_color_icon" "blue0")
+    fi
+
+    template=$1
+    result="${template//_ACCENT_COLOR_ICON_/${PALLETE[$plugin_battery_accent_color_icon]}}"
+    result="${result//_ACCENT_COLOR_/${PALLETE[$plugin_battery_accent_color]}}"
+    result="${result//_ICON_/$plugin_battery_icon}"
+    result="${result//_BATTERY_/$battery_percentage}"
+
+    echo $result
 fi
-
-battery_number="${battery_percentage//%/}"
-
-if [ "$battery_number" -lt $(get_tmux_option "@theme_plugin_battery_red_threshold" "10") ]; then
-    plugin_battery_accent_color=$(get_tmux_option "@theme_plugin_battery_red_accent_color" "red")
-    plugin_battery_accent_color_icon=$(get_tmux_option "@theme_plugin_battery_red_accent_color_icon" "magenta2")
-elif [ "$battery_number" -lt $(get_tmux_option "@theme_plugin_battery_yellow_threshold" "30") ]; then
-    plugin_battery_accent_color=$(get_tmux_option "@theme_plugin_battery_yellow_accent_color" "yellow")
-    plugin_battery_accent_color_icon=$(get_tmux_option "@theme_plugin_battery_yellow_accent_color_icon" "orange")
-else
-    plugin_battery_accent_color=$(get_tmux_option "@theme_plugin_battery_green_accent_color" "blue7")
-    plugin_battery_accent_color_icon=$(get_tmux_option "@theme_plugin_battery_green_accent_color_icon" "blue0")
-fi
-
-export plugin_battery_icon plugin_battery_accent_color plugin_battery_accent_color_icon
-
-echo $battery_percentage
