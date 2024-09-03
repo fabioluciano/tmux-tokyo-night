@@ -133,7 +133,7 @@ else
     if [ "$charging_status" ==  "charging" ] || [ "$charging_status" == "charged" ]; then
         plugin_battery_icon=$(get_tmux_option "@theme_plugin_battery_charging_icon" " ")
     else
-        plugin_battery_icon=$(get_tmux_option "@theme_plugin_battery_discharging_icon" "󰁹 ")
+        plugin_battery_icon=$(get_tmux_option "@theme_plugin_battery_discharging_icon" "󰁹")
     fi
 
     battery_number="${battery_percentage//%/}"
