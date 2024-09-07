@@ -86,7 +86,6 @@ if [ "$theme_disable_plugins" -ne 1 ]; then
 				accent_color_icon="${PALLETE[$accent_color_icon]}"
 			fi
 
-			separator_start="#[fg=${accent_color},bg=${PALLETE[bg_highlight]}]${right_separator}#[none]"
 			separator_end="#[fg=${PALLETE[bg_highlight]},bg=${accent_color}]${right_separator}#[none]"
 			separator_icon_start="#[fg=${accent_color_icon},bg=${PALLETE[bg_highlight]}]${right_separator}#[none]"
 			separator_icon_end="#[fg=${accent_color},bg=${accent_color_icon}]${right_separator}#[none]"
