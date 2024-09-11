@@ -1,3 +1,13 @@
+## [1.7.1](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.7.0...v1.7.1) (2024-09-11)
+
+
+### Bug Fixes
+
+* add battery to list of plugins in table ([bc4d532](https://github.com/fabioluciano/tmux-tokyo-night/commit/bc4d5321a60c160844f85fb6a9c48f6d7c628f89))
+* **battery:** Colors / icons not updating ([106bc2b](https://github.com/fabioluciano/tmux-tokyo-night/commit/106bc2bd33cd99ffdf042df2f5aff8448550fea6))
+* **battery:** remove space after battery icon ([1d7ca1f](https://github.com/fabioluciano/tmux-tokyo-night/commit/1d7ca1fbdf63e427b998b7dbc7d4ac8bcdbf44a6))
+* removing unused line ([8e51ec2](https://github.com/fabioluciano/tmux-tokyo-night/commit/8e51ec211cf6286997db5acfe3ba594492020bfe))
+
 # [1.7.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.6.0...v1.7.0) (2024-08-06)
 
 
