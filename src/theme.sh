@@ -78,24 +78,41 @@ if [ "$theme_disable_plugins" -ne 1 ]; then
 			accent_color="${!accent_color_var}"
 			accent_color_icon="${!accent_color_icon_var}"
 
-			separator_start="#[fg=${PALLETE[$accent_color]},bg=${PALLETE[bg_highlight]}]${right_separator}#[none]"
-			separator_end="#[fg=${PALLETE[bg_highlight]},bg=${PALLETE[$accent_color]}]${right_separator}#[none]"
-			separator_icon_start="#[fg=${PALLETE[$accent_color_icon]},bg=${PALLETE[bg_highlight]}]${right_separator}#[none]"
-			separator_icon_end="#[fg=${PALLETE[$accent_color]},bg=${PALLETE[$accent_color_icon]}]${right_separator}#[none]"
-
-			if [ "$plugin" == "datetime" ]; then
-				plugin_output="#[fg=${PALLETE[white]},bg=${PALLETE[$accent_color]}]${plugin_execution_string}#[none]"
-			else
-				plugin_output="#[fg=${PALLETE[white]},bg=${PALLETE[$accent_color]}]#($plugin_script_path)#[none]"
+			# For every plugin except battery, turn accent_color and accent_color_icon into
+			# the colors from the palette. The battery plugin uses placeholders so it can
+			# change the color based on battery level
+			if [ "$plugin" != "battery" ]; then
+				accent_color="${PALLETE[$accent_color]}"
+				accent_color_icon="${PALLETE[$accent_color_icon]}"
 			fi
+
+			separator_end="#[fg=${PALLETE[bg_highlight]},bg=${accent_color}]${right_separator}#[none]"
+			separator_icon_start="#[fg=${accent_color_icon},bg=${PALLETE[bg_highlight]}]${right_separator}#[none]"
+			separator_icon_end="#[fg=${accent_color},bg=${accent_color_icon}]${right_separator}#[none]"
+
 			plugin_output_string=""
 
-			plugin_icon_output="${separator_icon_start}#[fg=${PALLETE[white]},bg=${PALLETE[$accent_color_icon]}]${plugin_icon}${separator_icon_end}"
+			# For datetime and battery, we run the plugin to get the content
+			# For battery, the content is actually a template that will be replaced when
+			# running the script later
+			if [ "$plugin" == "datetime" ] || [ "$plugin" == "battery" ]; then
+				plugin_output="#[fg=${PALLETE[white]},bg=${accent_color}]${plugin_execution_string}#[none]"
+			else
+				plugin_output="#[fg=${PALLETE[white]},bg=${accent_color}]#($plugin_script_path)#[none]"
+			fi
+
+			plugin_icon_output="${separator_icon_start}#[fg=${PALLETE[white]},bg=${accent_color_icon}]${plugin_icon}${separator_icon_end}"
 
 			if [ ! $is_last_plugin -eq 1 ] && [ "${#plugins[@]}" -gt 1 ]; then
 				plugin_output_string="${plugin_icon_output}${plugin_output} ${separator_end}"
 			else
 				plugin_output_string="${plugin_icon_output}${plugin_output} "
+			fi
+
+			# For the battery plugin, we pass $plugin_output_string as an argument to the script so 
+			# we can dynamically change the icon and accent colors
+			if [ "$plugin" == "battery" ]; then
+				plugin_output_string="#($plugin_script_path \"$plugin_output_string\")"
 			fi
 
 			tmux set-option -ga status-right "$plugin_output_string"
