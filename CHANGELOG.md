@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.7.1...v1.8.0) (2024-10-01)
+
+
+### Features
+
+* fix [#37](https://github.com/fabioluciano/tmux-tokyo-night/issues/37) transparency support ([3be2aa2](https://github.com/fabioluciano/tmux-tokyo-night/commit/3be2aa280242941947d31a0386764e7f78b734bd))
+
 ## [1.7.1](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.7.0...v1.7.1) (2024-09-11)
 
 
