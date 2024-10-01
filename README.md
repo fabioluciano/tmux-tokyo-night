@@ -17,6 +17,8 @@
 
 ## Features
 
+- [Transparency support](#Transparency-examples)
+
 ## Plugins
 
 - **Datetime** - Show datetime;
@@ -116,7 +118,7 @@ Shows battery charging status (charging or discharging) and battery percentage.
 
 tmux.conf
 
-```
+```bash
 set -g @plugin 'tmux-plugins/tpm'
 
 set -g @plugin 'tmux-plugins/tmux-pain-control'
@@ -133,6 +135,35 @@ set -g @theme_plugins 'datetime,weather,playerctl,yay'
 
 run '~/.tmux/plugins/tpm/tpm'
 ```
+
+### Transparency examples
+
+Enable transparency with default separators:
+
+```bash
+### Enable transparency
+set -g @theme_transparent_status_bar 'true'
+```
+
+![Screenshot 2024-09-07 at 12 41 12](https://github.com/user-attachments/assets/56287ccb-9be9-4aa5-a2ab-ec48d2b2d08a)
+
+####
+
+Can also use custom separators:
+
+```bash
+### Enable transparency
+set -g @theme_left_separator ''
+set -g @theme_right_separator ''
+set -g @theme_transparent_status_bar 'true'
+set -g @theme_transparent_left_separator_inverse ''
+set -g @theme_transparent_right_separator_inverse ''
+
+```
+
+![Screenshot 2024-09-07 at 12 39 35](https://github.com/user-attachments/assets/a33417b1-34e0-4212-952e-7ef1e240e943)
+
+
 
 [features]: #features
 [screenshots]: #screenshots

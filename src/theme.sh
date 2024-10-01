@@ -19,6 +19,12 @@ border_style_active_pane=$(get_tmux_option "@theme_active_pane_border_style" "${
 border_style_inactive_pane=$(get_tmux_option "@theme_inactive_pane_border_style" "${PALLETE[bg_highlight]}")
 left_separator=$(get_tmux_option "@theme_left_separator" "")
 right_separator=$(get_tmux_option "@theme_right_separator" "")
+transparent=$(get_tmux_option "@theme_transparent_status_bar" "false")
+
+if [ "$transparent" = "true" ]; then
+	left_separator_inverse=$(get_tmux_option "@theme_transparent_left_separator_inverse" "")
+	right_separator_inverse=$(get_tmux_option "@theme_transparent_right_separator_inverse" "")
+fi
 
 window_with_activity_style=$(get_tmux_option "@theme_window_with_activity_style" "italics")
 window_status_bell_style=$(get_tmux_option "@theme_status_bell_style" "bold")
@@ -35,7 +41,11 @@ tmux set-window-option -g window-status-bell-style "${window_status_bell_style}"
 tmux set-option -g message-style "bg=${PALLETE[red]},fg=${PALLETE[bg_dark]}"
 
 # status bar
-tmux set-option -g status-style "bg=${PALLETE[bg_highlight]},fg=${PALLETE[white]}"
+status_bar_bg=${PALLETE[bg_highlight]}
+if [ "$transparent" = "true" ]; then
+	status_bar_bg="default"
+fi
+tmux set-option -g status-style "bg=${status_bar_bg},fg=${PALLETE[white]}"
 
 # border color
 tmux set-option -g pane-active-border-style "fg=$border_style_active_pane"
@@ -89,6 +99,15 @@ if [ "$theme_disable_plugins" -ne 1 ]; then
 			separator_end="#[fg=${PALLETE[bg_highlight]},bg=${accent_color}]${right_separator}#[none]"
 			separator_icon_start="#[fg=${accent_color_icon},bg=${PALLETE[bg_highlight]}]${right_separator}#[none]"
 			separator_icon_end="#[fg=${accent_color},bg=${accent_color_icon}]${right_separator}#[none]"
+			if [ "$transparent" = "true" ]; then
+				separator_icon_start="#[fg=${accent_color_icon},bg=default]${right_separator}#[none]"
+				separator_icon_end="#[fg=${accent_color},bg=${accent_color_icon}]${right_separator}#[none]"
+				separator_end="#[fg=${accent_color},bg=default]${right_separator_inverse}#[none]"
+			else
+				separator_icon_start="#[fg=${accent_color_icon},bg=${PALLETE[bg_highlight]}]${right_separator}#[none]"
+				separator_icon_end="#[fg=${accent_color},bg=${accent_color_icon}]${right_separator}#[none]"
+				separator_end="#[fg=${PALLETE[bg_highlight]},bg=${accent_color}]${right_separator}#[none]"
+			fi
 
 			plugin_output_string=""
 
