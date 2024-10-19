@@ -15,6 +15,7 @@ function get_tmux_option() {
 function generate_left_side_string() {
 
 	session_icon=$(get_tmux_option "@theme_session_icon" "⋅")
+	left_separator=$(get_tmux_option "@theme_left_separator" "")
 	transparent=$(get_tmux_option "@theme_transparent_status_bar" "false")
 
 	if [ "$transparent" = "true" ]; then
@@ -30,6 +31,7 @@ function generate_inactive_window_string() {
 
 	inactive_window_icon=$(get_tmux_option "@theme_plugin_inactive_window_icon" " ")
 	zoomed_window_icon=$(get_tmux_option "@theme_plugin_zoomed_window_icon" " ")
+	left_separator=$(get_tmux_option "@theme_left_separator" "")
 	transparent=$(get_tmux_option "@theme_transparent_status_bar" "false")
 
 	if [ "$transparent" = "true" ]; then
@@ -52,6 +54,7 @@ function generate_active_window_string() {
 	active_window_icon=$(get_tmux_option "@theme_plugin_active_window_icon" " ")
 	zoomed_window_icon=$(get_tmux_option "@theme_plugin_zoomed_window_icon" " ")
 	pane_synchronized_icon=$(get_tmux_option "@theme_plugin_pane_synchronized_icon" "✵")
+	left_separator=$(get_tmux_option "@theme_left_separator" "")
 
 	if [ "$transparent" = "true" ]; then
 		separator_start="#[bg=default,fg=${PALLETE['magenta']}]${left_separator_inverse}#[bg=${PALLETE['magenta']},fg=${PALLETE['bg_highlight']}]"
