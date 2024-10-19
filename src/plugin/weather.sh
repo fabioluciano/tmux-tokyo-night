@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# shellcheck source=src/utils.sh
 . "$ROOT_DIR/../utils.sh"
 
 # shellcheck disable=SC2005
@@ -17,7 +19,7 @@ function load_plugin() {
 	fi
 
 	LOCATION=$(curl -s http://ip-api.com/json | jq -r '"\(.city), \(.country)"' 2>/dev/null)
-	WEATHER=$(curl -sL wttr.in/${LOCATION// /%20}\?format="${plugin_weather_format_string}" 2>/dev/null)
+	WEATHER=$(curl -sL wttr.in/"${LOCATION// /%20}"\?format="${plugin_weather_format_string}" 2>/dev/null)
 
 	echo "${WEATHER}"
 }

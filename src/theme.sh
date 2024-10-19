@@ -75,9 +75,9 @@ if [ "$theme_disable_plugins" -ne 1 ]; then
 				is_last_plugin=1
 			fi
 
-			# shellcheck source=src/plugin/datetime.sh
 			plugin_script_path="${CURRENT_DIR}/plugin/${plugin}.sh"
 			plugin_execution_string="$(${plugin_script_path})"
+			# shellcheck source=src/plugin/datetime.sh
 			. "$plugin_script_path"
 
 			icon_var="plugin_${plugin}_icon"
