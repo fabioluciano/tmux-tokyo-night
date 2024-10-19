@@ -8,7 +8,6 @@ CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$CURRENT_DIR/utils.sh"
 
 theme_variation=$(get_tmux_option "@theme_variation" "night")
-theme_enable_icons=$(get_tmux_option "@theme_enable_icons" 1)
 theme_disable_plugins=$(get_tmux_option "@theme_disable_plugins" 0)
 
 # shellcheck source=src/palletes/night.sh

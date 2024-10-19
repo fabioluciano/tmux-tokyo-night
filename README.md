@@ -52,7 +52,6 @@ Hit <kbd>prefix</kbd> + <kbd>I</kbd> to fetch the plugin and source it. You can 
 | Configuration                       | Description                               | Avaliable Options                                                       | Default            |
 | ----------------------------------- | ----------------------------------------- | ----------------------------------------------------------------------- | ------------------ |
 | `@theme_variation`                  | The tokyo night theme variation to be use | `night`, `storm`, `moon`                                                | `night`            |
-| `@theme_enable_icons`               | Switch icons in window list and plugins   | `1`, `0`                                                                | `1`                |
 | `@theme_active_pane_border_style`   |                                           |                                                                         | `#737aa2`          |
 | `@theme_inactive_pane_border_style` |                                           |                                                                         | `#292e42`          |
 | `@theme_left_separator`             |                                           |                                                                         | ``                |
@@ -162,8 +161,6 @@ set -g @theme_transparent_right_separator_inverse ''
 ```
 
 ![Screenshot 2024-09-07 at 12 39 35](https://github.com/user-attachments/assets/a33417b1-34e0-4212-952e-7ef1e240e943)
-
-
 
 [features]: #features
 [screenshots]: #screenshots
