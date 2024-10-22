@@ -69,5 +69,5 @@ function generate_active_window_string() {
 		separator_end="#[bg=${PALLETE[bg_highlight]},fg=${PALLETE['purple']}]${left_separator:?}#[none]"
 	fi
 
-	echo "${separator_start}#[fg=${PALLETE[white]}]#I${separator_internal}#[fg=${PALLETE[white]}] #{?window_zoomed_flag,$zoomed_window_icon,$active_window_icon}#W #{?pane_synchronized,$pane_synchronized_icon, }${separator_end}#[none]"
+	echo "${separator_start}#[fg=${PALLETE[white]}]#I${separator_internal}#[fg=${PALLETE[white]}] #{?window_zoomed_flag,$zoomed_window_icon,$active_window_icon}#W #{?pane_synchronized,$pane_synchronized_icon,}${separator_end}#[none]"
 }
