@@ -55,8 +55,11 @@ function generate_active_window_string() {
 	zoomed_window_icon=$(get_tmux_option "@theme_plugin_zoomed_window_icon" " ")
 	pane_synchronized_icon=$(get_tmux_option "@theme_plugin_pane_synchronized_icon" "✵")
 	left_separator=$(get_tmux_option "@theme_left_separator" "")
+	transparent=$(get_tmux_option "@theme_transparent_status_bar" "false")
 
 	if [ "$transparent" = "true" ]; then
+		left_separator_inverse=$(get_tmux_option "@theme_transparent_left_separator_inverse" "")
+		
 		separator_start="#[bg=default,fg=${PALLETE['magenta']}]${left_separator_inverse}#[bg=${PALLETE['magenta']},fg=${PALLETE['bg_highlight']}]"
 		separator_internal="#[bg=${PALLETE['purple']},fg=${PALLETE['magenta']}]${left_separator:?}#[none]"
 		separator_end="#[bg=default,fg=${PALLETE['purple']}]${left_separator:?}#[none]"
