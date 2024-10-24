@@ -1,3 +1,16 @@
+## [1.8.1](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.8.0...v1.8.1) (2024-10-24)
+
+
+### Bug Fixes
+
+* extra space after active window name ([29a086e](https://github.com/fabioluciano/tmux-tokyo-night/commit/29a086e354fb9e99fef60058cab9a112818a6dd4))
+* Forgot transparent and left_separator_inverse ([a0228fe](https://github.com/fabioluciano/tmux-tokyo-night/commit/a0228fec97267dbf395862787a3bb981b44a3dc3))
+* removing theme_enable_icons ([c053ee2](https://github.com/fabioluciano/tmux-tokyo-night/commit/c053ee2562cfdecbadca59fde6d62f15194c1602))
+* run shellcheck on pull_requests ([31d10c0](https://github.com/fabioluciano/tmux-tokyo-night/commit/31d10c065af23fee3bd1f59cf27cc24b3429e13f))
+* shellcheck warnings ([8d706a9](https://github.com/fabioluciano/tmux-tokyo-night/commit/8d706a9631e88f5aba35f41ce7c3c71e22ca2833))
+* shellcheck warnings about unused vars ([6a340c8](https://github.com/fabioluciano/tmux-tokyo-night/commit/6a340c80148eee0a1d7af78ac38376971d2bb73f))
+* **shellcheck:** run files together to fix SC1091 ([df678f1](https://github.com/fabioluciano/tmux-tokyo-night/commit/df678f107726f1463667b5e2f5290bae13ff87fd))
+
 # [1.8.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.7.1...v1.8.0) (2024-10-01)
 
 
