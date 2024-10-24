@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# shellcheck source=src/utils.sh
 . "$ROOT_DIR/../utils.sh"
 
 #

@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# shellcheck source=src/utils.sh
 . "$ROOT_DIR/../utils.sh"
 
 # Battery querying code from https://github.com/tmux-plugins/tmux-battery
@@ -22,7 +24,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 s_osx() {
-    [ $(uname) == "Darwin" ]
+    [ "$(uname)" == "Darwin" ]
 }
 
 is_chrome() {
@@ -64,15 +66,15 @@ battery_status() {
     elif command_exists "upower"; then
         local battery
         battery=$(upower -e | grep -E 'battery|DisplayDevice'| tail -n1)
-        upower -i $battery | awk '/state/ {print $2}'
+        upower -i "$battery" | awk '/state/ {print $2}'
     elif command_exists "termux-battery-status"; then
         termux-battery-status | jq -r '.status' | awk '{printf("%s%", tolower($1))}'
     elif command_exists "apm"; then
         local battery
         battery=$(apm -a)
-        if [ $battery -eq 0 ]; then
+        if [ "$battery" -eq 0 ]; then
             echo "discharging"
-        elif [ $battery -eq 1 ]; then
+        elif [ "$battery" -eq 1 ]; then
             echo "charging"
         fi
     fi
@@ -90,21 +92,23 @@ print_battery_percentage() {
         acpi -b | grep -m 1 -Eo "[0-9]+%"
     elif command_exists "upower"; then
         # use DisplayDevice if available otherwise battery
-        local battery=$(upower -e | grep -E 'battery|DisplayDevice'| tail -n1)
+        local battery
+        battery=$(upower -e | grep -E 'battery|DisplayDevice'| tail -n1)
         if [ -z "$battery" ]; then
             return
         fi
-        local percentage=$(upower -i $battery | awk '/percentage:/ {print $2}')
+        local percentage
+        percentage=$(upower -i "$battery" | awk '/percentage:/ {print $2}')
         if [ "$percentage" ]; then
-            echo ${percentage%.*%}
+            echo "${percentage%.*%}"
             return
         fi
         local energy
         local energy_full
-        energy=$(upower -i $battery | awk -v nrg="$energy" '/energy:/ {print nrg+$2}')
-        energy_full=$(upower -i $battery | awk -v nrgfull="$energy_full" '/energy-full:/ {print nrgfull+$2}')
+        energy=$(upower -i "$battery" | awk -v nrg="$energy" '/energy:/ {print nrg+$2}')
+        energy_full=$(upower -i "$battery" | awk -v nrgfull="$energy_full" '/energy-full:/ {print nrgfull+$2}')
         if [ -n "$energy" ] && [ -n "$energy_full" ]; then
-            echo $energy $energy_full | awk '{printf("%d%%", ($1/$2)*100)}'
+            echo "$energy" "$energy_full" | awk '{printf("%d%%", ($1/$2)*100)}'
         fi
     elif command_exists "termux-battery-status"; then
         termux-battery-status | jq -r '.percentage' | awk '{printf("%d%%", $1)}'
@@ -140,12 +144,13 @@ else
 
     # load palette
     theme_variation=$(get_tmux_option "@theme_variation" "night")
+    # shellcheck source=src/palletes/night.sh
     . "$ROOT_DIR/../palletes/$theme_variation.sh"
 
-    if [ "$battery_number" -lt $(get_tmux_option "@theme_plugin_battery_red_threshold" "10") ]; then
+    if [ "$battery_number" -lt "$(get_tmux_option '@theme_plugin_battery_red_threshold' '10')" ]; then
         plugin_battery_accent_color=$(get_tmux_option "@theme_plugin_battery_red_accent_color" "red")
         plugin_battery_accent_color_icon=$(get_tmux_option "@theme_plugin_battery_red_accent_color_icon" "magenta2")
-    elif [ "$battery_number" -lt $(get_tmux_option "@theme_plugin_battery_yellow_threshold" "30") ]; then
+    elif [ "$battery_number" -lt "$(get_tmux_option '@theme_plugin_battery_yellow_threshold' '30')" ]; then
         plugin_battery_accent_color=$(get_tmux_option "@theme_plugin_battery_yellow_accent_color" "yellow")
         plugin_battery_accent_color_icon=$(get_tmux_option "@theme_plugin_battery_yellow_accent_color_icon" "orange")
     else
@@ -159,5 +164,5 @@ else
     result="${result//_ICON_/$plugin_battery_icon}"
     result="${result//_BATTERY_/$battery_percentage}"
 
-    echo $result
+    echo "$result"
 fi
