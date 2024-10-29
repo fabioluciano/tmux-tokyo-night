@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.8.1...v1.9.0) (2024-10-29)
+
+
+### Features
+
+* Allow customizing the window title string ([e064b37](https://github.com/fabioluciano/tmux-tokyo-night/commit/e064b37f00c6b5cd3754c6da1d4f7fbff11c225b))
+
 ## [1.8.1](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.8.0...v1.8.1) (2024-10-24)
 
 
