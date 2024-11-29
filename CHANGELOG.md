@@ -1,3 +1,10 @@
+# [1.10.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.9.0...v1.10.0) (2024-11-29)
+
+
+### Features
+
+* **weather:** add support for overriding IP-based location ([8f2421a](https://github.com/fabioluciano/tmux-tokyo-night/commit/8f2421acb443ce1ab206d1d090fecb7a59efeffd))
+
 # [1.9.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.8.1...v1.9.0) (2024-10-29)
 
 
