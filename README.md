@@ -69,7 +69,7 @@ Hit <kbd>prefix</kbd> + <kbd>I</kbd> to fetch the plugin and source it. You can 
 
 | Configuration                              | Description | Avaliable Options | Default |
 | ------------------------------------------ | ----------- | ----------------- | ------- |
-| `@theme_plugin_datetime_icon`              |             |                   |         |
+| `@theme_plugin_datetime_icon`              |             | Any character 📅  | Nerd Font 'Calendar' icon        |
 | `@theme_plugin_datetime_accent_color`      |             |                   |         |
 | `@theme_plugin_datetime_accent_color_icon` |             |                   |         |
 | `@theme_plugin_datetime_format`            |             |                   |         |
@@ -80,10 +80,16 @@ Hit <kbd>prefix</kbd> + <kbd>I</kbd> to fetch the plugin and source it. You can 
 
 | Configuration                             | Description | Avaliable Options | Default |
 | ----------------------------------------- | ----------- | ----------------- | ------- |
-| `@theme_plugin_weather_icon`              |             |                   |         |
+| `@theme_plugin_weather_icon`              |             | Any character 🌡️  |  Font Awesome 'Cloud' icon        |
 | `@theme_plugin_weather_accent_color`      |             |                   |         |
 | `@theme_plugin_weather_accent_color_icon` |             |                   |         |
-| `@theme_plugin_weather_format`            |             |                   |         |
+| `@theme_plugin_weather_format`            | Format for displaying weather information | `%t`, `%c`, `%h`, `%w` (temperature, condition, humidity, wind) | `%t+H:%h` |
+| `@theme_plugin_weather_location`          | Location for weather (city/country)   | `"City, Country"`  | IP-based location detection |
+
+#### Example
+  ```
+  set -g @theme_plugin_weather_location 'Blacksburg, United States'
+  ```
 
 ### Playerctl
 
