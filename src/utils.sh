@@ -14,7 +14,7 @@ function get_tmux_option() {
 
 function generate_left_side_string() {
 
-	session_icon=$(get_tmux_option "@theme_session_icon" "⋅")
+	session_icon=$(get_tmux_option "@theme_session_icon" " ")
 	left_separator=$(get_tmux_option "@theme_left_separator" "")
 	transparent=$(get_tmux_option "@theme_transparent_status_bar" "false")
 
