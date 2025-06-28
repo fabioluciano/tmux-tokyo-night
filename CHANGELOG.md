@@ -1,3 +1,10 @@
+## [1.10.1](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.10.0...v1.10.1) (2025-06-28)
+
+
+### Bug Fixes
+
+* Improve tmux compatibility ([6c67c7b](https://github.com/fabioluciano/tmux-tokyo-night/commit/6c67c7b591f5d017bfd27b3716ae08e18ad4b529))
+
 # [1.10.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.9.0...v1.10.0) (2024-11-29)
 
 
