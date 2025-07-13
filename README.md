@@ -101,6 +101,7 @@ Hit <kbd>prefix</kbd> + <kbd>I</kbd> to fetch the plugin and source it. You can 
 | `@theme_plugin_playerctl_accent_color`      |             |                   |         |
 | `@theme_plugin_playerctl_accent_color_icon` |             |                   |         |
 | `@theme_plugin_playerctl_format`            |             |                   |         |
+| `@theme_plugin_playerctl_ignore_players`    | List of players to ignore | `"player1,player2,.."` | `"IGNORE"` |
 
 ### Battery
 
