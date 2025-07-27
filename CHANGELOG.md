@@ -1,3 +1,10 @@
+# [1.11.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.10.1...v1.11.0) (2025-07-27)
+
+
+### Features
+
+* **playerctl:** add ability to ignore players ([eef5451](https://github.com/fabioluciano/tmux-tokyo-night/commit/eef5451ce3e30d4681f4dbeab3ca015f7290a6bf))
+
 ## [1.10.1](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.10.0...v1.10.1) (2025-06-28)
 
 
