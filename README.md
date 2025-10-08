@@ -85,6 +85,7 @@ Hit <kbd>prefix</kbd> + <kbd>I</kbd> to fetch the plugin and source it. You can 
 | `@theme_plugin_weather_accent_color_icon` |             |                   |         |
 | `@theme_plugin_weather_format`            | Format for displaying weather information | `%t`, `%c`, `%h`, `%w` (temperature, condition, humidity, wind) | `%t+H:%h` |
 | `@theme_plugin_weather_location`          | Location for weather (city/country)   | `"City, Country"`  | IP-based location detection |
+| `@theme_plugin_weather_unit`              | Unit for displayed information | `u`, `m`, `M` (USCS, metric, metric m/s) | Automatic detection |
 
 #### Example
   ```
