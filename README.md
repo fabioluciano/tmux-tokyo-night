@@ -101,7 +101,7 @@ Hit <kbd>prefix</kbd> + <kbd>I</kbd> to fetch the plugin and source it. You can 
 | `@theme_plugin_playerctl_icon`              |             |                   |         |
 | `@theme_plugin_playerctl_accent_color`      |             |                   |         |
 | `@theme_plugin_playerctl_accent_color_icon` |             |                   |         |
-| `@theme_plugin_playerctl_format`            |             |                   |         |
+| `@theme_plugin_playerctl_format_string`     |             |                   |         |
 | `@theme_plugin_playerctl_ignore_players`    | List of players to ignore | `"player1,player2,.."` | `"IGNORE"` |
 
 ### Battery
@@ -111,7 +111,7 @@ Shows battery charging status (charging or discharging) and battery percentage.
 | Configuration                                    | Description                        | Avaliable Options | Default  |
 | ------------------------------------------------ | ---------------------------------- | ----------------- | -------- |
 | `@theme_plugin_battery_charging_icon`            | Icon to display when charging      | Any character     |         |
-| `@theme_plugin_battery_discharging`              | Icon to display when on battery    | Any character     | 󰁹        |
+| `@theme_plugin_battery_discharging_icon`         | Icon to display when on battery    | Any character     | 󰁹        |
 | `@theme_plugin_battery_red_threshold`            | Show in red when below this %      | 0-100             | 10       |
 | `@theme_plugin_battery_yellow_threshold`         | Show in yellow when below this %   | 0-100             | 30       |
 | `@theme_plugin_battery_red_accent_color`         | Color when < red threshold         | Palette color     | red      |
