@@ -67,12 +67,12 @@ Hit <kbd>prefix</kbd> + <kbd>I</kbd> to fetch the plugin and source it. You can 
 
 > Prints informations about the current date and time.
 
-| Configuration                              | Description | Avaliable Options | Default |
-| ------------------------------------------ | ----------- | ----------------- | ------- |
-| `@theme_plugin_datetime_icon`              |             | Any character 📅  | Nerd Font 'Calendar' icon        |
-| `@theme_plugin_datetime_accent_color`      |             |                   |         |
-| `@theme_plugin_datetime_accent_color_icon` |             |                   |         |
-| `@theme_plugin_datetime_format`            |             |                   |         |
+| Configuration                              | Description                                                                 |  Avaliable Options                                              | Default                                    |
+| ------------------------------------------ | --------------------------------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------ |
+| `@theme_plugin_datetime_icon`              |                                                                             |  Any character 📅                                               | Nerd Font 'Calendar' icon                  |
+| `@theme_plugin_datetime_accent_color`      |                                                                             |                                                                 |                                            |
+| `@theme_plugin_datetime_accent_color_icon` |                                                                             |                                                                 |                                            |
+| `@theme_plugin_datetime_format`            | Format used in [`date`](https://man7.org/linux/man-pages/man1/date.1.html)  | See [`date`](https://man7.org/linux/man-pages/man1/date.1.html) | `%D %H:%M:%S`                              |
 
 ### Weather
 
