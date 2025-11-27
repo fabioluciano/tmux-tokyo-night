@@ -79,11 +79,21 @@ get_cpu_linux() {
 
 # Get CPU usage on macOS using ps (much faster than top -l 1 which takes ~1s)
 get_cpu_macos() {
-    local cpu_usage
+    local cpu_usage num_cores
+    
+    # Get number of CPU cores
+    num_cores=$(sysctl -n hw.ncpu 2>/dev/null || echo 1)
     
     # Use ps to aggregate CPU usage across all processes
-    # This is significantly faster than 'top -l 1' which takes ~1 second
-    cpu_usage=$(ps -A -o %cpu | awk 'NR>1 {sum+=$1} END {printf "%.0f", (sum > 100 ? 100 : sum)}')
+    # Then divide by number of cores to get average utilization
+    cpu_usage=$(ps -A -o %cpu | awk -v cores="$num_cores" '
+        NR>1 {sum+=$1} 
+        END {
+            avg = sum / cores
+            if (avg > 100) avg = 100
+            printf "%.0f", avg
+        }
+    ')
     
     printf '%s%%' "${cpu_usage:-0}"
 }
