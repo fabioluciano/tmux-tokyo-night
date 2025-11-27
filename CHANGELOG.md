@@ -1,3 +1,13 @@
+# [2.0.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.11.0...v2.0.0) (2025-11-27)
+
+
+* feat!: fixes and other things ([#74](https://github.com/fabioluciano/tmux-tokyo-night/issues/74)) ([e24e503](https://github.com/fabioluciano/tmux-tokyo-night/commit/e24e503c3d5fc7ca4bed727baf38ceb948242d74))
+
+
+### BREAKING CHANGES
+
+* just for version bump
+
 # [1.11.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.10.1...v1.11.0) (2025-07-27)
 
 
