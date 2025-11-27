@@ -24,7 +24,8 @@
 # Source guard - prevent multiple sourcing
 # shellcheck disable=SC2317
 if [[ -n "${_TMUX_TOKYO_NIGHT_CACHE_LOADED:-}" ]]; then
-    return 0 2>/dev/null || exit 0
+    # Already loaded, just return (don't exit as we might be in a subshell)
+    return 0 2>/dev/null || true
 fi
 _TMUX_TOKYO_NIGHT_CACHE_LOADED=1
 

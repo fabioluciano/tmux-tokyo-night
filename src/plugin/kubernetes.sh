@@ -23,8 +23,8 @@ plugin_kubernetes_accent_color=$(get_tmux_option "@theme_plugin_kubernetes_accen
 # shellcheck disable=SC2034
 plugin_kubernetes_accent_color_icon=$(get_tmux_option "@theme_plugin_kubernetes_accent_color_icon" "blue0")
 
-# Show namespace (true/false)
-plugin_kubernetes_show_namespace=$(get_tmux_option "@theme_plugin_kubernetes_show_namespace" "true")
+# Show namespace (true/false) - default: false (context only)
+plugin_kubernetes_show_namespace=$(get_tmux_option "@theme_plugin_kubernetes_show_namespace" "false")
 
 # Cache TTL in seconds (default: 30 seconds)
 CACHE_TTL=$(get_tmux_option "@theme_plugin_kubernetes_cache_ttl" "30")

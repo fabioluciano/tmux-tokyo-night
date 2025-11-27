@@ -19,10 +19,11 @@
 ## ✨ Features
 
 - 🎨 **Multiple color variations**: Night, Storm, Moon, and Day
-- 🔌 **15 built-in plugins** for system monitoring and information display
+- 🔌 **17 built-in plugins** for system monitoring and information display
 - 🪟 **Transparency support** with customizable separators
 - 📊 **Double bar layout** option for separating windows and plugins
 - ⚡ **Smart caching system** for improved performance (configurable TTL per plugin)
+- 🚀 **Optimized performance** with cached OS detection and source guards
 - 🔧 **Highly customizable** with per-plugin configuration options
 - 🎯 **Conditional plugins** (git, docker) that only appear when relevant
 
@@ -147,7 +148,7 @@ Displays current CPU usage percentage.
 Displays current memory usage.
 
 | Option | Description | Default |
-|--------|-------------|---------|
+|--------|-------------|---------|  
 | `@theme_plugin_memory_icon` | Plugin icon | ` ` |
 | `@theme_plugin_memory_accent_color` | Background color | `magenta` |
 | `@theme_plugin_memory_accent_color_icon` | Icon background color | `purple` |
@@ -157,9 +158,41 @@ Displays current memory usage.
 - `percent`: Shows percentage (e.g., `45%`)
 - `usage`: Shows used/total (e.g., `4.2G/16G`)
 
-#### Network
+#### Load Average
 
-Displays network download/upload speeds.
+Displays system load average (1, 5, and/or 15 minute averages).
+
+| Option | Description | Default |
+|--------|-------------|---------|  
+| `@theme_plugin_loadavg_icon` | Plugin icon | `󰊚 ` |
+| `@theme_plugin_loadavg_accent_color` | Background color | `yellow` |
+| `@theme_plugin_loadavg_accent_color_icon` | Icon background color | `blue0` |
+| `@theme_plugin_loadavg_format` | Display format | `1` |
+
+**Format options:**
+- `1`: Shows 1-minute load average (e.g., `1.23`)
+- `5`: Shows 5-minute load average
+- `15`: Shows 15-minute load average
+- `all`: Shows all three (e.g., `1.23 1.45 1.67`)
+
+#### Disk
+
+Displays disk usage for a specified mount point.
+
+| Option | Description | Default |
+|--------|-------------|---------|  
+| `@theme_plugin_disk_icon` | Plugin icon | `󰋊 ` |
+| `@theme_plugin_disk_accent_color` | Background color | `cyan` |
+| `@theme_plugin_disk_accent_color_icon` | Icon background color | `blue0` |
+| `@theme_plugin_disk_mount` | Mount point to monitor | `/` |
+| `@theme_plugin_disk_format` | Display format | `percent` |
+
+**Format options:**
+- `percent`: Shows percentage used (e.g., `45%`)
+- `usage`: Shows used/total (e.g., `234G/500G`)
+- `free`: Shows free space (e.g., `266G`)
+
+#### NetworkDisplays network download/upload speeds.
 
 > **Note:** This plugin uses a 1-second `sleep` to calculate network speed, which may cause minor delays during each status refresh. Consider using a longer tmux `status-interval` (e.g., 5+ seconds) when using this plugin.
 
@@ -212,14 +245,14 @@ Displays Docker container status. **Only shows when Docker is running and has co
 
 #### Kubernetes
 
-Displays current Kubernetes context and namespace.
+Displays current Kubernetes context (and optionally namespace).
 
 | Option | Description | Default |
 |--------|-------------|---------|
 | `@theme_plugin_kubernetes_icon` | Plugin icon | `󱃾 ` |
 | `@theme_plugin_kubernetes_accent_color` | Background color | `purple` |
 | `@theme_plugin_kubernetes_accent_color_icon` | Icon background color | `magenta` |
-| `@theme_plugin_kubernetes_show_namespace` | Show namespace | `true` |
+| `@theme_plugin_kubernetes_show_namespace` | Show namespace after context | `false` |
 
 ### Information
 
@@ -341,11 +374,14 @@ set -g @plugin 'fabioluciano/tmux-tokyo-night'
 
 # Tokyo Night Theme Configuration
 set -g @theme_variation 'night'
-set -g @theme_plugins 'datetime,cpu,memory,network,git,docker,kubernetes'
+set -g @theme_plugins 'datetime,cpu,loadavg,memory,disk,network,git,docker,kubernetes'
 
 # Plugin customization
 set -g @theme_plugin_datetime_format '%H:%M'
 set -g @theme_plugin_memory_format 'usage'
+set -g @theme_plugin_disk_format 'usage'
+set -g @theme_plugin_disk_mount '/'
+set -g @theme_plugin_loadavg_format '1'
 set -g @theme_plugin_kubernetes_show_namespace 'true'
 
 # Initialize TPM (keep this at the bottom)
@@ -413,9 +449,12 @@ All plugins support configurable cache TTL (Time To Live) via tmux options:
 |--------|--------|---------|-------------|
 | CPU | `@theme_plugin_cpu_cache_ttl` | `2` | 2 seconds |
 | Memory | `@theme_plugin_memory_cache_ttl` | `5` | 5 seconds |
+| Load Average | `@theme_plugin_loadavg_cache_ttl` | `5` | 5 seconds |
+| Disk | `@theme_plugin_disk_cache_ttl` | `60` | 1 minute |
 | Network | `@theme_plugin_network_cache_ttl` | `5` | 5 seconds |
 | Uptime | `@theme_plugin_uptime_cache_ttl` | `60` | 1 minute |
 | Battery | `@theme_plugin_battery_cache_ttl` | `30` | 30 seconds |
+| Git | `@theme_plugin_git_cache_ttl` | `5` | 5 seconds |
 | Docker | `@theme_plugin_docker_cache_ttl` | `10` | 10 seconds |
 | Kubernetes | `@theme_plugin_kubernetes_cache_ttl` | `30` | 30 seconds |
 | Weather | `@theme_plugin_weather_cache_ttl` | `900` | 15 minutes |

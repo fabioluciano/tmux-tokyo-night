@@ -36,16 +36,20 @@ Manual testing is required:
 - Configures status bar, window styles, borders, and pane styles
 - Dynamically loads and executes plugins from `src/plugin/`
 - Handles plugin rendering with proper separators and colors (e.g., datetime plugin uses static rendering)
+- Sources plugins once and calls `load_plugin()` function to avoid double execution
 
 **`src/utils.sh`** (76 lines)
 - `get_tmux_option()` - Retrieves tmux options with fallback defaults
+- `get_os()` - Returns cached OS name (avoids repeated `uname` calls)
+- `is_macos()` / `is_linux()` - Convenience functions for OS detection
 - `generate_left_side_string()` - Creates left status bar (session info)
 - `generate_inactive_window_string()` - Creates inactive window formatting
 - `generate_active_window_string()` - Creates active window formatting
 - Handles both transparent and non-transparent status bar modes
+- Uses source guard to prevent multiple sourcing
 
 **`src/cache.sh`** - Caching System
-- `cache_init()` - Ensures cache directory exists
+- `cache_init()` - Ensures cache directory exists (runs only once per session)
 - `cache_get(plugin_name, ttl)` - Returns cached value if valid (not expired)
 - `cache_set(plugin_name, value)` - Stores value in cache file
 - `cache_is_valid(plugin_name, ttl)` - Checks if cache is still valid
@@ -53,6 +57,7 @@ Manual testing is required:
 - `cache_clear_all()` - Clears all cached data
 - `cache_remaining_ttl(plugin_name, ttl)` - Returns remaining seconds until expiry
 - Cache files stored in `$XDG_CACHE_HOME/tmux-tokyo-night/` (or `~/.cache/tmux-tokyo-night/`)
+- Uses source guard to prevent multiple sourcing
 
 ### Color Palettes
 
@@ -72,18 +77,47 @@ Located in `src/palletes/*.sh` (night.sh, storm.sh, moon.sh, day.sh)
 
 **Available Plugins:**
 
+System Monitoring:
+- `cpu.sh` - Shows CPU usage percentage (uses ps on macOS, /proc/stat on Linux)
+- `memory.sh` - Shows memory usage (percent or used/total format)
+- `loadavg.sh` - Shows system load average (1, 5, 15 min or all)
+- `disk.sh` - Shows disk usage for configurable mount point
+- `network.sh` - Shows network download/upload speeds
+- `uptime.sh` - Shows system uptime
+
+Development:
+- `git.sh` - Shows git branch and status (conditional - only in git repos)
+- `docker.sh` - Shows container counts (conditional - only when Docker running)
+- `kubernetes.sh` - Shows current k8s context/namespace
+
+Information:
 - `datetime.sh` - Shows date/time using tmux `strftime` format
-- `weather.sh` - Fetches weather from wttr.in API (supports caching, TTL configurable via `@theme_plugin_weather_cache_ttl`)
-- `battery.sh` - Shows battery status with color-coded levels (red/yellow/green thresholds)
-- `playerctl.sh` - Media player info via MPRIS (Linux only, cached with configurable TTL)
-- `spt.sh` - Spotify integration via spotify-tui (cached with configurable TTL)
-- `homebrew.sh` - Homebrew outdated packages count (cached, default 30 min TTL)
-- `yay.sh` - AUR helper updates (cached, default 30 min TTL)
+- `hostname.sh` - Shows system hostname
+- `weather.sh` - Fetches weather from wttr.in API
+
+Media:
+- `playerctl.sh` - Media player info via MPRIS (Linux only)
+- `spt.sh` - Spotify integration via spotify-tui
+
+Package Managers:
+- `homebrew.sh` - Homebrew outdated packages count (macOS)
+- `yay.sh` - AUR helper updates (Arch Linux)
+- `battery.sh` - Shows battery status with color-coded levels
 
 **Plugin Cache Configuration:**
 
-Each cacheable plugin supports a TTL (Time To Live) option:
+All cacheable plugins support a TTL (Time To Live) option:
+- `@theme_plugin_cpu_cache_ttl` - CPU cache TTL in seconds (default: 2)
+- `@theme_plugin_memory_cache_ttl` - Memory cache TTL in seconds (default: 5)
+- `@theme_plugin_loadavg_cache_ttl` - Load average cache TTL in seconds (default: 5)
+- `@theme_plugin_disk_cache_ttl` - Disk cache TTL in seconds (default: 60)
+- `@theme_plugin_network_cache_ttl` - Network cache TTL in seconds (default: 5)
+- `@theme_plugin_uptime_cache_ttl` - Uptime cache TTL in seconds (default: 60)
+- `@theme_plugin_git_cache_ttl` - Git cache TTL in seconds (default: 5)
+- `@theme_plugin_docker_cache_ttl` - Docker cache TTL in seconds (default: 10)
+- `@theme_plugin_kubernetes_cache_ttl` - Kubernetes cache TTL in seconds (default: 30)
 - `@theme_plugin_weather_cache_ttl` - Weather cache TTL in seconds (default: 900 = 15 min)
+- `@theme_plugin_battery_cache_ttl` - Battery cache TTL in seconds (default: 30)
 - `@theme_plugin_playerctl_cache_ttl` - Playerctl cache TTL in seconds (default: 5)
 - `@theme_plugin_spt_cache_ttl` - Spotify TUI cache TTL in seconds (default: 5)
 - `@theme_plugin_homebrew_cache_ttl` - Homebrew cache TTL in seconds (default: 1800 = 30 min)
@@ -117,10 +151,22 @@ Each cacheable plugin supports a TTL (Time To Live) option:
 ## Adding New Plugins
 
 1. Create `src/plugin/<name>.sh`
-2. Export three variables: `plugin_<name>_icon`, `plugin_<name>_accent_color`, `plugin_<name>_accent_color_icon`
-3. Implement plugin logic that outputs the desired status text
-4. Add plugin name to `@theme_plugins` option in documentation
-5. Plugin will be automatically discovered and loaded by `theme.sh`
+2. Source `utils.sh` and `cache.sh` from `$ROOT_DIR/../`
+3. Export three variables: `plugin_<name>_icon`, `plugin_<name>_accent_color`, `plugin_<name>_accent_color_icon`
+4. Define a `load_plugin()` function that outputs the desired status text
+5. Add execution guard at end: `if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then load_plugin; fi`
+6. Use caching for expensive operations with `cache_get`/`cache_set`
+7. Use `is_macos()`/`is_linux()` for OS-specific logic instead of calling `uname`
+8. Add plugin name to `@theme_plugins` option in documentation
+9. Plugin will be automatically discovered and loaded by `theme.sh`
+
+## Performance Optimizations
+
+- **Source guards**: `utils.sh` and `cache.sh` use guards to prevent multiple parsing
+- **Cached OS detection**: `_CACHED_OS` variable set once, used by `is_macos()`/`is_linux()`
+- **Single plugin execution**: `theme.sh` sources plugins once and calls `load_plugin()`
+- **File-based caching**: Plugins cache results to reduce expensive operations
+- **Optimized commands**: e.g., CPU on macOS uses `ps` instead of slow `top -l 1`
 
 ## Important Notes
 
