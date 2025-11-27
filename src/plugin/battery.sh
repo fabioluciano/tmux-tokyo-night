@@ -78,7 +78,7 @@ battery_get_status() {
 
 # -----------------------------------------------------------------------------
 # Get battery percentage
-# Returns: Percentage with % sign (e.g., "85%")
+# Returns: Numeric percentage value (e.g., "85")
 # -----------------------------------------------------------------------------
 battery_get_percentage() {
     local percentage=""
@@ -88,7 +88,7 @@ battery_get_percentage() {
         battery_file=$(find /sys/class/power_supply/*/capacity 2>/dev/null | head -n1)
         [[ -n "$battery_file" ]] && percentage=$(cat "$battery_file" 2>/dev/null)
     elif command_exists "pmset"; then
-        percentage=$(pmset -g batt 2>/dev/null | grep -o "[0-9]\{1,3\}%")
+        percentage=$(pmset -g batt 2>/dev/null | grep -o "[0-9]\{1,3\}%" | tr -d '%')
     elif command_exists "acpi"; then
         percentage=$(acpi -b 2>/dev/null | grep -m 1 -Eo "[0-9]+%" | tr -d '%')
     elif command_exists "upower"; then
