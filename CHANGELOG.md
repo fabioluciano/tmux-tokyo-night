@@ -1,38 +1,3 @@
-# [2.0.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.11.0...v2.0.0) (2025-11-27)
-
-
-### ⚠ BREAKING CHANGES
-
-* Complete plugin architecture refactoring
-* New caching system with configurable TTL
-* Conditional plugins (git, docker) only show when relevant
-* Battery plugin simplified - no longer uses dynamic color templates
-
-### Features
-
-* **architecture:** Complete refactoring of all plugins to standardized architecture
-* **cache:** Add file-based caching system with per-plugin TTL configuration
-* **conditional-plugins:** Git and Docker plugins now only appear when relevant
-* **cpu:** New CPU monitoring plugin with usage percentage
-* **memory:** New memory plugin with percentage or usage format options
-* **network:** New network plugin showing download/upload speeds
-* **uptime:** New system uptime plugin
-* **hostname:** New hostname display plugin
-* **docker:** New Docker container status plugin (conditional)
-* **git:** Improved git plugin with branch and status (conditional)
-* **kubernetes:** New Kubernetes context/namespace plugin
-* **double-bar:** Add double status bar layout option (`@theme_bar_layout`)
-* **weather:** Improved weather plugin with better auto-detection and caching
-
-### Bug Fixes
-
-* **weather:** Fix URL encoding for locations with special characters
-* **weather:** Use wttr.in IP-based auto-detection by default
-* **git:** Fix exit code 128 when not in a repository
-* **plugins:** All plugins now fail silently when dependencies unavailable
-* **separators:** Fix Powerline separator characters in default configuration
-
-
 # [1.11.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.10.1...v1.11.0) (2025-07-27)
 
 
