@@ -77,9 +77,18 @@ get_git_info() {
 
 load_plugin() {
     # Generate unique cache key based on pane path using hash to handle long/special character paths
-    local pane_path cache_key
+    local pane_path cache_key path_hash
     pane_path="$(tmux display-message -p '#{pane_current_path}' 2>/dev/null)"
-    cache_key="git_$(printf '%s' "$pane_path" | md5sum | cut -d' ' -f1)"
+    # Use md5sum (Linux) or md5 (BSD/macOS) for portable hashing
+    if command -v md5sum &>/dev/null; then
+        path_hash=$(printf '%s' "$pane_path" | md5sum | cut -d' ' -f1)
+    elif command -v md5 &>/dev/null; then
+        path_hash=$(printf '%s' "$pane_path" | md5 -q)
+    else
+        # Fallback: sanitize path by replacing non-alphanumeric chars with underscore
+        path_hash="${pane_path//[^a-zA-Z0-9]/_}"
+    fi
+    cache_key="git_${path_hash}"
     
     # Check cache first
     local cached_value

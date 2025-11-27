@@ -41,12 +41,12 @@ get_docker_info() {
     docker info &>/dev/null || return
     
     # Single docker call to get both running and stopped counts (more efficient)
-    # Count "running" as running, and all other states (exited, paused, restarting, dead, created, removing) as stopped
+    # Count "running" as running, and all known non-running states as stopped
     local running=0 stopped=0
     while IFS= read -r state; do
         case "$state" in
             running) ((running++)) ;;
-            *) ((stopped++)) ;;
+            exited|paused|restarting|dead|created|removing) ((stopped++)) ;;
         esac
     done < <(docker ps -a --format '{{.State}}' 2>/dev/null)
     
