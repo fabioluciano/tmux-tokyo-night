@@ -161,6 +161,8 @@ Displays current memory usage.
 
 Displays network download/upload speeds.
 
+> **Note:** This plugin uses a 1-second `sleep` to calculate network speed, which may cause minor delays during each status refresh. Consider using a longer tmux `status-interval` (e.g., 5+ seconds) when using this plugin.
+
 | Option | Description | Default |
 |--------|-------------|---------|
 | `@theme_plugin_network_icon` | Plugin icon | `󰛳 ` |
@@ -244,14 +246,14 @@ Displays the system hostname.
 
 #### Weather
 
-Displays current weather information. Requires `curl` and `jq`.
+Displays current weather information. Requires `curl`. Note: `jq` is optional and only needed for auto-location detection via IP; if you provide a location via `@theme_plugin_weather_location`, the plugin works without `jq`.
 
 | Option | Description | Default |
 |--------|-------------|---------|
 | `@theme_plugin_weather_icon` | Plugin icon | ` ` |
 | `@theme_plugin_weather_accent_color` | Background color | `orange` |
 | `@theme_plugin_weather_accent_color_icon` | Icon background color | `yellow` |
-| `@theme_plugin_weather_format` | Weather format | `%t H:%h` |
+| `@theme_plugin_weather_format` | Weather format (e.g., temperature and humidity) | `%t H:%h` |
 | `@theme_plugin_weather_location` | Location (city, country) | Auto-detected |
 | `@theme_plugin_weather_unit` | Unit system: `u` (USCS), `m` (metric), `M` (metric m/s) | Auto |
 
@@ -284,6 +286,7 @@ Displays Spotify playback via `spt` CLI.
 | `@theme_plugin_spt_icon` | Plugin icon | ` ` |
 | `@theme_plugin_spt_accent_color` | Background color | `green` |
 | `@theme_plugin_spt_accent_color_icon` | Icon background color | `green1` |
+| `@theme_plugin_spt_format` | Format string for playback info | `%a - %t` |
 
 ### Package Managers
 
