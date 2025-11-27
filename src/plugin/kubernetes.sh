@@ -43,22 +43,42 @@ get_k8s_info() {
         return
     fi
     
-    local context namespace
-    context=$(kubectl config current-context 2>/dev/null)
+    # Read context directly from kubeconfig for faster access
+    local kubeconfig="${KUBECONFIG:-$HOME/.kube/config}"
     
-    if [[ -z "$context" ]]; then
+    if [[ ! -f "$kubeconfig" ]]; then
         printf ''
         return
     fi
     
-    # Shorten common context name patterns
-    context="${context##*@}"  # Remove user@ prefix
+    local context_raw context namespace
+    
+    # Fast extraction using awk instead of kubectl commands
+    # This avoids kubectl's startup overhead
+    context_raw=$(awk '/^current-context:/ {print $2; exit}' "$kubeconfig" 2>/dev/null)
+    
+    if [[ -z "$context_raw" ]]; then
+        printf ''
+        return
+    fi
+    
+    # Shorten common context name patterns for display
+    context="${context_raw##*@}"  # Remove user@ prefix
     context="${context##*:}"  # Remove cluster prefix
     
     local output="$context"
     
     if [[ "$plugin_kubernetes_show_namespace" == "true" ]]; then
-        namespace=$(kubectl config view --minify --output 'jsonpath={..namespace}' 2>/dev/null)
+        # Extract namespace for current context using awk (faster than kubectl config view)
+        # Use the raw context name for lookup, not the shortened one
+        namespace=$(awk -v ctx="$context_raw" '
+            /^contexts:/ { in_contexts=1; next }
+            in_contexts && /^[^ ]/ { in_contexts=0 }
+            in_contexts && /- name:/ && $3 == ctx { found=1; next }
+            found && /namespace:/ { print $2; exit }
+            found && /^  - name:/ { found=0 }
+        ' "$kubeconfig" 2>/dev/null)
+        
         [[ -z "$namespace" ]] && namespace="default"
         output+="/$namespace"
     fi
@@ -87,4 +107,7 @@ load_plugin() {
     printf '%s' "$result"
 }
 
-load_plugin
+# Only run if executed directly (not sourced)
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    load_plugin
+fi

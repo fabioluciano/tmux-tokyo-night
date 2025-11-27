@@ -112,7 +112,7 @@ battery_get_percentage() {
         percentage=$(apm -l 2>/dev/null | tr -d '%')
     fi
     
-    [[ -n "$percentage" ]] && echo -n "$percentage"
+    [[ -n "$percentage" ]] && printf '%s' "$percentage"
 }
 
 # -----------------------------------------------------------------------------
@@ -133,7 +133,7 @@ battery_format_output() {
     local percentage="$1"
     local status="$2"
     
-    echo -n "${percentage}%"
+    printf '%s%%' "$percentage"
 }
 
 # =============================================================================
@@ -161,7 +161,10 @@ load_plugin() {
 
     # Update cache and output result
     cache_set "$BATTERY_CACHE_KEY" "$result"
-    echo -n "$result"
+    printf '%s' "$result"
 }
 
-load_plugin
+# Only run if executed directly (not sourced)
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    load_plugin
+fi

@@ -9,17 +9,22 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # shellcheck source=src/utils.sh
 . "$ROOT_DIR/../utils.sh"
+# shellcheck source=src/cache.sh
+. "$ROOT_DIR/../cache.sh"
 
 # =============================================================================
 # Plugin Configuration
 # =============================================================================
 
 # shellcheck disable=SC2034
-plugin_git_icon=$(get_tmux_option "@theme_plugin_git_icon" " ")
+plugin_git_icon=$(get_tmux_option "@theme_plugin_git_icon" " ")
 # shellcheck disable=SC2034
 plugin_git_accent_color=$(get_tmux_option "@theme_plugin_git_accent_color" "blue7")
 # shellcheck disable=SC2034
 plugin_git_accent_color_icon=$(get_tmux_option "@theme_plugin_git_accent_color_icon" "blue0")
+
+# Cache TTL in seconds (default: 5 seconds - short TTL for git status responsiveness)
+CACHE_TTL=$(get_tmux_option "@theme_plugin_git_cache_ttl" "5")
 
 export plugin_git_icon plugin_git_accent_color plugin_git_accent_color_icon
 
@@ -63,7 +68,7 @@ get_git_info() {
     [[ $changed -gt 0 ]] && output+=" ~$changed"
     [[ $untracked -gt 0 ]] && output+=" +$untracked"
     
-    echo -n "$output"
+    printf '%s' "$output"
 }
 
 # =============================================================================
@@ -71,8 +76,35 @@ get_git_info() {
 # =============================================================================
 
 load_plugin() {
-    get_git_info
-    return 0  # Always return success
+    # Generate unique cache key based on pane path using hash to handle long/special character paths
+    local pane_path cache_key path_hash
+    pane_path="$(tmux display-message -p '#{pane_current_path}' 2>/dev/null)"
+    # Use md5sum (Linux) or md5 (BSD/macOS) for portable hashing
+    if command -v md5sum &>/dev/null; then
+        path_hash=$(printf '%s' "$pane_path" | md5sum | cut -d' ' -f1)
+    elif command -v md5 &>/dev/null; then
+        path_hash=$(printf '%s' "$pane_path" | md5 -q)
+    else
+        # Fallback: sanitize path by replacing non-alphanumeric chars with underscore
+        path_hash="${pane_path//[^a-zA-Z0-9]/_}"
+    fi
+    cache_key="git_${path_hash}"
+    
+    # Check cache first
+    local cached_value
+    if cached_value=$(cache_get "$cache_key" "$CACHE_TTL"); then
+        printf '%s' "$cached_value"
+        return 0
+    fi
+    
+    local result
+    result=$(get_git_info)
+    
+    # Cache the result (even if empty)
+    cache_set "$cache_key" "$result"
+    
+    printf '%s' "$result"
+    return 0
 }
 
 # Only run if executed directly (not sourced)

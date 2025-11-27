@@ -21,18 +21,34 @@
 #
 # =============================================================================
 
+# Source guard - prevent multiple sourcing
+# shellcheck disable=SC2317
+if [[ -n "${_TMUX_TOKYO_NIGHT_CACHE_LOADED:-}" ]]; then
+    return 0 2>/dev/null || exit 0
+fi
+_TMUX_TOKYO_NIGHT_CACHE_LOADED=1
+
 # Default cache directory (uses XDG_CACHE_HOME or fallback to ~/.cache)
 CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/tmux-tokyo-night"
 
-# Detect OS once for stat command compatibility
+# Detect OS once for stat command compatibility (use utils.sh if available)
 _CACHE_IS_MACOS=""
-[[ "$(uname)" == "Darwin" ]] && _CACHE_IS_MACOS="1"
+if [[ -n "$_CACHED_OS" ]]; then
+    [[ "$_CACHED_OS" == "Darwin" ]] && _CACHE_IS_MACOS="1"
+else
+    [[ "$(uname)" == "Darwin" ]] && _CACHE_IS_MACOS="1"
+fi
+
+# Flag to track if cache directory has been initialized
+_CACHE_DIR_INITIALIZED=""
 
 # -----------------------------------------------------------------------------
-# Ensures the cache directory exists
+# Ensures the cache directory exists (only runs once per session)
 # -----------------------------------------------------------------------------
 cache_init() {
+    [[ -n "$_CACHE_DIR_INITIALIZED" ]] && return
     [[ -d "$CACHE_DIR" ]] || mkdir -p "$CACHE_DIR"
+    _CACHE_DIR_INITIALIZED=1
 }
 
 # -----------------------------------------------------------------------------
@@ -121,7 +137,7 @@ cache_set() {
     local value="$2"
     
     cache_init
-    echo -n "$value" > "${CACHE_DIR}/${plugin_name}.cache"
+    printf '%s' "$value" > "${CACHE_DIR}/${plugin_name}.cache"
 }
 
 # -----------------------------------------------------------------------------
