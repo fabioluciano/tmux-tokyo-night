@@ -79,8 +79,7 @@ get_memory_linux() {
 
 # Get memory usage on macOS
 get_memory_macos() {
-    local page_size mem_total pages_free pages_active pages_inactive pages_speculative pages_wired
-    local mem_used percent
+    local page_size mem_total mem_used percent
     
     page_size=$(pagesize 2>/dev/null || sysctl -n hw.pagesize)
     mem_total=$(sysctl -n hw.memsize)
