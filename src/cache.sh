@@ -32,12 +32,11 @@ _TMUX_TOKYO_NIGHT_CACHE_LOADED=1
 CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/tmux-tokyo-night"
 
 # Detect OS once for stat command compatibility (use utils.sh if available)
-if [[ -z "$_CACHED_OS" ]]; then
-    _CACHE_IS_MACOS=""
-    [[ "$(uname)" == "Darwin" ]] && _CACHE_IS_MACOS="1"
-else
-    _CACHE_IS_MACOS=""
+_CACHE_IS_MACOS=""
+if [[ -n "$_CACHED_OS" ]]; then
     [[ "$_CACHED_OS" == "Darwin" ]] && _CACHE_IS_MACOS="1"
+else
+    [[ "$(uname)" == "Darwin" ]] && _CACHE_IS_MACOS="1"
 fi
 
 # Flag to track if cache directory has been initialized

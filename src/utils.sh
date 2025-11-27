@@ -14,15 +14,6 @@ _TMUX_TOKYO_NIGHT_UTILS_LOADED=1
 # Cached OS Detection
 # =============================================================================
 # Detect OS once and cache for all plugins to avoid repeated uname calls
-_CACHED_OS=""
-get_os() {
-    if [[ -z "$_CACHED_OS" ]]; then
-        _CACHED_OS="$(uname -s)"
-    fi
-    printf '%s' "$_CACHED_OS"
-}
-
-# Pre-detect OS on load
 _CACHED_OS="$(uname -s)"
 
 # Convenience functions for OS checks

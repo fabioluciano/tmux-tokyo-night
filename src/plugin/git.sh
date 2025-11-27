@@ -76,10 +76,10 @@ get_git_info() {
 # =============================================================================
 
 load_plugin() {
-    # Generate unique cache key based on pane path
-    local pane_path
+    # Generate unique cache key based on pane path using hash to handle long/special character paths
+    local pane_path cache_key
     pane_path="$(tmux display-message -p '#{pane_current_path}' 2>/dev/null)"
-    local cache_key="git_${pane_path//\//_}"
+    cache_key="git_$(printf '%s' "$pane_path" | md5sum | cut -d' ' -f1)"
     
     # Check cache first
     local cached_value
