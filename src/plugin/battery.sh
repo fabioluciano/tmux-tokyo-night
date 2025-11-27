@@ -1,168 +1,167 @@
 #!/usr/bin/env bash
+# =============================================================================
+# Plugin: battery
+# Description: Display battery percentage and charging status
+# Dependencies: pmset (macOS), acpi/upower (Linux), or termux-battery-status
+# =============================================================================
+# Battery querying code adapted from https://github.com/tmux-plugins/tmux-battery
+# Copyright (C) 2014 Bruno Sutic - MIT License
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # shellcheck source=src/utils.sh
 . "$ROOT_DIR/../utils.sh"
+# shellcheck source=src/cache.sh
+. "$ROOT_DIR/../cache.sh"
 
-# Battery querying code from https://github.com/tmux-plugins/tmux-battery
-#
-# Copyright (C) 2014 Bruno Sutic
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy of this software
-# and associated documentation files (the "Software"), to deal in the Software without restriction,
-# including without limitation the rights to use, copy, modify, merge, publish, distribute,
-# sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all copies or
-# substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
-# NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+# =============================================================================
+# Plugin Configuration
+# =============================================================================
 
-s_osx() {
-    [ "$(uname)" == "Darwin" ]
-}
+# shellcheck disable=SC2034
+plugin_battery_icon=$(get_tmux_option "@theme_plugin_battery_icon" "󰁹 ")
+# shellcheck disable=SC2034
+plugin_battery_accent_color=$(get_tmux_option "@theme_plugin_battery_accent_color" "blue7")
+# shellcheck disable=SC2034
+plugin_battery_accent_color_icon=$(get_tmux_option "@theme_plugin_battery_accent_color_icon" "blue0")
 
-is_chrome() {
-    chrome="/sys/class/chromeos/cros_ec"
-    if [ -d "$chrome" ]; then
-        return 0
-    else
-        return 1
-    fi
-}
+# Cache TTL in seconds (default: 30 seconds)
+BATTERY_CACHE_TTL=$(get_tmux_option "@theme_plugin_battery_cache_ttl" "30")
+BATTERY_CACHE_KEY="battery"
+
+export plugin_battery_icon plugin_battery_accent_color plugin_battery_accent_color_icon
+
+# =============================================================================
+# Platform Detection
+# =============================================================================
 
 is_wsl() {
-    if [ ! -f /proc/version ]; then
-        return 1
-    fi
-
-    version=$(</proc/version)
-    if [[ "$version" == *"Microsoft"* || "$version" == *"microsoft"* ]]; then
-        return 0
-    else
-        return 1
-    fi
+    [[ -f /proc/version ]] && grep -qiE "microsoft|wsl" /proc/version 2>/dev/null
 }
 
 command_exists() {
-    local command="$1"
-    type "$command" >/dev/null 2>&1
+    command -v "$1" &>/dev/null
 }
 
-battery_status() {
+# =============================================================================
+# Battery Detection Functions
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Get battery charging status
+# Returns: "charging", "charged", "discharging", or empty
+# -----------------------------------------------------------------------------
+battery_get_status() {
     if is_wsl; then
-        local battery
-        battery=$(find /sys/class/power_supply/*/status | tail -n1)
-        awk '{print tolower($0);}' "$battery"
+        local battery_file
+        battery_file=$(find /sys/class/power_supply/*/status 2>/dev/null | head -n1)
+        [[ -n "$battery_file" ]] && awk '{print tolower($0)}' "$battery_file"
     elif command_exists "pmset"; then
         pmset -g batt | awk -F '; *' 'NR==2 { print $2 }'
     elif command_exists "acpi"; then
         acpi -b | awk '{gsub(/,/, ""); print tolower($3); exit}'
     elif command_exists "upower"; then
         local battery
-        battery=$(upower -e | grep -E 'battery|DisplayDevice'| tail -n1)
-        upower -i "$battery" | awk '/state/ {print $2}'
+        battery=$(upower -e 2>/dev/null | grep -E 'battery|DisplayDevice' | tail -n1)
+        [[ -n "$battery" ]] && upower -i "$battery" | awk '/state/ {print $2}'
     elif command_exists "termux-battery-status"; then
-        termux-battery-status | jq -r '.status' | awk '{printf("%s%", tolower($1))}'
+        termux-battery-status 2>/dev/null | jq -r '.status' 2>/dev/null | awk '{print tolower($1)}'
     elif command_exists "apm"; then
-        local battery
-        battery=$(apm -a)
-        if [ "$battery" -eq 0 ]; then
-            echo "discharging"
-        elif [ "$battery" -eq 1 ]; then
-            echo "charging"
-        fi
+        local status
+        status=$(apm -a 2>/dev/null)
+        case "$status" in
+            0) echo "discharging" ;;
+            1) echo "charging" ;;
+        esac
     fi
 }
 
-print_battery_percentage() {
-    # percentage displayed in the 2nd field of the 2nd row
+# -----------------------------------------------------------------------------
+# Get battery percentage
+# Returns: Percentage with % sign (e.g., "85%")
+# -----------------------------------------------------------------------------
+battery_get_percentage() {
+    local percentage=""
+    
     if is_wsl; then
-        local battery
-        battery=$(find /sys/class/power_supply/*/capacity | tail -n1)
-        cat "$battery"
+        local battery_file
+        battery_file=$(find /sys/class/power_supply/*/capacity 2>/dev/null | head -n1)
+        [[ -n "$battery_file" ]] && percentage=$(cat "$battery_file" 2>/dev/null)
     elif command_exists "pmset"; then
-        pmset -g batt | grep -o "[0-9]\{1,3\}%"
+        percentage=$(pmset -g batt 2>/dev/null | grep -o "[0-9]\{1,3\}%")
     elif command_exists "acpi"; then
-        acpi -b | grep -m 1 -Eo "[0-9]+%"
+        percentage=$(acpi -b 2>/dev/null | grep -m 1 -Eo "[0-9]+%" | tr -d '%')
     elif command_exists "upower"; then
-        # use DisplayDevice if available otherwise battery
         local battery
-        battery=$(upower -e | grep -E 'battery|DisplayDevice'| tail -n1)
-        if [ -z "$battery" ]; then
-            return
-        fi
-        local percentage
-        percentage=$(upower -i "$battery" | awk '/percentage:/ {print $2}')
-        if [ "$percentage" ]; then
-            echo "${percentage%.*%}"
-            return
-        fi
-        local energy
-        local energy_full
-        energy=$(upower -i "$battery" | awk -v nrg="$energy" '/energy:/ {print nrg+$2}')
-        energy_full=$(upower -i "$battery" | awk -v nrgfull="$energy_full" '/energy-full:/ {print nrgfull+$2}')
-        if [ -n "$energy" ] && [ -n "$energy_full" ]; then
-            echo "$energy" "$energy_full" | awk '{printf("%d%%", ($1/$2)*100)}'
+        battery=$(upower -e 2>/dev/null | grep -E 'battery|DisplayDevice' | tail -n1)
+        if [[ -n "$battery" ]]; then
+            percentage=$(upower -i "$battery" 2>/dev/null | awk '/percentage:/ {gsub(/%/, ""); print $2}')
+            # Fallback to energy calculation
+            if [[ -z "$percentage" ]]; then
+                local energy energy_full
+                energy=$(upower -i "$battery" | awk '/energy:/ {print $2}')
+                energy_full=$(upower -i "$battery" | awk '/energy-full:/ {print $2}')
+                if [[ -n "$energy" && -n "$energy_full" ]]; then
+                    percentage=$(awk "BEGIN {printf \"%d\", ($energy/$energy_full)*100}")
+                fi
+            fi
         fi
     elif command_exists "termux-battery-status"; then
-        termux-battery-status | jq -r '.percentage' | awk '{printf("%d%%", $1)}'
+        percentage=$(termux-battery-status 2>/dev/null | jq -r '.percentage' 2>/dev/null)
     elif command_exists "apm"; then
-        apm -l
+        percentage=$(apm -l 2>/dev/null | tr -d '%')
     fi
+    
+    [[ -n "$percentage" ]] && echo -n "$percentage"
 }
-##################################################
 
+# -----------------------------------------------------------------------------
+# Check if battery is available
+# Returns: 0 if battery detected, 1 otherwise
+# -----------------------------------------------------------------------------
+battery_is_available() {
+    local percentage
+    percentage=$(battery_get_percentage)
+    [[ -n "$percentage" ]]
+}
 
-# When run with no args, return place holders to create a template that we'll replace with real
-# values when run by tmux
-if [ $# -eq 0 ]; then
-    plugin_battery_icon="_ICON_"
-    plugin_battery_accent_color="_ACCENT_COLOR_"
-    plugin_battery_accent_color_icon="_ACCENT_COLOR_ICON_"
-    export plugin_battery_icon plugin_battery_accent_color plugin_battery_accent_color_icon
-    echo "_BATTERY_"
-else
+# -----------------------------------------------------------------------------
+# Format battery output
+# Returns: Formatted string with percentage and optional charging indicator
+# -----------------------------------------------------------------------------
+battery_format_output() {
+    local percentage="$1"
+    local status="$2"
+    
+    echo -n "$percentage"
+}
 
-    # We have the template, replace the placeholders with real values now
+# =============================================================================
+# Main Plugin Logic
+# =============================================================================
 
-    battery_percentage=$(print_battery_percentage)
-    charging_status=$(battery_status)
-
-    if [ "$charging_status" ==  "charging" ] || [ "$charging_status" == "charged" ]; then
-        plugin_battery_icon=$(get_tmux_option "@theme_plugin_battery_charging_icon" " ")
-    else
-        plugin_battery_icon=$(get_tmux_option "@theme_plugin_battery_discharging_icon" "󰁹")
+load_plugin() {
+    # Check if battery is available - fail silently if not
+    if ! battery_is_available; then
+        return 0
     fi
 
-    battery_number="${battery_percentage//%/}"
-
-    # load palette
-    theme_variation=$(get_tmux_option "@theme_variation" "night")
-    # shellcheck source=src/palletes/night.sh
-    . "$ROOT_DIR/../palletes/$theme_variation.sh"
-
-    if [ "$battery_number" -lt "$(get_tmux_option '@theme_plugin_battery_red_threshold' '10')" ]; then
-        plugin_battery_accent_color=$(get_tmux_option "@theme_plugin_battery_red_accent_color" "red")
-        plugin_battery_accent_color_icon=$(get_tmux_option "@theme_plugin_battery_red_accent_color_icon" "magenta2")
-    elif [ "$battery_number" -lt "$(get_tmux_option '@theme_plugin_battery_yellow_threshold' '30')" ]; then
-        plugin_battery_accent_color=$(get_tmux_option "@theme_plugin_battery_yellow_accent_color" "yellow")
-        plugin_battery_accent_color_icon=$(get_tmux_option "@theme_plugin_battery_yellow_accent_color_icon" "orange")
-    else
-        plugin_battery_accent_color=$(get_tmux_option "@theme_plugin_battery_green_accent_color" "blue7")
-        plugin_battery_accent_color_icon=$(get_tmux_option "@theme_plugin_battery_green_accent_color_icon" "blue0")
+    # Try to get from cache first
+    local cached_value
+    if cached_value=$(cache_get "$BATTERY_CACHE_KEY" "$BATTERY_CACHE_TTL"); then
+        printf '%s' "$cached_value"
+        return 0
     fi
 
-    template=$1
-    result="${template//_ACCENT_COLOR_ICON_/${PALLETE[$plugin_battery_accent_color_icon]}}"
-    result="${result//_ACCENT_COLOR_/${PALLETE[$plugin_battery_accent_color]}}"
-    result="${result//_ICON_/$plugin_battery_icon}"
-    result="${result//_BATTERY_/$battery_percentage}"
+    # Fetch fresh data
+    local percentage status result
+    percentage=$(battery_get_percentage)
+    status=$(battery_get_status)
+    result=$(battery_format_output "$percentage" "$status")
 
-    echo "$result"
-fi
+    # Update cache and output result
+    cache_set "$BATTERY_CACHE_KEY" "$result"
+    echo -n "$result"
+}
+
+load_plugin
