@@ -26,8 +26,8 @@ plugin_network_accent_color_icon=$(get_tmux_option "@theme_plugin_network_accent
 # Network interface (auto-detect if empty)
 plugin_network_interface=$(get_tmux_option "@theme_plugin_network_interface" "")
 
-# Cache TTL in seconds
-CACHE_TTL=5
+# Cache TTL in seconds (default: 5 seconds)
+CACHE_TTL=$(get_tmux_option "@theme_plugin_network_cache_ttl" "5")
 CACHE_KEY="network"
 
 export plugin_network_icon plugin_network_accent_color plugin_network_accent_color_icon

@@ -23,8 +23,8 @@ plugin_cpu_accent_color=$(get_tmux_option "@theme_plugin_cpu_accent_color" "blue
 # shellcheck disable=SC2034
 plugin_cpu_accent_color_icon=$(get_tmux_option "@theme_plugin_cpu_accent_color_icon" "blue0")
 
-# Cache TTL in seconds (CPU updates every 2 seconds)
-CACHE_TTL=2
+# Cache TTL in seconds (default: 2 seconds)
+CACHE_TTL=$(get_tmux_option "@theme_plugin_cpu_cache_ttl" "2")
 CACHE_KEY="cpu"
 
 export plugin_cpu_icon plugin_cpu_accent_color plugin_cpu_accent_color_icon

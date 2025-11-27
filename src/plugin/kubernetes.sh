@@ -26,8 +26,8 @@ plugin_kubernetes_accent_color_icon=$(get_tmux_option "@theme_plugin_kubernetes_
 # Show namespace (true/false)
 plugin_kubernetes_show_namespace=$(get_tmux_option "@theme_plugin_kubernetes_show_namespace" "true")
 
-# Cache TTL in seconds
-CACHE_TTL=5
+# Cache TTL in seconds (default: 30 seconds)
+CACHE_TTL=$(get_tmux_option "@theme_plugin_kubernetes_cache_ttl" "30")
 CACHE_KEY="kubernetes"
 
 export plugin_kubernetes_icon plugin_kubernetes_accent_color plugin_kubernetes_accent_color_icon

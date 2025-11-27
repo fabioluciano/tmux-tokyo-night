@@ -397,21 +397,45 @@ Contributions are welcome! Feel free to:
 
 ### Cache Management
 
+The theme uses a file-based caching system to improve performance. Cache files are stored in `~/.cache/tmux-tokyo-night/`.
+
 Clear the cache if you experience issues:
 
 ```bash
 rm -rf ~/.cache/tmux-tokyo-night/
 ```
 
-Cache TTL can be configured per plugin:
+#### Configurable Cache TTL
 
-| Plugin | Option | Default |
-|--------|--------|---------|
-| Weather | `@theme_plugin_weather_cache_ttl` | `900` (15 min) |
-| CPU | Built-in | `5` (5 sec) |
-| Memory | Built-in | `5` (5 sec) |
-| Network | Built-in | `2` (2 sec) |
-| Kubernetes | Built-in | `30` (30 sec) |
+All plugins support configurable cache TTL (Time To Live) via tmux options:
+
+| Plugin | Option | Default | Description |
+|--------|--------|---------|-------------|
+| CPU | `@theme_plugin_cpu_cache_ttl` | `2` | 2 seconds |
+| Memory | `@theme_plugin_memory_cache_ttl` | `5` | 5 seconds |
+| Network | `@theme_plugin_network_cache_ttl` | `5` | 5 seconds |
+| Uptime | `@theme_plugin_uptime_cache_ttl` | `60` | 1 minute |
+| Battery | `@theme_plugin_battery_cache_ttl` | `30` | 30 seconds |
+| Docker | `@theme_plugin_docker_cache_ttl` | `10` | 10 seconds |
+| Kubernetes | `@theme_plugin_kubernetes_cache_ttl` | `30` | 30 seconds |
+| Weather | `@theme_plugin_weather_cache_ttl` | `900` | 15 minutes |
+| Homebrew | `@theme_plugin_homebrew_cache_ttl` | `1800` | 30 minutes |
+| Yay | `@theme_plugin_yay_cache_ttl` | `1800` | 30 minutes |
+
+**Example: Customize cache TTL**
+
+```bash
+# Weather updates every 30 minutes instead of 15
+set -g @theme_plugin_weather_cache_ttl '1800'
+
+# CPU updates every 10 seconds instead of 5
+set -g @theme_plugin_cpu_cache_ttl '10'
+
+# Homebrew checks every 2 hours instead of 1
+set -g @theme_plugin_homebrew_cache_ttl '7200'
+```
+
+> **Note:** Lower TTL values provide more up-to-date information but may increase CPU usage. Higher values improve performance but show less current data.
 
 ---
 

@@ -23,8 +23,8 @@ plugin_memory_accent_color=$(get_tmux_option "@theme_plugin_memory_accent_color"
 # shellcheck disable=SC2034
 plugin_memory_accent_color_icon=$(get_tmux_option "@theme_plugin_memory_accent_color_icon" "blue0")
 
-# Cache TTL in seconds
-CACHE_TTL=5
+# Cache TTL in seconds (default: 5 seconds)
+CACHE_TTL=$(get_tmux_option "@theme_plugin_memory_cache_ttl" "5")
 CACHE_KEY="memory"
 
 # Display format: "percent" or "usage" (e.g., "4.2G/16G")

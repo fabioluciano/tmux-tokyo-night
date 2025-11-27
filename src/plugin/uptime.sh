@@ -23,8 +23,8 @@ plugin_uptime_accent_color=$(get_tmux_option "@theme_plugin_uptime_accent_color"
 # shellcheck disable=SC2034
 plugin_uptime_accent_color_icon=$(get_tmux_option "@theme_plugin_uptime_accent_color_icon" "blue0")
 
-# Cache TTL in seconds (uptime updates every 60 seconds)
-CACHE_TTL=60
+# Cache TTL in seconds (default: 60 seconds)
+CACHE_TTL=$(get_tmux_option "@theme_plugin_uptime_cache_ttl" "60")
 CACHE_KEY="uptime"
 
 export plugin_uptime_icon plugin_uptime_accent_color plugin_uptime_accent_color_icon
