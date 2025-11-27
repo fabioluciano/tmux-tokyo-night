@@ -1,3 +1,10 @@
+# [2.3.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.2.1...v2.3.0) (2025-11-27)
+
+
+### Features
+
+* Add disk and load average plugins with caching and performance optimizations ([#78](https://github.com/fabioluciano/tmux-tokyo-night/issues/78)) ([908f1d1](https://github.com/fabioluciano/tmux-tokyo-night/commit/908f1d1e1e629cf4686a12604b1a3c85a38ef65b))
+
 ## [2.2.1](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.2.0...v2.2.1) (2025-11-27)
 
 
