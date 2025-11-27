@@ -4,6 +4,7 @@
 # =============================================================================
 
 # Source guard - prevent multiple sourcing
+# shellcheck disable=SC2317
 if [[ -n "${_TMUX_TOKYO_NIGHT_UTILS_LOADED:-}" ]]; then
     return 0 2>/dev/null || exit 0
 fi
