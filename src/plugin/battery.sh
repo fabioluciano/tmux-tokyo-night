@@ -133,7 +133,7 @@ battery_format_output() {
     local percentage="$1"
     local status="$2"
     
-    echo -n "$percentage"
+    echo -n "${percentage}%"
 }
 
 # =============================================================================

@@ -104,8 +104,9 @@ weather_fetch() {
     # Add unit parameter if specified
     [[ -n "$plugin_weather_unit" ]] && url+="${plugin_weather_unit}&"
     
-    # URL encode the format string
-    local encoded_format="${plugin_weather_format// /%20}"
+    # URL encode the format string more thoroughly
+    local encoded_format
+    encoded_format=$(printf '%s' "$plugin_weather_format" | sed 's/%/%25/g; s/ /%20/g; s/:/%3A/g; s/+/%2B/g')
     url+="format=${encoded_format}"
     
     local weather
