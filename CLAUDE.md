@@ -35,7 +35,6 @@ Manual testing is required:
 - Loads the selected color palette from `src/palletes/`
 - Configures status bar, window styles, borders, and pane styles
 - Dynamically loads and executes plugins from `src/plugin/`
-- Handles plugin rendering with proper separators and colors
 - Handles plugin rendering with proper separators and colors (e.g., datetime plugin uses static rendering)
 
 **`src/utils.sh`** (76 lines)
@@ -69,7 +68,7 @@ Located in `src/palletes/*.sh` (night.sh, storm.sh, moon.sh, day.sh)
 2. `theme.sh` iterates through enabled plugins (from `@theme_plugins` option)
 3. For most plugins: Output is generated dynamically via `#($plugin_script_path)` in tmux status bar
 4. For datetime: Output is pre-rendered at theme load time
-5. For battery: Template string with placeholders is passed as argument; script replaces placeholders with dynamic values based on battery level
+5. For battery: Uses the standard plugin format with caching; does not accept arguments or use templates/placeholders.
 
 **Available Plugins:**
 
@@ -129,5 +128,5 @@ Each cacheable plugin supports a TTL (Time To Live) option:
 - Color values from palette must be referenced as `${PALLETE[key]}`
 - Tmux options are read via `get_tmux_option` helper with fallback defaults
 - The `set -euxo pipefail` in theme.sh ensures strict error handling
-- Weather plugin requires `jq` command-line JSON processor
+- Weather plugin: `jq` is optional. It is only required for auto-location detection via IP; if you provide a location via `@theme_plugin_weather_location`, the plugin works without `jq`.
 - Battery plugin contains code adapted from tmux-plugins/tmux-battery (MIT licensed)
