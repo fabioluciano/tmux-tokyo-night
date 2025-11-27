@@ -93,9 +93,9 @@ weather_fetch() {
     
     # Build URL - if no location, wttr.in uses IP-based location
     if [[ -n "$location" ]]; then
-        # URL encode the location properly
+        # URL encode the location properly using simple sed replacement
         local encoded_location
-        encoded_location=$(printf '%s' "$location" | curl -Gso /dev/null -w %{url_effective} --data-urlencode @- "" 2>/dev/null | cut -c 3- || printf '%s' "$location" | sed 's/ /%20/g; s/,/%2C/g')
+        encoded_location=$(printf '%s' "$location" | sed 's/ /%20/g; s/,/%2C/g')
         url="wttr.in/${encoded_location}?"
     else
         url="wttr.in/?"

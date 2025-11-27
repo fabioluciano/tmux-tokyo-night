@@ -15,7 +15,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # =============================================================================
 
 # shellcheck disable=SC2034
-plugin_git_icon=$(get_tmux_option "@theme_plugin_git_icon" " ")
+plugin_git_icon=$(get_tmux_option "@theme_plugin_git_icon" " ")
 # shellcheck disable=SC2034
 plugin_git_accent_color=$(get_tmux_option "@theme_plugin_git_accent_color" "blue7")
 # shellcheck disable=SC2034
@@ -51,7 +51,11 @@ get_git_info() {
     local changed=0 untracked=0
     while IFS= read -r line; do
         [[ -z "$line" ]] && continue
-        [[ "${line:0:2}" == "??" ]] && ((untracked++)) || ((changed++))
+        if [[ "${line:0:2}" == "??" ]]; then
+            ((untracked++))
+        else
+            ((changed++))
+        fi
     done <<< "$status_output"
     
     # Build output

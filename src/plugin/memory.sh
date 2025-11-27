@@ -89,10 +89,8 @@ get_memory_macos() {
     local vm_stat_output
     vm_stat_output=$(vm_stat)
     
-    pages_free=$(echo "$vm_stat_output" | grep "Pages free:" | awk '{print $3}' | tr -d '.')
+    local pages_active pages_wired
     pages_active=$(echo "$vm_stat_output" | grep "Pages active:" | awk '{print $3}' | tr -d '.')
-    pages_inactive=$(echo "$vm_stat_output" | grep "Pages inactive:" | awk '{print $3}' | tr -d '.')
-    pages_speculative=$(echo "$vm_stat_output" | grep "Pages speculative:" | awk '{print $3}' | tr -d '.')
     pages_wired=$(echo "$vm_stat_output" | grep "Pages wired down:" | awk '{print $4}' | tr -d '.')
     
     # Calculate used memory (active + wired)
@@ -102,7 +100,7 @@ get_memory_macos() {
     percent=$(( (mem_used * 100) / mem_total ))
     
     if [[ "$plugin_memory_format" == "usage" ]]; then
-        printf '%s/%s' "$(bytes_to_human $mem_used)" "$(bytes_to_human $mem_total)"
+        printf '%s/%s' "$(bytes_to_human "$mem_used")" "$(bytes_to_human "$mem_total")"
     else
         printf '%d%%' "$percent"
     fi
