@@ -1,3 +1,10 @@
+# [2.1.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.0.0...v2.1.0) (2025-11-27)
+
+
+### Features
+
+* implement configurable cache TTL for plugins ([49aa909](https://github.com/fabioluciano/tmux-tokyo-night/commit/49aa909b2cca06593628be1f21bdd442d9b0c1bd))
+
 # [2.0.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v1.11.0...v2.0.0) (2025-11-27)
 
 
