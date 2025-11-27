@@ -36,7 +36,7 @@ Manual testing is required:
 - Configures status bar, window styles, borders, and pane styles
 - Dynamically loads and executes plugins from `src/plugin/`
 - Handles plugin rendering with proper separators and colors
-- Special handling for battery plugin (dynamic color changes) and datetime plugin (static rendering)
+- Handles plugin rendering with proper separators and colors (e.g., datetime plugin uses static rendering)
 
 **`src/utils.sh`** (76 lines)
 - `get_tmux_option()` - Retrieves tmux options with fallback defaults

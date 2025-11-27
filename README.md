@@ -230,7 +230,7 @@ Displays current date and time.
 | `@theme_plugin_datetime_icon` | Plugin icon | ` ` |
 | `@theme_plugin_datetime_accent_color` | Background color | `blue0` |
 | `@theme_plugin_datetime_accent_color_icon` | Icon background color | `blue` |
-| `@theme_plugin_datetime_format` | strftime format string | `%Y-%m-%d %H:%M` |
+| `@theme_plugin_datetime_format` | strftime format string | `%D %H:%M:%S` |
 
 #### Hostname
 
@@ -251,7 +251,7 @@ Displays current weather information. Requires `curl` and `jq`.
 | `@theme_plugin_weather_icon` | Plugin icon | ` ` |
 | `@theme_plugin_weather_accent_color` | Background color | `orange` |
 | `@theme_plugin_weather_accent_color_icon` | Icon background color | `yellow` |
-| `@theme_plugin_weather_format` | Weather format | `%t+H:%h` |
+| `@theme_plugin_weather_format` | Weather format | `%t H:%h` |
 | `@theme_plugin_weather_location` | Location (city, country) | Auto-detected |
 | `@theme_plugin_weather_unit` | Unit system: `u` (USCS), `m` (metric), `M` (metric m/s) | Auto |
 
@@ -272,7 +272,7 @@ Displays currently playing media. **Linux only** (uses MPRIS).
 | `@theme_plugin_playerctl_icon` | Plugin icon | ` ` |
 | `@theme_plugin_playerctl_accent_color` | Background color | `magenta` |
 | `@theme_plugin_playerctl_accent_color_icon` | Icon background color | `purple` |
-| `@theme_plugin_playerctl_format_string` | Playerctl format | `#{artist} - #{title}` |
+| `@theme_plugin_playerctl_format` | Playerctl format | `{{artist}} - {{title}}` |
 | `@theme_plugin_playerctl_ignore_players` | Players to ignore | `""` |
 
 #### Spotify (spt)

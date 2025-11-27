@@ -62,7 +62,7 @@ load_plugin() {
     # Check cache first
     local cached_value
     if cached_value=$(cache_get "$CACHE_KEY" "$CACHE_TTL"); then
-        echo -n "$cached_value"
+        printf '%s' "$cached_value"
         return
     fi
 
@@ -74,7 +74,7 @@ load_plugin() {
         cache_set "$CACHE_KEY" "$result"
     fi
     
-    echo -n "$result"
+    printf '%s' "$result"
 }
 
 # Only run if executed directly (not sourced)

@@ -27,7 +27,7 @@ plugin_network_accent_color_icon=$(get_tmux_option "@theme_plugin_network_accent
 plugin_network_interface=$(get_tmux_option "@theme_plugin_network_interface" "")
 
 # Cache TTL in seconds
-CACHE_TTL=2
+CACHE_TTL=5
 CACHE_KEY="network"
 
 export plugin_network_icon plugin_network_accent_color plugin_network_accent_color_icon
@@ -125,7 +125,7 @@ load_plugin() {
     # Check cache first
     local cached_value
     if cached_value=$(cache_get "$CACHE_KEY" "$CACHE_TTL"); then
-        echo -n "$cached_value"
+        printf '%s' "$cached_value"
         return
     fi
 
