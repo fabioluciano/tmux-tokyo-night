@@ -1,3 +1,10 @@
+## [2.2.1](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.2.0...v2.2.1) (2025-11-27)
+
+
+### Bug Fixes
+
+* Improve CPU usage calculation on macOS by averaging over cores ([#77](https://github.com/fabioluciano/tmux-tokyo-night/issues/77)) ([a14aa11](https://github.com/fabioluciano/tmux-tokyo-night/commit/a14aa11b1a8243fab930f04fe8c5a55c7cab8448))
+
 # [2.2.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.1.0...v2.2.0) (2025-11-27)
 
 
