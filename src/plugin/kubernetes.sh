@@ -51,26 +51,27 @@ get_k8s_info() {
         return
     fi
     
-    local context namespace
+    local context_raw context namespace
     
     # Fast extraction using awk instead of kubectl commands
     # This avoids kubectl's startup overhead
-    context=$(awk '/^current-context:/ {print $2; exit}' "$kubeconfig" 2>/dev/null)
+    context_raw=$(awk '/^current-context:/ {print $2; exit}' "$kubeconfig" 2>/dev/null)
     
-    if [[ -z "$context" ]]; then
+    if [[ -z "$context_raw" ]]; then
         printf ''
         return
     fi
     
-    # Shorten common context name patterns
-    context="${context##*@}"  # Remove user@ prefix
+    # Shorten common context name patterns for display
+    context="${context_raw##*@}"  # Remove user@ prefix
     context="${context##*:}"  # Remove cluster prefix
     
     local output="$context"
     
     if [[ "$plugin_kubernetes_show_namespace" == "true" ]]; then
         # Extract namespace for current context using awk (faster than kubectl config view)
-        namespace=$(awk -v ctx="$context" '
+        # Use the raw context name for lookup, not the shortened one
+        namespace=$(awk -v ctx="$context_raw" '
             /^contexts:/ { in_contexts=1; next }
             in_contexts && /^[^ ]/ { in_contexts=0 }
             in_contexts && /- name:/ && $3 == ctx { found=1; next }
