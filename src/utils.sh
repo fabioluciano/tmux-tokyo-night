@@ -1,15 +1,28 @@
 #!/usr/bin/env bash
+# =============================================================================
+# Utility Functions for tmux-tokyo-night
+# =============================================================================
 
-function get_tmux_option() {
-	local option=$1
-	local default_value=$2
-	local -r option_value=$(tmux show-option -gqv "$option")
-
-	if [ -z "$option_value" ]; then
-		echo "$default_value"
-	else
-		echo "$option_value"
-	fi
+# -----------------------------------------------------------------------------
+# Get tmux option value with fallback default
+# Arguments:
+#   $1 - Option name
+#   $2 - Default value
+# Output:
+#   Option value or default
+# -----------------------------------------------------------------------------
+get_tmux_option() {
+    local option="$1"
+    local default_value="$2"
+    local option_value
+    
+    option_value=$(tmux show-option -gqv "$option")
+    
+    if [[ -z "$option_value" ]]; then
+        printf '%s' "$default_value"
+    else
+        printf '%s' "$option_value"
+    fi
 }
 
 function generate_left_side_string() {
@@ -51,7 +64,6 @@ function generate_inactive_window_string() {
 }
 
 function generate_active_window_string() {
-
 	active_window_icon=$(get_tmux_option "@theme_plugin_active_window_icon" " ")
 	zoomed_window_icon=$(get_tmux_option "@theme_plugin_zoomed_window_icon" " ")
 	pane_synchronized_icon=$(get_tmux_option "@theme_plugin_pane_synchronized_icon" "✵")

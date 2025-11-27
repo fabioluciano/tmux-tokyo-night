@@ -1,177 +1,423 @@
 <div align="center">
-  <h1>Tokyo Night Tmux Theme</h1>
+  <h1>🌃 Tokyo Night Tmux Theme</h1>
   
-  <h4>A Tokyo Night tmux theme directly inspired from Tokyo Night vim theme</h4>
+  <h4>A clean, elegant tmux theme inspired by the popular Tokyo Night color scheme</h4>
+  
+  <p>
+    <a href="#features"><img src="https://img.shields.io/badge/Features-blue?style=flat-square" alt="Features"></a>
+    <a href="#screenshots"><img src="https://img.shields.io/badge/Screenshots-purple?style=flat-square" alt="Screenshots"></a>
+    <a href="#installation"><img src="https://img.shields.io/badge/Install-green?style=flat-square" alt="Install"></a>
+    <a href="#configuration"><img src="https://img.shields.io/badge/Config-orange?style=flat-square" alt="Configuration"></a>
+    <a href="#plugins"><img src="https://img.shields.io/badge/Plugins-red?style=flat-square" alt="Plugins"></a>
+  </p>
+
+  > ⚠️ **Version 2.0 - Breaking Changes**: This release includes significant refactoring with improved plugin architecture and caching system. See [Migration Guide](#migration-from-v1) below.
     
   ---
-    
-  **[<kbd> <br> Features <br> </kbd>][features]**
-  **[<kbd> <br> Screenshots <br> </kbd>][screenshots]**
-  **[<kbd> <br> Install <br> </kbd>][install]**
-  **[<kbd> <br> Available Configurations <br> </kbd>][available-configurations]**
-  **[<kbd> <br> Plugins <br> </kbd>][plugins]**
-  
-  ---
-    
 </div>
 
-## Features
+## ✨ Features
 
-- [Transparency support](#Transparency-examples)
+- 🎨 **Multiple color variations**: Night, Storm, Moon, and Day
+- 🔌 **15 built-in plugins** for system monitoring and information display
+- 🪟 **Transparency support** with customizable separators
+- 📊 **Double bar layout** option for separating windows and plugins
+- ⚡ **Smart caching system** for improved performance (configurable TTL per plugin)
+- 🔧 **Highly customizable** with per-plugin configuration options
+- 🎯 **Conditional plugins** (git, docker) that only appear when relevant
 
-## Plugins
-
-- **Datetime** - Show datetime;
-- **Weather** - Show weather;
-- **Playerctl** - Show playerctl;
-- **Spt** - Show Spotify;
-- **Homebrew** - Show Homebrew;
-- **yay** - Show yay;
-- **battery** - Show battery;
-
-## Screenshots
+## 📸 Screenshots
 
 ### Tokyo Night - Default Variation
 
-| Inactive                                                                                                             | Active                                                                                                                      |
-| -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| ![Tokyo Night tmux theme - Default Variation](./assets/tokyo-night.png "Tokyo Night tmux theme - Default Variation") | ![Tokyo Night tmux theme - Default Variation](./assets/tokyo-night-active.png "Tokyo Night tmux theme - Default Variation") |
+| Inactive | Active |
+|----------|--------|
+| ![Tokyo Night Inactive](./assets/tokyo-night.png) | ![Tokyo Night Active](./assets/tokyo-night-active.png) |
 
-## Install
+## 📦 Installation
 
-Add plugin to the list of `TPM` plugins in `.tmux.conf`:
+### Using TPM (recommended)
 
-```
+Add the plugin to your `~/.tmux.conf`:
+
+```bash
 set -g @plugin 'fabioluciano/tmux-tokyo-night'
 ```
 
-Hit <kbd>prefix</kbd> + <kbd>I</kbd> to fetch the plugin and source it. You can now use the plugin.
+Press <kbd>prefix</kbd> + <kbd>I</kbd> to install.
 
-## Available Configurations
+### Manual Installation
 
-| Configuration                       | Description                               | Avaliable Options                                                       | Default            |
-| ----------------------------------- | ----------------------------------------- | ----------------------------------------------------------------------- | ------------------ |
-| `@theme_variation`                  | The tokyo night theme variation to be use | `night`, `storm`, `moon`                                                | `night`            |
-| `@theme_active_pane_border_style`   |                                           |                                                                         | `#737aa2`          |
-| `@theme_inactive_pane_border_style` |                                           |                                                                         | `#292e42`          |
-| `@theme_left_separator`             |                                           |                                                                         | ``                |
-| `@theme_right_separator`            |                                           |                                                                         | ``                |
-| `@theme_window_with_activity_style` |                                           |                                                                         | `italics`          |
-| `@theme_status_bell_style`          |                                           |                                                                         | `bold`             |
-| `@theme_plugins`                    |                                           | `datetime`, `weather`, `playerctl`, `spt`, `homebrew`, `yay`, `battery` | `datetime,weather` |
-| `@theme_disable_plugins`            | Disables plugins                          | `1`, `0`                                                                | `0`                |
+```bash
+git clone https://github.com/fabioluciano/tmux-tokyo-night.git ~/.tmux/plugins/tmux-tokyo-night
+```
 
-## Plugins
+Add to your `~/.tmux.conf`:
 
-### Datetime
+```bash
+run-shell ~/.tmux/plugins/tmux-tokyo-night/tmux-tokyo-night.tmux
+```
 
-> Prints informations about the current date and time.
+## ⚙️ Configuration
 
-| Configuration                              | Description                                                                 |  Avaliable Options                                              | Default                                    |
-| ------------------------------------------ | --------------------------------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------ |
-| `@theme_plugin_datetime_icon`              |                                                                             |  Any character 📅                                               | Nerd Font 'Calendar' icon                  |
-| `@theme_plugin_datetime_accent_color`      |                                                                             |                                                                 |                                            |
-| `@theme_plugin_datetime_accent_color_icon` |                                                                             |                                                                 |                                            |
-| `@theme_plugin_datetime_format`            | Format used in [`date`](https://man7.org/linux/man-pages/man1/date.1.html)  | See [`date`](https://man7.org/linux/man-pages/man1/date.1.html) | `%D %H:%M:%S`                              |
+### Theme Options
 
-### Weather
+| Option | Description | Values | Default |
+|--------|-------------|--------|---------|
+| `@theme_variation` | Color scheme variation | `night`, `storm`, `moon`, `day` | `night` |
+| `@theme_plugins` | Comma-separated list of plugins to enable | See [Plugins](#plugins) | `datetime,weather` |
+| `@theme_disable_plugins` | Disable all plugins | `0`, `1` | `0` |
+| `@theme_bar_layout` | Status bar layout mode | `single`, `double` | `single` |
+| `@theme_transparent_status_bar` | Enable transparency | `true`, `false` | `false` |
 
-> Prints informations about the current weather. It uses `jq` to parse the response. Make shure to have it;
+### Appearance Options
 
-| Configuration                             | Description | Avaliable Options | Default |
-| ----------------------------------------- | ----------- | ----------------- | ------- |
-| `@theme_plugin_weather_icon`              |             | Any character 🌡️  |  Font Awesome 'Cloud' icon        |
-| `@theme_plugin_weather_accent_color`      |             |                   |         |
-| `@theme_plugin_weather_accent_color_icon` |             |                   |         |
-| `@theme_plugin_weather_format`            | Format for displaying weather information | `%t`, `%c`, `%h`, `%w` (temperature, condition, humidity, wind) | `%t+H:%h` |
-| `@theme_plugin_weather_location`          | Location for weather (city/country)   | `"City, Country"`  | IP-based location detection |
-| `@theme_plugin_weather_unit`              | Unit for displayed information | `u`, `m`, `M` (USCS, metric, metric m/s) | Automatic detection |
+| Option | Description | Default |
+|--------|-------------|---------|
+| `@theme_active_pane_border_style` | Active pane border color | `#737aa2` |
+| `@theme_inactive_pane_border_style` | Inactive pane border color | `#292e42` |
+| `@theme_left_separator` | Left powerline separator | `` |
+| `@theme_right_separator` | Right powerline separator | `` |
+| `@theme_window_with_activity_style` | Style for windows with activity | `italics` |
+| `@theme_status_bell_style` | Style for bell alerts | `bold` |
 
-#### Example
-  ```
-  set -g @theme_plugin_weather_location 'Blacksburg, United States'
-  ```
+### Transparency Options
 
-### Playerctl
+When `@theme_transparent_status_bar` is enabled:
 
-> Prints informations about the current song playing. Does not work in `MacOS`, because it uses `MPRIS`, and is only available in `Linux`.
+| Option | Description | Default |
+|--------|-------------|---------|
+| `@theme_transparent_left_separator_inverse` | Inverse left separator for transparency | `` |
+| `@theme_transparent_right_separator_inverse` | Inverse right separator for transparency | `` |
 
-| Configuration                               | Description | Avaliable Options | Default |
-| ------------------------------------------- | ----------- | ----------------- | ------- |
-| `@theme_plugin_playerctl_icon`              |             |                   |         |
-| `@theme_plugin_playerctl_accent_color`      |             |                   |         |
-| `@theme_plugin_playerctl_accent_color_icon` |             |                   |         |
-| `@theme_plugin_playerctl_format_string`     |             |                   |         |
-| `@theme_plugin_playerctl_ignore_players`    | List of players to ignore | `"player1,player2,.."` | `"IGNORE"` |
+### Bar Layout
+
+The `@theme_bar_layout` option controls how the status bar is displayed:
+
+- **`single`** (default): Traditional single status bar with session, windows, and plugins
+- **`double`**: Two status lines - one for session/windows, another for plugins
+
+```bash
+# Enable double bar layout
+set -g @theme_bar_layout 'double'
+```
+
+### Available Colors
+
+You can use these colors for any `accent_color` or `accent_color_icon` option:
+
+| Color | Hex | Color | Hex |
+|-------|-----|-------|-----|
+| `bg` | `#1a1b26` | `blue` | `#7aa2f7` |
+| `bg_dark` | `#16161e` | `blue0` | `#3d59a1` |
+| `bg_highlight` | `#292e42` | `blue1` | `#2ac3de` |
+| `fg` | `#c0caf5` | `blue2` | `#0db9d7` |
+| `fg_dark` | `#a9b1d6` | `cyan` | `#7dcfff` |
+| `red` | `#f7768e` | `green` | `#9ece6a` |
+| `red1` | `#db4b4b` | `green1` | `#73daca` |
+| `orange` | `#ff9e64` | `green2` | `#41a6b5` |
+| `yellow` | `#e0af68` | `teal` | `#1abc9c` |
+| `magenta` | `#bb9af7` | `purple` | `#9d7cd8` |
+| `magenta2` | `#ff007c` | `white` | `#ffffff` |
+
+---
+
+## 🔌 Plugins
+
+Enable plugins by adding them to the `@theme_plugins` option:
+
+```bash
+set -g @theme_plugins 'cpu,memory,network,git,datetime'
+```
+
+### System Monitoring
+
+#### CPU
+
+Displays current CPU usage percentage.
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `@theme_plugin_cpu_icon` | Plugin icon | ` ` |
+| `@theme_plugin_cpu_accent_color` | Background color | `yellow` |
+| `@theme_plugin_cpu_accent_color_icon` | Icon background color | `orange` |
+
+#### Memory
+
+Displays current memory usage.
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `@theme_plugin_memory_icon` | Plugin icon | ` ` |
+| `@theme_plugin_memory_accent_color` | Background color | `magenta` |
+| `@theme_plugin_memory_accent_color_icon` | Icon background color | `purple` |
+| `@theme_plugin_memory_format` | Display format: `percent` or `usage` | `percent` |
+
+**Format options:**
+- `percent`: Shows percentage (e.g., `45%`)
+- `usage`: Shows used/total (e.g., `4.2G/16G`)
+
+#### Network
+
+Displays network download/upload speeds.
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `@theme_plugin_network_icon` | Plugin icon | `󰛳 ` |
+| `@theme_plugin_network_accent_color` | Background color | `cyan` |
+| `@theme_plugin_network_accent_color_icon` | Icon background color | `blue2` |
+| `@theme_plugin_network_interface` | Network interface (auto-detected if empty) | `""` |
+
+#### Uptime
+
+Displays system uptime.
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `@theme_plugin_uptime_icon` | Plugin icon | `󰔟 ` |
+| `@theme_plugin_uptime_accent_color` | Background color | `green1` |
+| `@theme_plugin_uptime_accent_color_icon` | Icon background color | `teal` |
+
+### Development
+
+#### Git
+
+Displays current git branch and status. **Only shows when in a git repository.**
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `@theme_plugin_git_icon` | Plugin icon | ` ` |
+| `@theme_plugin_git_accent_color` | Background color | `green` |
+| `@theme_plugin_git_accent_color_icon` | Icon background color | `green2` |
+
+**Status indicators:**
+- `~N`: N files modified
+- `+N`: N untracked files
+
+#### Docker
+
+Displays Docker container status. **Only shows when Docker is running and has containers.**
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `@theme_plugin_docker_icon` | Plugin icon | ` ` |
+| `@theme_plugin_docker_accent_color` | Background color | `blue` |
+| `@theme_plugin_docker_accent_color_icon` | Icon background color | `blue0` |
+
+**Status indicators:**
+- `N`: N running containers
+- `⏹N`: N stopped containers
+
+#### Kubernetes
+
+Displays current Kubernetes context and namespace.
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `@theme_plugin_kubernetes_icon` | Plugin icon | `󱃾 ` |
+| `@theme_plugin_kubernetes_accent_color` | Background color | `purple` |
+| `@theme_plugin_kubernetes_accent_color_icon` | Icon background color | `magenta` |
+| `@theme_plugin_kubernetes_show_namespace` | Show namespace | `true` |
+
+### Information
+
+#### Datetime
+
+Displays current date and time.
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `@theme_plugin_datetime_icon` | Plugin icon | ` ` |
+| `@theme_plugin_datetime_accent_color` | Background color | `blue0` |
+| `@theme_plugin_datetime_accent_color_icon` | Icon background color | `blue` |
+| `@theme_plugin_datetime_format` | strftime format string | `%D %H:%M:%S` |
+
+#### Hostname
+
+Displays the system hostname.
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `@theme_plugin_hostname_icon` | Plugin icon | `󰒋 ` |
+| `@theme_plugin_hostname_accent_color` | Background color | `orange` |
+| `@theme_plugin_hostname_accent_color_icon` | Icon background color | `red` |
+
+#### Weather
+
+Displays current weather information. Requires `curl` and `jq`.
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `@theme_plugin_weather_icon` | Plugin icon | ` ` |
+| `@theme_plugin_weather_accent_color` | Background color | `orange` |
+| `@theme_plugin_weather_accent_color_icon` | Icon background color | `yellow` |
+| `@theme_plugin_weather_format` | Weather format | `%t H:%h` |
+| `@theme_plugin_weather_location` | Location (city, country) | Auto-detected |
+| `@theme_plugin_weather_unit` | Unit system: `u` (USCS), `m` (metric), `M` (metric m/s) | Auto |
+
+**Format placeholders:**
+- `%t`: Temperature
+- `%c`: Condition
+- `%h`: Humidity  
+- `%w`: Wind speed
+
+### Media & Applications
+
+#### Playerctl
+
+Displays currently playing media. **Linux only** (uses MPRIS).
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `@theme_plugin_playerctl_icon` | Plugin icon | ` ` |
+| `@theme_plugin_playerctl_accent_color` | Background color | `magenta` |
+| `@theme_plugin_playerctl_accent_color_icon` | Icon background color | `purple` |
+| `@theme_plugin_playerctl_format` | Playerctl format | `{{artist}} - {{title}}` |
+| `@theme_plugin_playerctl_ignore_players` | Players to ignore | `""` |
+
+#### Spotify (spt)
+
+Displays Spotify playback via `spt` CLI.
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `@theme_plugin_spt_icon` | Plugin icon | ` ` |
+| `@theme_plugin_spt_accent_color` | Background color | `green` |
+| `@theme_plugin_spt_accent_color_icon` | Icon background color | `green1` |
+
+### Package Managers
+
+#### Homebrew
+
+Displays number of outdated Homebrew packages. **macOS only.**
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `@theme_plugin_homebrew_icon` | Plugin icon | `󰜋 ` |
+| `@theme_plugin_homebrew_accent_color` | Background color | `yellow` |
+| `@theme_plugin_homebrew_accent_color_icon` | Icon background color | `orange` |
+
+#### Yay (AUR)
+
+Displays number of outdated AUR packages. **Arch Linux only.**
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `@theme_plugin_yay_icon` | Plugin icon | ` ` |
+| `@theme_plugin_yay_accent_color` | Background color | `cyan` |
+| `@theme_plugin_yay_accent_color_icon` | Icon background color | `blue` |
 
 ### Battery
 
-Shows battery charging status (charging or discharging) and battery percentage.
+Displays battery status with dynamic colors based on charge level.
 
-| Configuration                                    | Description                        | Avaliable Options | Default  |
-| ------------------------------------------------ | ---------------------------------- | ----------------- | -------- |
-| `@theme_plugin_battery_charging_icon`            | Icon to display when charging      | Any character     |         |
-| `@theme_plugin_battery_discharging_icon`         | Icon to display when on battery    | Any character     | 󰁹        |
-| `@theme_plugin_battery_red_threshold`            | Show in red when below this %      | 0-100             | 10       |
-| `@theme_plugin_battery_yellow_threshold`         | Show in yellow when below this %   | 0-100             | 30       |
-| `@theme_plugin_battery_red_accent_color`         | Color when < red threshold         | Palette color     | red      |
-| `@theme_plugin_battery_red_accent_color_icon`    | Icon color when < red threshold    | Palette color     | magenta2 |
-| `@theme_plugin_battery_yellow_accent_color`      | Color when < yellow threshold      | Palette color     | yellow   |
-| `@theme_plugin_battery_yellow_accent_color_icon` | Icon color when < yellow threshold | Palette color     | orange   |
-| `@theme_plugin_battery_green_accent_color`       | Color when > yellow threshold      | Palette color     | blue7    |
-| `@theme_plugin_battery_green_accent_color_icon`  | Icon color when > yellow threshold | Palette color     | blue0    |
+| Option | Description | Default |
+|--------|-------------|---------|
+| `@theme_plugin_battery_charging_icon` | Charging icon | `` |
+| `@theme_plugin_battery_discharging_icon` | Discharging icon | `󰁹` |
+| `@theme_plugin_battery_red_threshold` | Red warning threshold | `10` |
+| `@theme_plugin_battery_yellow_threshold` | Yellow warning threshold | `30` |
+| `@theme_plugin_battery_red_accent_color` | Color below red threshold | `red` |
+| `@theme_plugin_battery_red_accent_color_icon` | Icon color below red threshold | `magenta2` |
+| `@theme_plugin_battery_yellow_accent_color` | Color below yellow threshold | `yellow` |
+| `@theme_plugin_battery_yellow_accent_color_icon` | Icon color below yellow threshold | `orange` |
+| `@theme_plugin_battery_green_accent_color` | Color above yellow threshold | `blue7` |
+| `@theme_plugin_battery_green_accent_color_icon` | Icon color above yellow threshold | `blue0` |
 
-### Example configuration
+---
 
-tmux.conf
+## 📋 Example Configuration
 
 ```bash
+# ~/.tmux.conf
+
+# List of plugins
 set -g @plugin 'tmux-plugins/tpm'
-
-set -g @plugin 'tmux-plugins/tmux-pain-control'
 set -g @plugin 'tmux-plugins/tmux-sensible'
-set -g @plugin 'tmux-plugins/tmux-logging'
-
 set -g @plugin 'fabioluciano/tmux-tokyo-night'
 
-### Tokyo Night Theme configuration
-set -g @theme_variation 'moon'
-set -g @theme_left_separator ''
-set -g @theme_right_separator ''
-set -g @theme_plugins 'datetime,weather,playerctl,yay'
+# Tokyo Night Theme Configuration
+set -g @theme_variation 'night'
+set -g @theme_plugins 'datetime,cpu,memory,network,git,docker,kubernetes'
 
+# Plugin customization
+set -g @theme_plugin_datetime_format '%H:%M'
+set -g @theme_plugin_memory_format 'usage'
+set -g @theme_plugin_kubernetes_show_namespace 'true'
+
+# Initialize TPM (keep this at the bottom)
 run '~/.tmux/plugins/tpm/tpm'
 ```
 
-### Transparency examples
+## 🎨 Transparency Example
 
-Enable transparency with default separators:
-
-```bash
-### Enable transparency
-set -g @theme_transparent_status_bar 'true'
-```
-
-![Screenshot 2024-09-07 at 12 41 12](https://github.com/user-attachments/assets/56287ccb-9be9-4aa5-a2ab-ec48d2b2d08a)
-
-####
-
-Can also use custom separators:
+Enable transparency with custom separators:
 
 ```bash
-### Enable transparency
-set -g @theme_left_separator ''
-set -g @theme_right_separator ''
+# Enable transparency
 set -g @theme_transparent_status_bar 'true'
-set -g @theme_transparent_left_separator_inverse ''
-set -g @theme_transparent_right_separator_inverse ''
 
+# Optional: Custom separators for transparency
+set -g @theme_left_separator ''
+set -g @theme_right_separator ''
+set -g @theme_transparent_left_separator_inverse ''
+set -g @theme_transparent_right_separator_inverse ''
 ```
 
-![Screenshot 2024-09-07 at 12 39 35](https://github.com/user-attachments/assets/a33417b1-34e0-4212-952e-7ef1e240e943)
+![Transparency Example](https://github.com/user-attachments/assets/56287ccb-9be9-4aa5-a2ab-ec48d2b2d08a)
 
-[features]: #features
-[screenshots]: #screenshots
-[install]: #install
-[available-configurations]: #available-configurations
-[plugins]: #plugins
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Feel free to:
+
+- Report bugs
+- Suggest new features or plugins
+- Submit pull requests
+
+---
+
+## 🔄 Migration from v1
+
+### Breaking Changes in v2.0
+
+1. **Plugin Architecture Refactored**: All plugins now follow a standardized architecture with consistent variable naming and caching support.
+
+2. **Caching System**: Plugins now use a file-based caching system located at `~/.cache/tmux-tokyo-night/`. Each plugin has its own cache file with configurable TTL.
+
+3. **Conditional Plugins**: Git and Docker plugins are now conditional - they only appear when you're in a git repository or when Docker has containers.
+
+4. **Weather Plugin**: Now uses wttr.in's IP-based auto-detection by default. The `jq` dependency is no longer required for basic functionality.
+
+5. **Battery Plugin**: Simplified architecture - no longer uses dynamic color changing via templates. Uses standard plugin format.
+
+### Cache Management
+
+Clear the cache if you experience issues:
+
+```bash
+rm -rf ~/.cache/tmux-tokyo-night/
+```
+
+Cache TTL can be configured per plugin:
+
+| Plugin | Option | Default |
+|--------|--------|---------|
+| Weather | `@theme_plugin_weather_cache_ttl` | `900` (15 min) |
+| CPU | Built-in | `5` (5 sec) |
+| Memory | Built-in | `5` (5 sec) |
+| Network | Built-in | `2` (2 sec) |
+| Kubernetes | Built-in | `30` (30 sec) |
+
+---
+
+## 📄 License
+
+MIT License - See [LICENSE](LICENSE) for details.
+
+---
+
+<div align="center">
+  <p>Made with ❤️ by <a href="https://github.com/fabioluciano">Fábio Luciano</a></p>
+</div>

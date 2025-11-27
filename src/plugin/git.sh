@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+# =============================================================================
+# Plugin: git
+# Description: Display current git branch and status
+# Dependencies: git
+# =============================================================================
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# shellcheck source=src/utils.sh
+. "$ROOT_DIR/../utils.sh"
+
+# =============================================================================
+# Plugin Configuration
+# =============================================================================
+
+# shellcheck disable=SC2034
+plugin_git_icon=$(get_tmux_option "@theme_plugin_git_icon" " ")
+# shellcheck disable=SC2034
+plugin_git_accent_color=$(get_tmux_option "@theme_plugin_git_accent_color" "blue7")
+# shellcheck disable=SC2034
+plugin_git_accent_color_icon=$(get_tmux_option "@theme_plugin_git_accent_color_icon" "blue0")
+
+export plugin_git_icon plugin_git_accent_color plugin_git_accent_color_icon
+
+# =============================================================================
+# Git Functions
+# =============================================================================
+
+get_git_info() {
+    local pane_path
+    pane_path="$(tmux display-message -p '#{pane_current_path}')"
+    
+    [[ -z "$pane_path" || ! -d "$pane_path" ]] && return
+    
+    cd "$pane_path" 2>/dev/null || return
+    
+    # Check if we're in a git repo
+    git rev-parse --git-dir &>/dev/null || return
+    
+    local branch
+    branch=$(git symbolic-ref --short HEAD 2>/dev/null || \
+             git rev-parse --short HEAD 2>/dev/null)
+    
+    [[ -z "$branch" ]] && return
+    
+    # Get status counts
+    local status_output
+    status_output=$(git status --porcelain 2>/dev/null)
+    
+    local changed=0 untracked=0
+    while IFS= read -r line; do
+        [[ -z "$line" ]] && continue
+        if [[ "${line:0:2}" == "??" ]]; then
+            ((untracked++))
+        else
+            ((changed++))
+        fi
+    done <<< "$status_output"
+    
+    # Build output
+    local output="$branch"
+    [[ $changed -gt 0 ]] && output+=" ~$changed"
+    [[ $untracked -gt 0 ]] && output+=" +$untracked"
+    
+    echo -n "$output"
+}
+
+# =============================================================================
+# Main Plugin Logic
+# =============================================================================
+
+load_plugin() {
+    get_git_info
+    return 0  # Always return success
+}
+
+# Only run if executed directly (not sourced)
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    load_plugin
+fi
