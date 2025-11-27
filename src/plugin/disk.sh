@@ -73,8 +73,8 @@ get_disk_info() {
         return 1
     fi
     
-    local filesystem total_kb used_kb available_kb percent_used mount
-    read -r filesystem total_kb used_kb available_kb percent_used mount <<< "$df_output"
+    local _ total_kb used_kb available_kb percent_used
+    read -r _ total_kb used_kb available_kb percent_used _ <<< "$df_output"
     
     # Remove % sign from percent
     percent_used="${percent_used%%%}"
