@@ -40,9 +40,14 @@ get_docker_info() {
     # Check if docker daemon is running  
     docker info &>/dev/null || return
     
-    local running stopped
-    running=$(docker ps -q 2>/dev/null | wc -l | tr -d ' ')
-    stopped=$(docker ps -aq --filter "status=exited" 2>/dev/null | wc -l | tr -d ' ')
+    # Single docker call to get both running and stopped counts (more efficient)
+    local running=0 stopped=0
+    while IFS= read -r state; do
+        case "$state" in
+            running) ((running++)) ;;
+            exited) ((stopped++)) ;;
+        esac
+    done < <(docker ps -a --format '{{.State}}' 2>/dev/null)
     
     # Only show if there are containers
     [[ "$running" -eq 0 && "$stopped" -eq 0 ]] && return
@@ -51,7 +56,7 @@ get_docker_info() {
     [[ "$running" -gt 0 ]] && output="${running}"
     [[ "$stopped" -gt 0 ]] && output+=" ⏹${stopped}"
     
-    echo -n "${output# }"
+    printf '%s' "${output# }"
 }
 
 # =============================================================================

@@ -118,17 +118,14 @@ load_plugin() {
     fi
 
     local result
-    case "$(uname -s)" in
-        Linux*)
-            result=$(get_memory_linux)
-            ;;
-        Darwin*)
-            result=$(get_memory_macos)
-            ;;
-        *)
-            result="N/A"
-            ;;
-    esac
+    # Use cached OS detection from utils.sh
+    if is_linux; then
+        result=$(get_memory_linux)
+    elif is_macos; then
+        result=$(get_memory_macos)
+    else
+        result="N/A"
+    fi
 
     # Update cache
     cache_set "$CACHE_KEY" "$result"
@@ -136,4 +133,7 @@ load_plugin() {
     printf '%s' "$result"
 }
 
-load_plugin
+# Only run if executed directly (not sourced)
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    load_plugin
+fi

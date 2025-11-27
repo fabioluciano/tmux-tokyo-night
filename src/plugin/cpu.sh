@@ -77,19 +77,15 @@ get_cpu_linux() {
     printf '%d%%' "$cpu_usage"
 }
 
-# Get CPU usage on macOS using top
+# Get CPU usage on macOS using ps (much faster than top -l 1 which takes ~1s)
 get_cpu_macos() {
     local cpu_usage
     
-    # Use top in logging mode to get CPU usage
-    cpu_usage=$(top -l 1 -n 0 2>/dev/null | grep "CPU usage" | awk '{print $3}' | tr -d '%')
+    # Use ps to aggregate CPU usage across all processes
+    # This is significantly faster than 'top -l 1' which takes ~1 second
+    cpu_usage=$(ps -A -o %cpu | awk 'NR>1 {sum+=$1} END {printf "%.0f", (sum > 100 ? 100 : sum)}')
     
-    if [[ -z "$cpu_usage" ]]; then
-        # Fallback: use ps to estimate
-        cpu_usage=$(ps -A -o %cpu | awk '{sum+=$1} END {printf "%.0f", sum}')
-    fi
-    
-    printf '%.0f%%' "$cpu_usage"
+    printf '%s%%' "${cpu_usage:-0}"
 }
 
 # =============================================================================
@@ -105,17 +101,14 @@ load_plugin() {
     fi
 
     local result
-    case "$(uname -s)" in
-        Linux*)
-            result=$(get_cpu_linux)
-            ;;
-        Darwin*)
-            result=$(get_cpu_macos)
-            ;;
-        *)
-            result="N/A"
-            ;;
-    esac
+    # Use cached OS detection from utils.sh
+    if is_linux; then
+        result=$(get_cpu_linux)
+    elif is_macos; then
+        result=$(get_cpu_macos)
+    else
+        result="N/A"
+    fi
 
     # Update cache
     cache_set "$CACHE_KEY" "$result"
@@ -123,4 +116,7 @@ load_plugin() {
     printf '%s' "$result"
 }
 
-load_plugin
+# Only run if executed directly (not sourced)
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    load_plugin
+fi

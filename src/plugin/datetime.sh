@@ -35,4 +35,7 @@ load_plugin() {
     printf '%s' "$plugin_datetime_format"
 }
 
-load_plugin
+# Only run if executed directly (not sourced)
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    load_plugin
+fi

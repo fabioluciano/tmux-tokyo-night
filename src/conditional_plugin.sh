@@ -35,8 +35,8 @@ if [[ -n "$content" ]]; then
     
     # Combine with or without separator
     if [[ "$IS_LAST" != "1" ]]; then
-        echo -n "${icon_output}${content_output} ${SEP_END}"
+        printf '%s' "${icon_output}${content_output} ${SEP_END}"
     else
-        echo -n "${icon_output}${content_output} "
+        printf '%s' "${icon_output}${content_output} "
     fi
 fi

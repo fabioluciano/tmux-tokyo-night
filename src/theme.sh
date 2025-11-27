@@ -86,9 +86,11 @@ if [ "$theme_disable_plugins" -ne 1 ]; then
 			fi
 
 			plugin_script_path="${CURRENT_DIR}/plugin/${plugin}.sh"
-			plugin_execution_string="$(${plugin_script_path})"
+			# Source plugin once to get config variables and use load_plugin function
 			# shellcheck source=src/plugin/datetime.sh
 			. "$plugin_script_path"
+			# Get execution string from sourced load_plugin function (avoids double execution)
+			plugin_execution_string="$(load_plugin)"
 
 			icon_var="plugin_${plugin}_icon"
 			accent_color_var="plugin_${plugin}_accent_color"
