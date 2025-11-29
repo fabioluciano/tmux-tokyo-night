@@ -1,3 +1,10 @@
+# [2.4.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.3.0...v2.4.0) (2025-11-29)
+
+
+### Features
+
+* Implement dynamic color thresholds and conditional display for plugins ([#79](https://github.com/fabioluciano/tmux-tokyo-night/issues/79)) ([f3a61ad](https://github.com/fabioluciano/tmux-tokyo-night/commit/f3a61addaf36a7675082f709bf033a9f6ea06c93))
+
 # [2.3.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.2.1...v2.3.0) (2025-11-27)
 
 
