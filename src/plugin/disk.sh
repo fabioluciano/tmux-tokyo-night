@@ -7,6 +7,8 @@
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# shellcheck source=src/defaults.sh
+. "$ROOT_DIR/../defaults.sh"
 # shellcheck source=src/utils.sh
 . "$ROOT_DIR/../utils.sh"
 # shellcheck source=src/cache.sh
@@ -17,20 +19,20 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # =============================================================================
 
 # shellcheck disable=SC2034
-plugin_disk_icon=$(get_tmux_option "@theme_plugin_disk_icon" "󰋊 ")
+plugin_disk_icon=$(get_tmux_option "@theme_plugin_disk_icon" "$PLUGIN_DISK_ICON")
 # shellcheck disable=SC2034
-plugin_disk_accent_color=$(get_tmux_option "@theme_plugin_disk_accent_color" "blue7")
+plugin_disk_accent_color=$(get_tmux_option "@theme_plugin_disk_accent_color" "$PLUGIN_DISK_ACCENT_COLOR")
 # shellcheck disable=SC2034
-plugin_disk_accent_color_icon=$(get_tmux_option "@theme_plugin_disk_accent_color_icon" "blue0")
+plugin_disk_accent_color_icon=$(get_tmux_option "@theme_plugin_disk_accent_color_icon" "$PLUGIN_DISK_ACCENT_COLOR_ICON")
 
 # Mount point to monitor (default: root filesystem)
-plugin_disk_mount=$(get_tmux_option "@theme_plugin_disk_mount" "/")
+plugin_disk_mount=$(get_tmux_option "@theme_plugin_disk_mount" "$PLUGIN_DISK_MOUNT")
 
 # Display format: "percent", "usage" (used/total), or "free"
-plugin_disk_format=$(get_tmux_option "@theme_plugin_disk_format" "percent")
+plugin_disk_format=$(get_tmux_option "@theme_plugin_disk_format" "$PLUGIN_DISK_FORMAT")
 
 # Cache TTL in seconds (default: 60 seconds - disk usage changes slowly)
-CACHE_TTL=$(get_tmux_option "@theme_plugin_disk_cache_ttl" "60")
+CACHE_TTL=$(get_tmux_option "@theme_plugin_disk_cache_ttl" "$PLUGIN_DISK_CACHE_TTL")
 CACHE_KEY="disk"
 
 export plugin_disk_icon plugin_disk_accent_color plugin_disk_accent_color_icon

@@ -7,6 +7,8 @@
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# shellcheck source=src/defaults.sh
+. "$ROOT_DIR/../defaults.sh"
 # shellcheck source=src/utils.sh
 . "$ROOT_DIR/../utils.sh"
 # shellcheck source=src/cache.sh
@@ -17,15 +19,15 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # =============================================================================
 
 # shellcheck disable=SC2034
-plugin_yay_icon=$(get_tmux_option "@theme_plugin_yay_icon" " ")
+plugin_yay_icon=$(get_tmux_option "@theme_plugin_yay_icon" "$PLUGIN_YAY_ICON")
 # shellcheck disable=SC2034
-plugin_yay_accent_color=$(get_tmux_option "@theme_plugin_yay_accent_color" "blue7")
+plugin_yay_accent_color=$(get_tmux_option "@theme_plugin_yay_accent_color" "$PLUGIN_YAY_ACCENT_COLOR")
 # shellcheck disable=SC2034
-plugin_yay_accent_color_icon=$(get_tmux_option "@theme_plugin_yay_accent_color_icon" "blue0")
+plugin_yay_accent_color_icon=$(get_tmux_option "@theme_plugin_yay_accent_color_icon" "$PLUGIN_YAY_ACCENT_COLOR_ICON")
 
 # Cache TTL in seconds (default: 1800 seconds = 30 minutes)
 # Package updates don't change frequently, so longer cache is appropriate
-YAY_CACHE_TTL=$(get_tmux_option "@theme_plugin_yay_cache_ttl" "1800")
+YAY_CACHE_TTL=$(get_tmux_option "@theme_plugin_yay_cache_ttl" "$PLUGIN_YAY_CACHE_TTL")
 YAY_CACHE_KEY="yay"
 
 export plugin_yay_icon plugin_yay_accent_color plugin_yay_accent_color_icon

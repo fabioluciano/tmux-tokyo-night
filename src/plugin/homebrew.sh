@@ -3,10 +3,17 @@
 # Plugin: homebrew
 # Description: Display number of outdated Homebrew packages
 # Dependencies: brew (Homebrew package manager for macOS/Linux)
+#
+# PERFORMANCE: This plugin uses background refresh to avoid blocking.
+# On first run or cache miss, it triggers a background job to fetch
+# updates and returns the last known value (or empty). Subsequent
+# calls use the cached value until TTL expires.
 # =============================================================================
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# shellcheck source=src/defaults.sh
+. "$ROOT_DIR/../defaults.sh"
 # shellcheck source=src/utils.sh
 . "$ROOT_DIR/../utils.sh"
 # shellcheck source=src/cache.sh
@@ -17,19 +24,20 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # =============================================================================
 
 # shellcheck disable=SC2034
-plugin_homebrew_icon=$(get_tmux_option "@theme_plugin_homebrew_icon" " ")
+plugin_homebrew_icon=$(get_tmux_option "@theme_plugin_homebrew_icon" "$PLUGIN_HOMEBREW_ICON")
 # shellcheck disable=SC2034
-plugin_homebrew_accent_color=$(get_tmux_option "@theme_plugin_homebrew_accent_color" "blue7")
+plugin_homebrew_accent_color=$(get_tmux_option "@theme_plugin_homebrew_accent_color" "$PLUGIN_HOMEBREW_ACCENT_COLOR")
 # shellcheck disable=SC2034
-plugin_homebrew_accent_color_icon=$(get_tmux_option "@theme_plugin_homebrew_accent_color_icon" "blue0")
+plugin_homebrew_accent_color_icon=$(get_tmux_option "@theme_plugin_homebrew_accent_color_icon" "$PLUGIN_HOMEBREW_ACCENT_COLOR_ICON")
 
 # Plugin-specific options
-plugin_homebrew_options=$(get_tmux_option "@theme_plugin_homebrew_additional_options" "--greedy")
+plugin_homebrew_options=$(get_tmux_option "@theme_plugin_homebrew_additional_options" "$PLUGIN_HOMEBREW_ADDITIONAL_OPTIONS")
 
 # Cache TTL in seconds (default: 1800 seconds = 30 minutes)
 # Package updates don't change frequently, so longer cache is appropriate
-HOMEBREW_CACHE_TTL=$(get_tmux_option "@theme_plugin_homebrew_cache_ttl" "1800")
+HOMEBREW_CACHE_TTL=$(get_tmux_option "@theme_plugin_homebrew_cache_ttl" "$PLUGIN_HOMEBREW_CACHE_TTL")
 HOMEBREW_CACHE_KEY="homebrew"
+HOMEBREW_LOCK_FILE="${CACHE_DIR:-$HOME/.cache/tmux-tokyo-night}/homebrew_updating.lock"
 
 export plugin_homebrew_icon plugin_homebrew_accent_color plugin_homebrew_accent_color_icon
 
@@ -46,44 +54,63 @@ homebrew_is_available() {
 }
 
 # -----------------------------------------------------------------------------
-# Count outdated packages
-# Returns: Number of outdated packages
+# Check if background update is running
+# Returns: 0 if running, 1 otherwise
 # -----------------------------------------------------------------------------
-homebrew_count_outdated() {
-    local outdated_packages
-    local count
-
-    # Use 'brew outdated' to list packages that need updating
-    # shellcheck disable=SC2086
-    outdated_packages=$(brew outdated $plugin_homebrew_options 2>/dev/null || true)
-
-    if [[ -z "$outdated_packages" ]]; then
-        printf '0'
-        return
+homebrew_is_updating() {
+    # Check if lock file exists and is recent (less than 5 minutes old)
+    if [[ -f "$HOMEBREW_LOCK_FILE" ]]; then
+        local lock_age
+        lock_age=$(( $(date +%s) - $(stat -f %m "$HOMEBREW_LOCK_FILE" 2>/dev/null || stat -c %Y "$HOMEBREW_LOCK_FILE" 2>/dev/null || echo 0) ))
+        if [[ $lock_age -lt 300 ]]; then
+            return 0
+        else
+            # Stale lock, remove it
+            rm -f "$HOMEBREW_LOCK_FILE"
+        fi
     fi
-
-    # Count non-empty lines
-    count=$(printf '%s' "$outdated_packages" | grep -c . || printf '0')
-    printf '%s' "$count"
+    return 1
 }
 
 # -----------------------------------------------------------------------------
-# Format the output message
-# Arguments:
-#   $1 - Number of outdated packages
-# Returns: Formatted status string (empty if no updates)
+# Run background update
+# Fetches outdated packages and updates cache
 # -----------------------------------------------------------------------------
-homebrew_format_output() {
-    local count="$1"
-
-    # Return empty string if no updates (plugin won't be displayed)
-    if [[ "$count" -eq 0 ]]; then
-        printf ''
-    elif [[ "$count" -eq 1 ]]; then
-        printf '1 update'
-    else
-        printf '%s updates' "$count"
-    fi
+homebrew_background_update() {
+    # Create lock file
+    mkdir -p "$(dirname "$HOMEBREW_LOCK_FILE")"
+    touch "$HOMEBREW_LOCK_FILE"
+    
+    # Run brew outdated in background
+    (
+        local outdated_packages count result
+        
+        # shellcheck disable=SC2086
+        outdated_packages=$(brew outdated $plugin_homebrew_options 2>/dev/null || true)
+        
+        if [[ -z "$outdated_packages" ]]; then
+            count=0
+        else
+            count=$(printf '%s' "$outdated_packages" | grep -c . || printf '0')
+        fi
+        
+        # Format result
+        if [[ "$count" -eq 0 ]]; then
+            result=""
+        elif [[ "$count" -eq 1 ]]; then
+            result="1 update"
+        else
+            result="$count updates"
+        fi
+        
+        # Update cache
+        cache_set "$HOMEBREW_CACHE_KEY" "$result"
+        
+        # Remove lock file
+        rm -f "$HOMEBREW_LOCK_FILE"
+    ) &>/dev/null &
+    
+    disown 2>/dev/null || true
 }
 
 # =============================================================================
@@ -102,15 +129,21 @@ load_plugin() {
         printf '%s' "$cached_value"
         return 0
     fi
-
-    # Fetch fresh data
-    local count result
-    count=$(homebrew_count_outdated)
-    result=$(homebrew_format_output "$count")
-
-    # Update cache and output result
-    cache_set "$HOMEBREW_CACHE_KEY" "$result"
-    printf '%s' "$result"
+    
+    # Cache miss - check if already updating
+    if homebrew_is_updating; then
+        # Return last known value (even if expired) or empty
+        cached_value=$(cache_get "$HOMEBREW_CACHE_KEY" "86400" 2>/dev/null || echo "")
+        printf '%s' "$cached_value"
+        return 0
+    fi
+    
+    # Start background update
+    homebrew_background_update
+    
+    # Return last known value or empty (first run will show nothing)
+    cached_value=$(cache_get "$HOMEBREW_CACHE_KEY" "86400" 2>/dev/null || echo "")
+    printf '%s' "$cached_value"
 }
 
 # Only run if executed directly (not sourced)

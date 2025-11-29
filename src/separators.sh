@@ -105,7 +105,7 @@ build_entry_separator() {
     if [[ "$transparent" == "true" ]]; then
         printf '%s' "#[fg=${prev_accent_color},bg=default]${right_separator_inverse}#[bg=default]"
     else
-        printf '%s' "#[fg=${bg_highlight},bg=${prev_accent_color}]${right_separator}#[bg=${bg_highlight}]"
+        printf '%s' "#[fg=${prev_accent_color},bg=${bg_highlight}]${right_separator}#[bg=${bg_highlight}]"
     fi
 }
 
@@ -116,7 +116,7 @@ build_entry_separator() {
 #   $2 - separator_icon_end - Pre-built or will be constructed
 #   $3 - white_color - Foreground color for icon
 #   $4 - accent_color_icon - Background color for icon
-#   $5 - plugin_icon - Icon character
+#   $5 - plugin_icon - Icon character (without trailing space)
 # Output:
 #   Formatted icon section string
 # -----------------------------------------------------------------------------
@@ -127,7 +127,7 @@ build_icon_section() {
     local accent_color_icon="$4"
     local plugin_icon="$5"
     
-    printf '%s' "${sep_icon_start}#[fg=${white_color},bg=${accent_color_icon}]${plugin_icon}${sep_icon_end}"
+    printf '%s' "${sep_icon_start}#[fg=${white_color},bg=${accent_color_icon}]${plugin_icon}${sep_icon_end}"
 }
 
 # -----------------------------------------------------------------------------
@@ -136,6 +136,7 @@ build_icon_section() {
 #   $1 - white_color - Foreground color
 #   $2 - accent_color - Background color
 #   $3 - content - Plugin content text
+#   $4 - is_last - "1" if last plugin (no trailing space), "0" otherwise
 # Output:
 #   Formatted content section string
 # -----------------------------------------------------------------------------
@@ -143,8 +144,13 @@ build_content_section() {
     local white_color="$1"
     local accent_color="$2"
     local content="$3"
+    local is_last="${4:-0}"
     
-    printf '%s' "#[fg=${white_color},bg=${accent_color}] ${content}#[none]"
+    if [[ "$is_last" == "1" ]]; then
+        printf '%s' "#[fg=${white_color},bg=${accent_color}] ${content}#[none]"
+    else
+        printf '%s' "#[fg=${white_color},bg=${accent_color}] ${content} #[none]"
+    fi
 }
 
 # -----------------------------------------------------------------------------
@@ -164,8 +170,8 @@ build_plugin_segment() {
     local is_last="${4:-0}"
     
     if [[ "$is_last" != "1" ]]; then
-        printf '%s' "${icon_output}${content_output} ${separator_end}"
+        printf '%s' "${icon_output}${content_output}${separator_end}"
     else
-        printf '%s' "${icon_output}${content_output} "
+        printf '%s' "${icon_output}${content_output}"
     fi
 }

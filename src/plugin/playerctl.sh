@@ -7,6 +7,8 @@
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# shellcheck source=src/defaults.sh
+. "$ROOT_DIR/../defaults.sh"
 # shellcheck source=src/utils.sh
 . "$ROOT_DIR/../utils.sh"
 # shellcheck source=src/cache.sh
@@ -17,18 +19,18 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # =============================================================================
 
 # shellcheck disable=SC2034
-plugin_playerctl_icon=$(get_tmux_option "@theme_plugin_playerctl_icon" "󰝚 ")
+plugin_playerctl_icon=$(get_tmux_option "@theme_plugin_playerctl_icon" "$PLUGIN_PLAYERCTL_ICON")
 # shellcheck disable=SC2034
-plugin_playerctl_accent_color=$(get_tmux_option "@theme_plugin_playerctl_accent_color" "blue7")
+plugin_playerctl_accent_color=$(get_tmux_option "@theme_plugin_playerctl_accent_color" "$PLUGIN_PLAYERCTL_ACCENT_COLOR")
 # shellcheck disable=SC2034
-plugin_playerctl_accent_color_icon=$(get_tmux_option "@theme_plugin_playerctl_accent_color_icon" "blue0")
+plugin_playerctl_accent_color_icon=$(get_tmux_option "@theme_plugin_playerctl_accent_color_icon" "$PLUGIN_PLAYERCTL_ACCENT_COLOR_ICON")
 
 # Plugin-specific options
-plugin_playerctl_format=$(get_tmux_option "@theme_plugin_playerctl_format" "{{artist}} - {{title}}")
-plugin_playerctl_ignore_players=$(get_tmux_option "@theme_plugin_playerctl_ignore_players" "IGNORE")
+plugin_playerctl_format=$(get_tmux_option "@theme_plugin_playerctl_format" "$PLUGIN_PLAYERCTL_FORMAT")
+plugin_playerctl_ignore_players=$(get_tmux_option "@theme_plugin_playerctl_ignore_players" "$PLUGIN_PLAYERCTL_IGNORE_PLAYERS")
 
 # Cache TTL in seconds (default: 5 seconds - media changes frequently)
-PLAYERCTL_CACHE_TTL=$(get_tmux_option "@theme_plugin_playerctl_cache_ttl" "5")
+PLAYERCTL_CACHE_TTL=$(get_tmux_option "@theme_plugin_playerctl_cache_ttl" "$PLUGIN_PLAYERCTL_CACHE_TTL")
 PLAYERCTL_CACHE_KEY="playerctl"
 
 export plugin_playerctl_icon plugin_playerctl_accent_color plugin_playerctl_accent_color_icon

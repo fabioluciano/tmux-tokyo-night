@@ -7,6 +7,8 @@
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# shellcheck source=src/defaults.sh
+. "$ROOT_DIR/../defaults.sh"
 # shellcheck source=src/utils.sh
 . "$ROOT_DIR/../utils.sh"
 
@@ -15,11 +17,11 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # =============================================================================
 
 # shellcheck disable=SC2034
-plugin_hostname_icon=$(get_tmux_option "@theme_plugin_hostname_icon" "󰒋 ")
+plugin_hostname_icon=$(get_tmux_option "@theme_plugin_hostname_icon" "$PLUGIN_HOSTNAME_ICON")
 # shellcheck disable=SC2034
-plugin_hostname_accent_color=$(get_tmux_option "@theme_plugin_hostname_accent_color" "blue7")
+plugin_hostname_accent_color=$(get_tmux_option "@theme_plugin_hostname_accent_color" "$PLUGIN_HOSTNAME_ACCENT_COLOR")
 # shellcheck disable=SC2034
-plugin_hostname_accent_color_icon=$(get_tmux_option "@theme_plugin_hostname_accent_color_icon" "blue0")
+plugin_hostname_accent_color_icon=$(get_tmux_option "@theme_plugin_hostname_accent_color_icon" "$PLUGIN_HOSTNAME_ACCENT_COLOR_ICON")
 
 export plugin_hostname_icon plugin_hostname_accent_color plugin_hostname_accent_color_icon
 
@@ -29,7 +31,7 @@ export plugin_hostname_icon plugin_hostname_accent_color plugin_hostname_accent_
 
 load_plugin() {
     local hostname_format
-    hostname_format=$(get_tmux_option "@theme_plugin_hostname_format" "short")
+    hostname_format=$(get_tmux_option "@theme_plugin_hostname_format" "$PLUGIN_HOSTNAME_FORMAT")
     
     case "$hostname_format" in
         full)

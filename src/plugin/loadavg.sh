@@ -7,6 +7,8 @@
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# shellcheck source=src/defaults.sh
+. "$ROOT_DIR/../defaults.sh"
 # shellcheck source=src/utils.sh
 . "$ROOT_DIR/../utils.sh"
 # shellcheck source=src/cache.sh
@@ -17,17 +19,17 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # =============================================================================
 
 # shellcheck disable=SC2034
-plugin_loadavg_icon=$(get_tmux_option "@theme_plugin_loadavg_icon" "󰊚 ")
+plugin_loadavg_icon=$(get_tmux_option "@theme_plugin_loadavg_icon" "$PLUGIN_LOADAVG_ICON")
 # shellcheck disable=SC2034
-plugin_loadavg_accent_color=$(get_tmux_option "@theme_plugin_loadavg_accent_color" "blue7")
+plugin_loadavg_accent_color=$(get_tmux_option "@theme_plugin_loadavg_accent_color" "$PLUGIN_LOADAVG_ACCENT_COLOR")
 # shellcheck disable=SC2034
-plugin_loadavg_accent_color_icon=$(get_tmux_option "@theme_plugin_loadavg_accent_color_icon" "blue0")
+plugin_loadavg_accent_color_icon=$(get_tmux_option "@theme_plugin_loadavg_accent_color_icon" "$PLUGIN_LOADAVG_ACCENT_COLOR_ICON")
 
 # Display format: "1" (1min), "5" (5min), "15" (15min), or "all" (1/5/15)
-plugin_loadavg_format=$(get_tmux_option "@theme_plugin_loadavg_format" "1")
+plugin_loadavg_format=$(get_tmux_option "@theme_plugin_loadavg_format" "$PLUGIN_LOADAVG_FORMAT")
 
 # Cache TTL in seconds (default: 5 seconds)
-CACHE_TTL=$(get_tmux_option "@theme_plugin_loadavg_cache_ttl" "5")
+CACHE_TTL=$(get_tmux_option "@theme_plugin_loadavg_cache_ttl" "$PLUGIN_LOADAVG_CACHE_TTL")
 CACHE_KEY="loadavg"
 
 export plugin_loadavg_icon plugin_loadavg_accent_color plugin_loadavg_accent_color_icon

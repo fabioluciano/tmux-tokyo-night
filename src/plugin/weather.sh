@@ -4,9 +4,33 @@
 # Description: Display weather information from wttr.in API
 # Dependencies: curl, jq (optional, for auto location detection)
 # =============================================================================
+#
+# Configuration options:
+#   @theme_plugin_weather_icon            - Plugin icon (default: 󰖐)
+#   @theme_plugin_weather_format          - Display format (default: "compact")
+#                                           Predefined formats:
+#                                             "compact"  - 25° ☀️
+#                                             "full"     - 25°C ☀️ H:73%
+#                                             "minimal"  - 25°
+#                                             "detailed" - São Paulo: 25°C ☀️
+#                                           Custom format using wttr.in placeholders:
+#                                             %t - temperature, %c - condition icon
+#                                             %h - humidity, %w - wind, %l - location
+#                                             %C - condition text, %p - precipitation
+#   @theme_plugin_weather_location        - Location (default: auto-detect by IP)
+#   @theme_plugin_weather_unit            - Unit: "m" (metric), "u" (USCS), "M" (metric m/s)
+#   @theme_plugin_weather_cache_ttl       - Cache TTL in seconds (default: 900)
+#
+# Examples:
+#   set -g @theme_plugin_weather_format "compact"
+#   set -g @theme_plugin_weather_format "full"
+#   set -g @theme_plugin_weather_format "%t %C"  # Custom: "25°C Sunny"
+# =============================================================================
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# shellcheck source=src/defaults.sh
+. "$ROOT_DIR/../defaults.sh"
 # shellcheck source=src/utils.sh
 . "$ROOT_DIR/../utils.sh"
 # shellcheck source=src/cache.sh
@@ -17,24 +41,59 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # =============================================================================
 
 # shellcheck disable=SC2034
-plugin_weather_icon=$(get_tmux_option "@theme_plugin_weather_icon" " ")
+plugin_weather_icon=$(get_tmux_option "@theme_plugin_weather_icon" "$PLUGIN_WEATHER_ICON")
 # shellcheck disable=SC2034
-plugin_weather_accent_color=$(get_tmux_option "@theme_plugin_weather_accent_color" "blue7")
+plugin_weather_accent_color=$(get_tmux_option "@theme_plugin_weather_accent_color" "$PLUGIN_WEATHER_ACCENT_COLOR")
 # shellcheck disable=SC2034
-plugin_weather_accent_color_icon=$(get_tmux_option "@theme_plugin_weather_accent_color_icon" "blue0")
+plugin_weather_accent_color_icon=$(get_tmux_option "@theme_plugin_weather_accent_color_icon" "$PLUGIN_WEATHER_ACCENT_COLOR_ICON")
 
 # Plugin-specific options
-plugin_weather_location=$(get_tmux_option "@theme_plugin_weather_location" "")
-plugin_weather_unit=$(get_tmux_option "@theme_plugin_weather_unit" "")
-plugin_weather_format=$(get_tmux_option "@theme_plugin_weather_format" "%t H:%h")
+plugin_weather_location=$(get_tmux_option "@theme_plugin_weather_location" "$PLUGIN_WEATHER_LOCATION")
+plugin_weather_unit=$(get_tmux_option "@theme_plugin_weather_unit" "$PLUGIN_WEATHER_UNIT")
+plugin_weather_format=$(get_tmux_option "@theme_plugin_weather_format" "$PLUGIN_WEATHER_FORMAT")
 
 # Cache TTL in seconds (default: 900 seconds = 15 minutes)
-WEATHER_CACHE_TTL=$(get_tmux_option "@theme_plugin_weather_cache_ttl" "900")
+WEATHER_CACHE_TTL=$(get_tmux_option "@theme_plugin_weather_cache_ttl" "$PLUGIN_WEATHER_CACHE_TTL")
 WEATHER_CACHE_KEY="weather"
 WEATHER_LOCATION_CACHE_KEY="weather_location"
 WEATHER_LOCATION_CACHE_TTL="3600"  # 1 hour for location
 
 export plugin_weather_icon plugin_weather_accent_color plugin_weather_accent_color_icon
+
+# =============================================================================
+# Predefined Format Templates
+# =============================================================================
+# These use wttr.in format placeholders
+# See: https://wttr.in/:help for all available placeholders
+# =============================================================================
+
+# Resolve format string from predefined name or use custom format
+resolve_format() {
+    local format="$1"
+    
+    case "$format" in
+        compact)
+            # Temperature + condition icon (e.g., "25° ☀️")
+            printf '%s' '%t %c'
+            ;;
+        full)
+            # Temperature + icon + humidity (e.g., "25°C ☀️ H:73%")
+            printf '%s' '%t %c H:%h'
+            ;;
+        minimal)
+            # Just temperature (e.g., "25°")
+            printf '%s' '%t'
+            ;;
+        detailed)
+            # Location + temperature + icon (e.g., "São Paulo: 25°C ☀️")
+            printf '%s' '%l: %t %c'
+            ;;
+        *)
+            # Custom format - use as-is
+            printf '%s' "$format"
+            ;;
+    esac
+}
 
 # =============================================================================
 # Helper Functions
@@ -91,6 +150,10 @@ weather_fetch() {
     local location="$1"
     local url
     
+    # Resolve format from predefined name or custom format
+    local resolved_format
+    resolved_format=$(resolve_format "$plugin_weather_format")
+    
     # Build URL - if no location, wttr.in uses IP-based location
     if [[ -n "$location" ]]; then
         # URL encode the location properly using simple sed replacement
@@ -104,16 +167,21 @@ weather_fetch() {
     # Add unit parameter if specified
     [[ -n "$plugin_weather_unit" ]] && url+="${plugin_weather_unit}&"
     
-    # URL encode the format string more thoroughly
+    # URL encode the format string
     local encoded_format
-    encoded_format=$(printf '%s' "$plugin_weather_format" | sed 's/%/%25/g; s/ /%20/g; s/:/%3A/g; s/+/%2B/g')
+    encoded_format=$(printf '%s' "$resolved_format" | sed 's/%/%25/g; s/ /%20/g; s/:/%3A/g; s/+/%2B/g')
     url+="format=${encoded_format}"
     
     local weather
     weather=$(curl -sL --connect-timeout 5 --max-time 10 "$url" 2>/dev/null)
     
+    # Clean up the response
+    # - Remove trailing % that wttr.in adds at the end
+    # - Trim whitespace
+    weather=$(printf '%s' "$weather" | sed 's/%$//; s/^[[:space:]]*//; s/[[:space:]]*$//')
+    
     # Validate response
-    if [[ -z "$weather" || "$weather" == *"Unknown"* || "$weather" == *"ERROR"* || ${#weather} -gt 50 ]]; then
+    if [[ -z "$weather" || "$weather" == *"Unknown"* || "$weather" == *"ERROR"* || ${#weather} -gt 100 ]]; then
         printf 'N/A'
         return 1
     fi

@@ -7,6 +7,8 @@
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# shellcheck source=src/defaults.sh
+. "$ROOT_DIR/../defaults.sh"
 # shellcheck source=src/utils.sh
 . "$ROOT_DIR/../utils.sh"
 # shellcheck source=src/cache.sh
@@ -17,17 +19,17 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # =============================================================================
 
 # shellcheck disable=SC2034
-plugin_spt_icon=$(get_tmux_option "@theme_plugin_spt_icon" "󰝚 ")
+plugin_spt_icon=$(get_tmux_option "@theme_plugin_spt_icon" "$PLUGIN_SPT_ICON")
 # shellcheck disable=SC2034
-plugin_spt_accent_color=$(get_tmux_option "@theme_plugin_spt_accent_color" "blue7")
+plugin_spt_accent_color=$(get_tmux_option "@theme_plugin_spt_accent_color" "$PLUGIN_SPT_ACCENT_COLOR")
 # shellcheck disable=SC2034
-plugin_spt_accent_color_icon=$(get_tmux_option "@theme_plugin_spt_accent_color_icon" "blue0")
+plugin_spt_accent_color_icon=$(get_tmux_option "@theme_plugin_spt_accent_color_icon" "$PLUGIN_SPT_ACCENT_COLOR_ICON")
 
 # Plugin-specific options
-plugin_spt_format=$(get_tmux_option "@theme_plugin_spt_format" "%a - %t")
+plugin_spt_format=$(get_tmux_option "@theme_plugin_spt_format" "$PLUGIN_SPT_FORMAT")
 
 # Cache TTL in seconds (default: 5 seconds - music changes frequently)
-SPT_CACHE_TTL=$(get_tmux_option "@theme_plugin_spt_cache_ttl" "5")
+SPT_CACHE_TTL=$(get_tmux_option "@theme_plugin_spt_cache_ttl" "$PLUGIN_SPT_CACHE_TTL")
 SPT_CACHE_KEY="spt"
 
 export plugin_spt_icon plugin_spt_accent_color plugin_spt_accent_color_icon

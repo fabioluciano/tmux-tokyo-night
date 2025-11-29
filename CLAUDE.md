@@ -30,8 +30,17 @@ Manual testing is required:
 
 ### Core Components
 
+**`src/defaults.sh`** - Centralized Default Values
+- Contains ALL default values for the theme in one place
+- Modify this file to change defaults across the entire theme
+- Uses source guard (`_DEFAULTS_LOADED`) to prevent multiple sourcing
+- Provides `get_plugin_default()` helper function
+- Variables follow naming convention: `PLUGIN_<NAME>_<OPTION>` (e.g., `PLUGIN_BATTERY_ICON`)
+- Theme core options: `THEME_DEFAULT_VARIATION`, `THEME_DEFAULT_PLUGINS`, etc.
+
 **`src/theme.sh`** (142 lines)
 - Main orchestration script that configures tmux appearance
+- Sources `defaults.sh` first for centralized default values
 - Loads the selected color palette from `src/palletes/`
 - Configures status bar, window styles, borders, and pane styles
 - Dynamically loads and executes plugins from `src/plugin/`
@@ -71,9 +80,12 @@ Located in `src/palletes/*.sh` (night.sh, storm.sh, moon.sh, day.sh)
 **Plugin Architecture:**
 1. Each plugin in `src/plugin/*.sh` exports variables: `plugin_<name>_icon`, `plugin_<name>_accent_color`, `plugin_<name>_accent_color_icon`
 2. `theme.sh` iterates through enabled plugins (from `@theme_plugins` option)
-3. For most plugins: Output is generated dynamically via `#($plugin_script_path)` in tmux status bar
-4. For datetime: Output is pre-rendered at theme load time
-5. For battery: Uses the standard plugin format with caching; does not accept arguments or use templates/placeholders.
+3. Plugins are rendered using wrapper scripts based on their features:
+   - **conditional_plugin.sh**: For plugins that may or may not produce output (git, docker, kubernetes, spotify, homebrew, yay)
+   - **threshold_plugin.sh**: For plugins with display_threshold or threshold_mode (battery, cpu, memory, disk, loadavg)
+   - **static_plugin.sh**: For static plugins followed by conditional plugins (network, weather, etc.)
+   - Direct rendering: For simple plugins or when no special handling is needed
+4. For datetime: Output is pre-rendered at theme load time using tmux's strftime
 
 **Available Plugins:**
 
@@ -139,14 +151,38 @@ All cacheable plugins support a TTL (Time To Live) option:
 
 ### Plugin Rendering Strategy
 - **Static plugins** (datetime): Executed once at theme load, output embedded in status string
-- **Dynamic plugins** (weather, playerctl, etc.): Executed by tmux on each status refresh via `#(command)` syntax
-- **Template plugins** (battery): Template created at load time, script fills in dynamic values including colors
+- **Dynamic plugins** (weather, network, etc.): Executed by tmux on each status refresh via wrapper scripts
+- **Conditional plugins** (git, docker, kubernetes, homebrew, yay, spotify): Only render when they have output
+- **Threshold plugins** (battery, cpu, memory, disk, loadavg): Support conditional display and dynamic colors based on values
+
+### Plugin Rendering Wrappers
+
+**`src/conditional_plugin.sh`**
+- Wraps plugins that may produce empty output (git, docker, kubernetes, etc.)
+- Only renders the segment if the plugin outputs content
+- Dynamically determines if it's the last visible plugin by checking subsequent plugins
+- Arguments: plugin_name, accent_color, accent_color_icon, plugin_icon, white_color, bg_highlight, transparent, prev_accent, plugins_after
+
+**`src/static_plugin.sh`**
+- Wraps static plugins (always produce output) that are followed by conditional plugins
+- Checks if any following conditional plugins have content to determine if it's the last visible
+- Uses `any_plugin_has_content()` to check subsequent plugins at runtime
+- Arguments: plugin_name, accent_color, accent_color_icon, plugin_icon, white_color, bg_highlight, transparent, plugins_after
+
+**`src/threshold_plugin.sh`**
+- Wraps plugins with display threshold or dynamic color support
+- Features:
+  1. Conditional display based on value threshold (display_threshold + display_condition)
+  2. Dynamic colors based on 3-level thresholds (threshold_mode: ascending/descending)
+  3. Simple low threshold with custom icon (low_threshold + icon_low + low_accent_color)
+- Supports serialized palette for color resolution
 
 ### Separator System
 - Left separator: Used for session/windows (flows left to right)
 - Right separator: Used for plugins (flows right to left)
 - Each plugin gets: icon separator → icon → content separator → content → end separator
-- Last plugin omits the end separator
+- Last plugin omits the end separator AND the trailing space
+- Separator characters (RIGHT_SEPARATOR, RIGHT_SEPARATOR_INVERSE) are stored in tmux options
 
 ## Adding New Plugins
 

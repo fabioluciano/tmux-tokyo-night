@@ -7,6 +7,8 @@
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# shellcheck source=src/defaults.sh
+. "$ROOT_DIR/../defaults.sh"
 # shellcheck source=src/utils.sh
 . "$ROOT_DIR/../utils.sh"
 # shellcheck source=src/cache.sh
@@ -17,14 +19,14 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # =============================================================================
 
 # shellcheck disable=SC2034
-plugin_git_icon=$(get_tmux_option "@theme_plugin_git_icon" " ")
+plugin_git_icon=$(get_tmux_option "@theme_plugin_git_icon" "$PLUGIN_GIT_ICON")
 # shellcheck disable=SC2034
-plugin_git_accent_color=$(get_tmux_option "@theme_plugin_git_accent_color" "blue7")
+plugin_git_accent_color=$(get_tmux_option "@theme_plugin_git_accent_color" "$PLUGIN_GIT_ACCENT_COLOR")
 # shellcheck disable=SC2034
-plugin_git_accent_color_icon=$(get_tmux_option "@theme_plugin_git_accent_color_icon" "blue0")
+plugin_git_accent_color_icon=$(get_tmux_option "@theme_plugin_git_accent_color_icon" "$PLUGIN_GIT_ACCENT_COLOR_ICON")
 
 # Cache TTL in seconds (default: 5 seconds - short TTL for git status responsiveness)
-CACHE_TTL=$(get_tmux_option "@theme_plugin_git_cache_ttl" "5")
+CACHE_TTL=$(get_tmux_option "@theme_plugin_git_cache_ttl" "$PLUGIN_GIT_CACHE_TTL")
 
 export plugin_git_icon plugin_git_accent_color plugin_git_accent_color_icon
 

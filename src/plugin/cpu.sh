@@ -7,6 +7,8 @@
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# shellcheck source=src/defaults.sh
+. "$ROOT_DIR/../defaults.sh"
 # shellcheck source=src/utils.sh
 . "$ROOT_DIR/../utils.sh"
 # shellcheck source=src/cache.sh
@@ -17,14 +19,14 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # =============================================================================
 
 # shellcheck disable=SC2034
-plugin_cpu_icon=$(get_tmux_option "@theme_plugin_cpu_icon" " ")
+plugin_cpu_icon=$(get_tmux_option "@theme_plugin_cpu_icon" "$PLUGIN_CPU_ICON")
 # shellcheck disable=SC2034
-plugin_cpu_accent_color=$(get_tmux_option "@theme_plugin_cpu_accent_color" "blue7")
+plugin_cpu_accent_color=$(get_tmux_option "@theme_plugin_cpu_accent_color" "$PLUGIN_CPU_ACCENT_COLOR")
 # shellcheck disable=SC2034
-plugin_cpu_accent_color_icon=$(get_tmux_option "@theme_plugin_cpu_accent_color_icon" "blue0")
+plugin_cpu_accent_color_icon=$(get_tmux_option "@theme_plugin_cpu_accent_color_icon" "$PLUGIN_CPU_ACCENT_COLOR_ICON")
 
 # Cache TTL in seconds (default: 2 seconds)
-CACHE_TTL=$(get_tmux_option "@theme_plugin_cpu_cache_ttl" "2")
+CACHE_TTL=$(get_tmux_option "@theme_plugin_cpu_cache_ttl" "$PLUGIN_CPU_CACHE_TTL")
 CACHE_KEY="cpu"
 
 export plugin_cpu_icon plugin_cpu_accent_color plugin_cpu_accent_color_icon

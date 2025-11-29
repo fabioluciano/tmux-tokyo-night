@@ -12,6 +12,8 @@ CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # =============================================================================
 # Source Dependencies
 # =============================================================================
+# shellcheck source=src/defaults.sh
+. "$CURRENT_DIR/defaults.sh"
 # shellcheck source=src/utils.sh
 . "$CURRENT_DIR/utils.sh"
 # shellcheck source=src/separators.sh
@@ -20,9 +22,9 @@ CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # =============================================================================
 # Theme Configuration Options
 # =============================================================================
-theme_variation=$(get_tmux_option "@theme_variation" "night")
-theme_disable_plugins=$(get_tmux_option "@theme_disable_plugins" 0)
-theme_bar_layout=$(get_tmux_option "@theme_bar_layout" "single")
+theme_variation=$(get_tmux_option "@theme_variation" "$THEME_DEFAULT_VARIATION")
+theme_disable_plugins=$(get_tmux_option "@theme_disable_plugins" "$THEME_DEFAULT_DISABLE_PLUGINS")
+theme_bar_layout=$(get_tmux_option "@theme_bar_layout" "$THEME_DEFAULT_BAR_LAYOUT")
 
 # shellcheck source=src/palletes/night.sh
 . "$CURRENT_DIR/palletes/$theme_variation.sh"
@@ -30,20 +32,24 @@ theme_bar_layout=$(get_tmux_option "@theme_bar_layout" "single")
 ### Load Options
 border_style_active_pane=$(get_tmux_option "@theme_active_pane_border_style" "${PALLETE['dark5']}")
 border_style_inactive_pane=$(get_tmux_option "@theme_inactive_pane_border_style" "${PALLETE[bg_highlight]}")
-right_separator=$(get_tmux_option "@theme_right_separator" "")
-transparent=$(get_tmux_option "@theme_transparent_status_bar" "false")
+right_separator=$(get_tmux_option "@theme_right_separator" "$THEME_DEFAULT_RIGHT_SEPARATOR")
+transparent=$(get_tmux_option "@theme_transparent_status_bar" "$THEME_DEFAULT_TRANSPARENT")
 
 if [ "$transparent" = "true" ]; then
-	right_separator_inverse=$(get_tmux_option "@theme_transparent_right_separator_inverse" "")
+	right_separator_inverse=$(get_tmux_option "@theme_transparent_right_separator_inverse" "$THEME_DEFAULT_RIGHT_SEPARATOR_INVERSE")
 fi
 
-window_with_activity_style=$(get_tmux_option "@theme_window_with_activity_style" "italics")
-window_status_bell_style=$(get_tmux_option "@theme_status_bell_style" "bold")
+window_with_activity_style=$(get_tmux_option "@theme_window_with_activity_style" "$THEME_DEFAULT_WINDOW_WITH_ACTIVITY_STYLE")
+window_status_bell_style=$(get_tmux_option "@theme_status_bell_style" "$THEME_DEFAULT_STATUS_BELL_STYLE")
 
-IFS=',' read -r -a plugins <<<"$(get_tmux_option "@theme_plugins" "datetime,weather")"
+IFS=',' read -r -a plugins <<<"$(get_tmux_option "@theme_plugins" "$THEME_DEFAULT_PLUGINS")"
 
-tmux set-option -g status-left-length 100
-tmux set-option -g status-right-length 100
+# Status bar length limits (configurable)
+status_left_length=$(get_tmux_option "@theme_status_left_length" "$THEME_DEFAULT_STATUS_LEFT_LENGTH")
+status_right_length=$(get_tmux_option "@theme_status_right_length" "$THEME_DEFAULT_STATUS_RIGHT_LENGTH")
+
+tmux set-option -g status-left-length "$status_left_length"
+tmux set-option -g status-right-length "$status_right_length"
 
 tmux set-window-option -g window-status-activity-style "$window_with_activity_style"
 tmux set-window-option -g window-status-bell-style "${window_status_bell_style}"
@@ -98,7 +104,7 @@ serialize_palette() {
 }
 
 # List of conditional plugins that may not render (only show when they have content)
-readonly CONDITIONAL_PLUGINS="git docker homebrew yay spotify"
+readonly CONDITIONAL_PLUGINS="git docker homebrew yay spotify kubernetes"
 
 # Check if a plugin is conditional (may not render)
 is_conditional_plugin() {
@@ -176,30 +182,47 @@ if [ "$theme_disable_plugins" -ne 1 ]; then
 		accent_color_icon="${PALLETE[$accent_color_icon]}"
 
 		# -----------------------------------------------------------------
-		# Build Separators (using functions from separators.sh)
-		# -----------------------------------------------------------------
-		separator_icon_start=$(build_separator_icon_start "$accent_color_icon" "${PALLETE[bg_highlight]}" "$right_separator" "$transparent")
-		separator_icon_end=$(build_separator_icon_end "$accent_color" "$accent_color_icon" "$right_separator")
-		separator_end=$(build_separator_end "$accent_color" "${PALLETE[bg_highlight]}" "$right_separator" "$transparent" "${right_separator_inverse:-}")
-
-		# -----------------------------------------------------------------
 		# Render Plugin Based on Type
 		# -----------------------------------------------------------------
 		
 		# CONDITIONAL PLUGINS: Only render when they have content
 		if is_conditional_plugin "$plugin"; then
-			conditional_is_last=$([ "$plugin" == "$last_plugin" ] && echo 1 || echo 0)
 			prev_accent_to_pass=$([ "$prev_was_last" == "1" ] && echo "$prev_plugin_accent_color" || echo "")
 			
-			plugin_output_string="#(${CURRENT_DIR}/conditional_plugin.sh \"${plugin}\" \"${separator_icon_start}\" \"${separator_icon_end}\" \"${separator_end}\" \"${accent_color}\" \"${accent_color_icon}\" \"${plugin_icon}\" \"${conditional_is_last}\" \"${PALLETE[white]}\" \"${PALLETE[bg_highlight]}\" \"${right_separator}\" \"${transparent}\" \"${right_separator_inverse:-}\" \"${prev_accent_to_pass}\")"
+			# Build list of plugins that come after this one (for dynamic last detection)
+			plugins_after=""
+			for ((i=plugin_index+1; i<${#plugins[@]}; i++)); do
+				[[ -n "$plugins_after" ]] && plugins_after+=","
+				plugins_after+="${plugins[$i]}"
+			done
+			
+			plugin_output_string="#(${CURRENT_DIR}/conditional_plugin.sh \"${plugin}\" \"${accent_color}\" \"${accent_color_icon}\" \"${plugin_icon}\" \"${PALLETE[white]}\" \"${PALLETE[bg_highlight]}\" \"${transparent}\" \"${prev_accent_to_pass}\" \"${plugins_after}\")"
 			tmux set-option -ga status-right "$plugin_output_string"
 			
 			prev_plugin_accent_color="$accent_color"
-			prev_was_last="$conditional_is_last"
+			prev_was_last=$([ "$plugin" == "$last_plugin" ] && echo 1 || echo 0)
 		
 		# THRESHOLD PLUGINS: Dynamic colors based on value
 		elif [ -n "$(get_tmux_option "@theme_plugin_${plugin}_threshold_mode" "")" ] || \
-		     [ "$(get_tmux_option "@theme_plugin_${plugin}_display_condition" "always")" != "always" ]; then
+		     [ "$(get_tmux_option "@theme_plugin_${plugin}_display_condition" "always")" != "always" ] || \
+		     [ -n "$(get_tmux_option "@theme_plugin_${plugin}_low_threshold" "")" ]; then
+			
+			# Set plugin-specific defaults for battery
+			if [ "$plugin" == "battery" ]; then
+				[ -z "$(get_tmux_option "@theme_plugin_battery_low_threshold" "")" ] && \
+					tmux set-option -gq "@theme_plugin_battery_low_threshold" "$PLUGIN_BATTERY_LOW_THRESHOLD"
+				[ -z "$(get_tmux_option "@theme_plugin_battery_icon_low" "")" ] && \
+					tmux set-option -gq "@theme_plugin_battery_icon_low" "$PLUGIN_BATTERY_ICON_LOW"
+				[ -z "$(get_tmux_option "@theme_plugin_battery_low_accent_color" "")" ] && \
+					tmux set-option -gq "@theme_plugin_battery_low_accent_color" "$PLUGIN_BATTERY_LOW_ACCENT_COLOR"
+				[ -z "$(get_tmux_option "@theme_plugin_battery_low_accent_color_icon" "")" ] && \
+					tmux set-option -gq "@theme_plugin_battery_low_accent_color_icon" "$PLUGIN_BATTERY_LOW_ACCENT_COLOR_ICON"
+			fi
+			
+			# Build separators for threshold plugins
+			separator_icon_start=$(build_separator_icon_start "$accent_color_icon" "${PALLETE[bg_highlight]}" "$right_separator" "$transparent")
+			separator_icon_end=$(build_separator_icon_end "$accent_color" "$accent_color_icon" "$right_separator")
+			separator_end=$(build_separator_end "$accent_color" "${PALLETE[bg_highlight]}" "$right_separator" "$transparent" "${right_separator_inverse:-}")
 			
 			plugin_output_string="#(${CURRENT_DIR}/threshold_plugin.sh \"${plugin}\" \"${separator_icon_start}\" \"${separator_icon_end}\" \"${separator_end}\" \"${accent_color}\" \"${accent_color_icon}\" \"${plugin_icon}\" \"${is_last_plugin}\" \"${PALLETE[white]}\" \"${PALLETE[bg_highlight]}\" \"${right_separator}\" \"${transparent}\" \"${right_separator_inverse:-}\" \"${PALETTE_SERIALIZED}\")"
 			tmux set-option -ga status-right "$plugin_output_string"
@@ -209,20 +232,55 @@ if [ "$theme_disable_plugins" -ne 1 ]; then
 		
 		# STATIC PLUGINS: Standard rendering
 		else
-			# datetime uses tmux strftime, others execute dynamically
-			if [ "$plugin" == "datetime" ]; then
-				content_output="$(build_content_section "${PALLETE[white]}" "$accent_color" "${plugin_execution_string# }")"
-			else
-				content_output="#[fg=${PALLETE[white]},bg=${accent_color}]#($plugin_script_path)#[none]"
+			# Build list of plugins that come after this one
+			plugins_after=""
+			for ((i=plugin_index+1; i<${#plugins[@]}; i++)); do
+				[[ -n "$plugins_after" ]] && plugins_after+=","
+				plugins_after+="${plugins[$i]}"
+			done
+			
+			# Check if we need dynamic last detection (only conditional plugins follow)
+			needs_dynamic_check=0
+			if [ "$is_last_plugin" == "1" ] && [ -n "$plugins_after" ]; then
+				# We're marked as "last" but there are plugins after us
+				# This means only conditional plugins follow - use dynamic check
+				needs_dynamic_check=1
 			fi
 			
-			icon_output="$(build_icon_section "$separator_icon_start" "$separator_icon_end" "${PALLETE[white]}" "$accent_color_icon" "$plugin_icon")"
-			plugin_output_string="$(build_plugin_segment "$icon_output" "$content_output" "$separator_end" "$is_last_plugin")"
-			
-			tmux set-option -ga status-right "$plugin_output_string"
-			
-			prev_plugin_accent_color="$accent_color"
-			prev_was_last="$is_last_plugin"
+			if [ "$needs_dynamic_check" == "1" ]; then
+				# Use static_plugin.sh for dynamic last detection
+				plugin_output_string="#(${CURRENT_DIR}/static_plugin.sh \"${plugin}\" \"${accent_color}\" \"${accent_color_icon}\" \"${plugin_icon}\" \"${PALLETE[white]}\" \"${PALLETE[bg_highlight]}\" \"${transparent}\" \"${plugins_after}\")"
+				tmux set-option -ga status-right "$plugin_output_string"
+				
+				# static_plugin.sh dynamically adds separator_end when needed,
+				# so next plugin should NOT add entry_separator
+				prev_plugin_accent_color="$accent_color"
+				prev_was_last="0"
+			else
+				# Build separators for static plugins
+				separator_icon_start=$(build_separator_icon_start "$accent_color_icon" "${PALLETE[bg_highlight]}" "$right_separator" "$transparent")
+				separator_icon_end=$(build_separator_icon_end "$accent_color" "$accent_color_icon" "$right_separator")
+				separator_end=$(build_separator_end "$accent_color" "${PALLETE[bg_highlight]}" "$right_separator" "$transparent" "${right_separator_inverse:-}")
+				
+				# datetime uses tmux strftime, others execute dynamically
+				if [ "$plugin" == "datetime" ]; then
+					content_output="$(build_content_section "${PALLETE[white]}" "$accent_color" "${plugin_execution_string# }" "$is_last_plugin")"
+				else
+					if [ "$is_last_plugin" == "1" ]; then
+						content_output="#[fg=${PALLETE[white]},bg=${accent_color}] #($plugin_script_path)#[none]"
+					else
+						content_output="#[fg=${PALLETE[white]},bg=${accent_color}] #($plugin_script_path) #[none]"
+					fi
+				fi
+				
+				icon_output="$(build_icon_section "$separator_icon_start" "$separator_icon_end" "${PALLETE[white]}" "$accent_color_icon" "$plugin_icon")"
+				plugin_output_string="$(build_plugin_segment "$icon_output" "$content_output" "$separator_end" "$is_last_plugin")"
+				
+				tmux set-option -ga status-right "$plugin_output_string"
+				
+				prev_plugin_accent_color="$accent_color"
+				prev_was_last="$is_last_plugin"
+			fi
 		fi
 		
 		plugin_index=$((plugin_index + 1))

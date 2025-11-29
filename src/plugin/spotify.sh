@@ -4,16 +4,21 @@
 # Description: Display currently playing Spotify track (cross-platform)
 # 
 # Supported backends (in order of preference):
-#   - shpotify (macOS): https://github.com/hnarayanan/shpotify
+#   - osascript (macOS): Single AppleScript call (FAST!)
 #   - playerctl (Linux): MPRIS-compatible media player control
+#   - shpotify (macOS): https://github.com/hnarayanan/shpotify
 #   - spt (cross-platform): https://github.com/Rigellute/spotify-tui
-#   - osascript (macOS fallback): Direct AppleScript to Spotify.app
+#
+# PERFORMANCE: Optimized to use single command per backend.
+# osascript now fetches all data in one call instead of 4 separate calls.
 #
 # Dependencies: At least one of the above backends
 # =============================================================================
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# shellcheck source=src/defaults.sh
+. "$ROOT_DIR/../defaults.sh"
 # shellcheck source=src/utils.sh
 . "$ROOT_DIR/../utils.sh"
 # shellcheck source=src/cache.sh
@@ -24,26 +29,26 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # =============================================================================
 
 # shellcheck disable=SC2034
-plugin_spotify_icon=$(get_tmux_option "@theme_plugin_spotify_icon" "󰝚 ")
+plugin_spotify_icon=$(get_tmux_option "@theme_plugin_spotify_icon" "$PLUGIN_SPOTIFY_ICON")
 # shellcheck disable=SC2034
-plugin_spotify_accent_color=$(get_tmux_option "@theme_plugin_spotify_accent_color" "blue7")
+plugin_spotify_accent_color=$(get_tmux_option "@theme_plugin_spotify_accent_color" "$PLUGIN_SPOTIFY_ACCENT_COLOR")
 # shellcheck disable=SC2034
-plugin_spotify_accent_color_icon=$(get_tmux_option "@theme_plugin_spotify_accent_color_icon" "blue0")
+plugin_spotify_accent_color_icon=$(get_tmux_option "@theme_plugin_spotify_accent_color_icon" "$PLUGIN_SPOTIFY_ACCENT_COLOR_ICON")
 
 # Format: %artist%, %track%, %album%
-plugin_spotify_format=$(get_tmux_option "@theme_plugin_spotify_format" "%artist% - %track%")
+plugin_spotify_format=$(get_tmux_option "@theme_plugin_spotify_format" "$PLUGIN_SPOTIFY_FORMAT")
 
 # Maximum length for output (0 = no limit)
-plugin_spotify_max_length=$(get_tmux_option "@theme_plugin_spotify_max_length" "40")
+plugin_spotify_max_length=$(get_tmux_option "@theme_plugin_spotify_max_length" "$PLUGIN_SPOTIFY_MAX_LENGTH")
 
 # What to show when not playing
-plugin_spotify_not_playing=$(get_tmux_option "@theme_plugin_spotify_not_playing" "")
+plugin_spotify_not_playing=$(get_tmux_option "@theme_plugin_spotify_not_playing" "$PLUGIN_SPOTIFY_NOT_PLAYING")
 
 # Preferred backend: auto, shpotify, playerctl, spt, osascript
-plugin_spotify_backend=$(get_tmux_option "@theme_plugin_spotify_backend" "auto")
+plugin_spotify_backend=$(get_tmux_option "@theme_plugin_spotify_backend" "$PLUGIN_SPOTIFY_BACKEND")
 
 # Cache TTL in seconds (default: 5 seconds - music changes frequently)
-SPOTIFY_CACHE_TTL=$(get_tmux_option "@theme_plugin_spotify_cache_ttl" "5")
+SPOTIFY_CACHE_TTL=$(get_tmux_option "@theme_plugin_spotify_cache_ttl" "$PLUGIN_SPOTIFY_CACHE_TTL")
 SPOTIFY_CACHE_KEY="spotify"
 
 export plugin_spotify_icon plugin_spotify_accent_color plugin_spotify_accent_color_icon
@@ -72,11 +77,11 @@ detect_backend() {
             command_exists "osascript" && echo "osascript" && return
             ;;
         auto|*)
-            # Auto-detect in order of preference
+            # Auto-detect in order of preference (osascript first for macOS - fastest!)
             if is_macos; then
-                # macOS: prefer shpotify > osascript > spt
-                command_exists "spotify" && echo "shpotify" && return
+                # macOS: prefer osascript (single call) > shpotify > spt
                 command_exists "osascript" && echo "osascript" && return
+                command_exists "spotify" && echo "shpotify" && return
                 command_exists "spt" && echo "spt" && return
             else
                 # Linux: prefer playerctl > spt
@@ -94,7 +99,66 @@ detect_backend() {
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# shpotify backend (macOS)
+# osascript backend (macOS - OPTIMIZED: single AppleScript call)
+# Fetches state, artist, track, album in ONE call
+# -----------------------------------------------------------------------------
+get_spotify_osascript() {
+    local result
+    
+    # Single AppleScript call that returns all data at once
+    # Format: "state|artist|track|album"
+    result=$(osascript -e '
+        if application "Spotify" is running then
+            tell application "Spotify"
+                if player state is playing then
+                    set trackArtist to artist of current track
+                    set trackName to name of current track
+                    set trackAlbum to album of current track
+                    return "playing|" & trackArtist & "|" & trackName & "|" & trackAlbum
+                else
+                    return "paused"
+                end if
+            end tell
+        else
+            return "closed"
+        end if
+    ' 2>/dev/null)
+    
+    # Check state
+    [[ "$result" != playing* ]] && return 1
+    
+    # Parse result (format: "playing|artist|track|album")
+    local artist track album
+    IFS='|' read -r _ artist track album <<< "$result"
+    
+    [[ -z "$track" ]] && return 1
+    
+    format_output "$artist" "$track" "$album"
+}
+
+# -----------------------------------------------------------------------------
+# playerctl backend (Linux - MPRIS) - OPTIMIZED: single call
+# Uses: playerctl metadata --format
+# -----------------------------------------------------------------------------
+get_spotify_playerctl() {
+    local result
+    
+    # Single call with format string to get all data
+    result=$(playerctl -p spotify metadata --format '{{status}}|{{artist}}|{{title}}|{{album}}' 2>/dev/null)
+    
+    [[ "$result" != Playing* ]] && return 1
+    
+    # Parse result
+    local artist track album
+    IFS='|' read -r _ artist track album <<< "$result"
+    
+    [[ -z "$track" ]] && return 1
+    
+    format_output "$artist" "$track" "$album"
+}
+
+# -----------------------------------------------------------------------------
+# shpotify backend (macOS) - Multiple calls but cached
 # Uses: spotify status track/artist/album
 # -----------------------------------------------------------------------------
 get_spotify_shpotify() {
@@ -109,26 +173,6 @@ get_spotify_shpotify() {
     artist=$(spotify status artist 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g; s/^Artist: //')
     track=$(spotify status track 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g; s/^Track: //')
     album=$(spotify status album 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g; s/^Album: //')
-    
-    [[ -z "$track" ]] && return 1
-    
-    format_output "$artist" "$track" "$album"
-}
-
-# -----------------------------------------------------------------------------
-# playerctl backend (Linux - MPRIS)
-# Uses: playerctl metadata
-# -----------------------------------------------------------------------------
-get_spotify_playerctl() {
-    local status artist track album
-    
-    # Check if Spotify is playing via playerctl
-    status=$(playerctl -p spotify status 2>/dev/null)
-    [[ "$status" != "Playing" ]] && return 1
-    
-    artist=$(playerctl -p spotify metadata artist 2>/dev/null)
-    track=$(playerctl -p spotify metadata title 2>/dev/null)
-    album=$(playerctl -p spotify metadata album 2>/dev/null)
     
     [[ -z "$track" ]] && return 1
     
@@ -154,31 +198,6 @@ get_spotify_spt() {
     [[ -z "$output" ]] && return 1
     
     printf '%s' "$output"
-}
-
-# -----------------------------------------------------------------------------
-# osascript backend (macOS - direct AppleScript)
-# Fallback for macOS without shpotify installed
-# -----------------------------------------------------------------------------
-get_spotify_osascript() {
-    local state artist track album
-    
-    # Check if Spotify is running
-    if ! osascript -e 'application "Spotify" is running' 2>/dev/null | grep -q "true"; then
-        return 1
-    fi
-    
-    # Check player state
-    state=$(osascript -e 'tell application "Spotify" to player state as string' 2>/dev/null)
-    [[ "$state" != "playing" ]] && return 1
-    
-    artist=$(osascript -e 'tell application "Spotify" to artist of current track as string' 2>/dev/null)
-    track=$(osascript -e 'tell application "Spotify" to name of current track as string' 2>/dev/null)
-    album=$(osascript -e 'tell application "Spotify" to album of current track as string' 2>/dev/null)
-    
-    [[ -z "$track" ]] && return 1
-    
-    format_output "$artist" "$track" "$album"
 }
 
 # =============================================================================
