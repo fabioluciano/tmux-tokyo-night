@@ -14,6 +14,10 @@
 #   2. Use variables like: $(get_tmux_option "@theme_plugin_X_icon" "$PLUGIN_X_ICON")
 # =============================================================================
 
+# shellcheck disable=SC2034
+# All variables in this file are intentionally exported for use by other scripts
+# that source this file. ShellCheck cannot track cross-file variable usage.
+
 # Prevent multiple sourcing
 [[ -n "${_DEFAULTS_LOADED:-}" ]] && return 0
 _DEFAULTS_LOADED=1
