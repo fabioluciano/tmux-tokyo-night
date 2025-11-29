@@ -19,15 +19,16 @@
 ## ✨ Features
 
 - 🎨 **Multiple color variations**: Night, Storm, Moon, and Day
-- 🔌 **17 built-in plugins** for system monitoring and information display
+- 🔌 **18 built-in plugins** for system monitoring and information display
 - 🪟 **Transparency support** with customizable separators
 - 📊 **Double bar layout** option for separating windows and plugins
 - ⚡ **Smart caching system** for improved performance (configurable TTL per plugin)
 - 🚀 **Optimized performance** with cached OS detection and source guards
 - 🔧 **Highly customizable** with per-plugin configuration options
-- 🎯 **Conditional plugins** (git, docker) that only appear when relevant
+- 🎯 **Conditional plugins** (git, docker, homebrew, yay, spotify) that only appear when relevant
 - 🌈 **Dynamic threshold colors** - plugins change colors based on values (e.g., battery turns red when low)
 - 👁️ **Conditional display** - show plugins only when values meet threshold conditions
+- 🎵 **Cross-platform Spotify** - unified plugin supporting macOS (shpotify, osascript), Linux (playerctl), and spt
 
 ## 📸 Screenshots
 
@@ -300,9 +301,46 @@ Displays current weather information. Requires `curl`. Note: `jq` is optional an
 
 ### Media & Applications
 
-#### Playerctl
+#### Spotify (Recommended)
 
-Displays currently playing media. **Linux only** (uses MPRIS).
+Unified cross-platform Spotify plugin. **Only shows when music is playing.**
+
+Supports multiple backends (auto-detected in order of preference):
+- **macOS**: shpotify → osascript (AppleScript)
+- **Linux**: playerctl (MPRIS)
+- **Cross-platform**: spt (Spotify TUI)
+
+| Option | Description | Default |
+|--------|-------------|---------|  
+| `@theme_plugin_spotify_icon` | Plugin icon | ` ` |
+| `@theme_plugin_spotify_accent_color` | Background color | `green` |
+| `@theme_plugin_spotify_accent_color_icon` | Icon background color | `green1` |
+| `@theme_plugin_spotify_format` | Format string (`%artist%`, `%track%`, `%album%`) | `%artist% - %track%` |
+| `@theme_plugin_spotify_max_length` | Maximum output length (0 = no limit) | `40` |
+| `@theme_plugin_spotify_not_playing` | Text when not playing (empty = hide) | `""` |
+| `@theme_plugin_spotify_backend` | Force backend: `auto`, `shpotify`, `playerctl`, `spt`, `osascript` | `auto` |
+| `@theme_plugin_spotify_cache_ttl` | Cache TTL in seconds | `5` |
+
+**Installation (macOS with shpotify):**
+```bash
+brew install shpotify
+# Configure API credentials in ~/.shpotify.cfg
+```
+
+**Installation (Linux with playerctl):**
+```bash
+# Debian/Ubuntu
+sudo apt install playerctl
+
+# Arch
+sudo pacman -S playerctl
+```
+
+#### Playerctl (Legacy)
+
+Displays currently playing media via MPRIS. **Linux only.**
+
+> **Note:** Consider using the unified `spotify` plugin instead, which provides cross-platform support.
 
 | Option | Description | Default |
 |--------|-------------|---------|
@@ -312,9 +350,11 @@ Displays currently playing media. **Linux only** (uses MPRIS).
 | `@theme_plugin_playerctl_format` | Playerctl format | `{{artist}} - {{title}}` |
 | `@theme_plugin_playerctl_ignore_players` | Players to ignore | `""` |
 
-#### Spotify (spt)
+#### Spotify (spt) - Legacy
 
 Displays Spotify playback via `spt` CLI.
+
+> **Note:** Consider using the unified `spotify` plugin instead, which auto-detects the best available backend.
 
 | Option | Description | Default |
 |--------|-------------|---------|
@@ -327,7 +367,7 @@ Displays Spotify playback via `spt` CLI.
 
 #### Homebrew
 
-Displays number of outdated Homebrew packages. **macOS only.**
+Displays number of outdated Homebrew packages. **Only shows when updates are available.** Works on macOS and Linux.
 
 | Option | Description | Default |
 |--------|-------------|---------|
@@ -337,7 +377,7 @@ Displays number of outdated Homebrew packages. **macOS only.**
 
 #### Yay (AUR)
 
-Displays number of outdated AUR packages. **Arch Linux only.**
+Displays number of outdated AUR packages. **Only shows when updates are available.** Arch Linux only.
 
 | Option | Description | Default |
 |--------|-------------|---------|
@@ -468,15 +508,20 @@ set -g @plugin 'fabioluciano/tmux-tokyo-night'
 
 # Tokyo Night Theme Configuration
 set -g @theme_variation 'night'
-set -g @theme_plugins 'datetime,cpu,loadavg,memory,disk,network,git,docker,kubernetes'
+set -g @theme_plugins 'datetime,cpu,memory,disk,network,battery,spotify,git,docker'
 
 # Plugin customization
 set -g @theme_plugin_datetime_format '%H:%M'
 set -g @theme_plugin_memory_format 'usage'
 set -g @theme_plugin_disk_format 'usage'
 set -g @theme_plugin_disk_mount '/'
-set -g @theme_plugin_loadavg_format '1'
-set -g @theme_plugin_kubernetes_show_namespace 'true'
+set -g @theme_plugin_spotify_format '%artist% - %track%'
+set -g @theme_plugin_spotify_max_length '30'
+
+# Battery with dynamic colors
+set -g @theme_plugin_battery_threshold_mode 'descending'
+set -g @theme_plugin_battery_critical_threshold '10'
+set -g @theme_plugin_battery_warning_threshold '30'
 
 # Initialize TPM (keep this at the bottom)
 run '~/.tmux/plugins/tpm/tpm'
@@ -517,13 +562,19 @@ Contributions are welcome! Feel free to:
 
 1. **Plugin Architecture Refactored**: All plugins now follow a standardized architecture with consistent variable naming and caching support.
 
-2. **Caching System**: Plugins now use a file-based caching system located at `~/.cache/tmux-tokyo-night/`. Each plugin has its own cache file with configurable TTL.
+2. **Modular Separator System**: Separator building logic has been extracted to `src/separators.sh` for better maintainability and consistency across all plugin types.
 
-3. **Conditional Plugins**: Git and Docker plugins are now conditional - they only appear when you're in a git repository or when Docker has containers.
+3. **Caching System**: Plugins now use a file-based caching system located at `~/.cache/tmux-tokyo-night/`. Each plugin has its own cache file with configurable TTL.
 
-4. **Weather Plugin**: Now uses wttr.in's IP-based auto-detection by default. The `jq` dependency is no longer required for basic functionality.
+4. **Conditional Plugins**: Git, Docker, Homebrew, Yay, and Spotify plugins are now conditional - they only appear when relevant (e.g., in a git repo, when Docker has containers, when package updates are available, when music is playing).
 
-5. **Battery Plugin**: Simplified architecture - no longer uses dynamic color changing via templates. Uses standard plugin format.
+5. **Weather Plugin**: Now uses wttr.in's IP-based auto-detection by default. The `jq` dependency is no longer required for basic functionality.
+
+6. **Battery Plugin**: Simplified architecture with support for dynamic threshold colors and charging/discharging icons.
+
+7. **Spotify Plugin**: New unified cross-platform plugin that auto-detects the best available backend (shpotify, playerctl, spt, or osascript). The `spt` and `playerctl` plugins are now considered legacy.
+
+8. **Cross-Platform Compatibility**: All plugins now properly detect and handle macOS vs Linux differences.
 
 ### Cache Management
 
@@ -552,6 +603,7 @@ All plugins support configurable cache TTL (Time To Live) via tmux options:
 | Docker | `@theme_plugin_docker_cache_ttl` | `10` | 10 seconds |
 | Kubernetes | `@theme_plugin_kubernetes_cache_ttl` | `30` | 30 seconds |
 | Weather | `@theme_plugin_weather_cache_ttl` | `900` | 15 minutes |
+| Spotify | `@theme_plugin_spotify_cache_ttl` | `5` | 5 seconds |
 | Homebrew | `@theme_plugin_homebrew_cache_ttl` | `1800` | 30 minutes |
 | Yay | `@theme_plugin_yay_cache_ttl` | `1800` | 30 minutes |
 

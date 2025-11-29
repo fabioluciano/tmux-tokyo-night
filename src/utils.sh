@@ -19,7 +19,7 @@ _CACHED_OS="$(uname -s)"
 
 # Convenience functions for OS checks
 is_macos() { [[ "$_CACHED_OS" == "Darwin" ]]; }
-is_linux() { [[ "$_CACHED_OS" == Linux* ]]; }
+is_linux() { [[ "$_CACHED_OS" == Linux ]]; }
 
 # -----------------------------------------------------------------------------
 # Get tmux option value with fallback default

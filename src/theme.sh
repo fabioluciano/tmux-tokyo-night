@@ -1,12 +1,25 @@
 #!/usr/bin/env bash
+# =============================================================================
+# tmux-tokyo-night Theme Configuration
+# Main entry point for theme initialization and plugin rendering
+# =============================================================================
 set -euo pipefail
 
 export LC_ALL=en_US.UTF-8
 
 CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# =============================================================================
+# Source Dependencies
+# =============================================================================
 # shellcheck source=src/utils.sh
 . "$CURRENT_DIR/utils.sh"
+# shellcheck source=src/separators.sh
+. "$CURRENT_DIR/separators.sh"
 
+# =============================================================================
+# Theme Configuration Options
+# =============================================================================
 theme_variation=$(get_tmux_option "@theme_variation" "night")
 theme_disable_plugins=$(get_tmux_option "@theme_disable_plugins" 0)
 theme_bar_layout=$(get_tmux_option "@theme_bar_layout" "single")
@@ -71,7 +84,11 @@ tmux set-window-option -g window-status-current-format "$(generate_active_window
 ### Right side
 tmux set-option -g status-right ""
 
-# Serialize palette for threshold_plugin.sh
+# =============================================================================
+# Plugin Helper Functions
+# =============================================================================
+
+# Serialize palette for passing to external scripts (threshold_plugin.sh)
 serialize_palette() {
     local result=""
     for key in "${!PALLETE[@]}"; do
@@ -79,175 +96,135 @@ serialize_palette() {
     done
     printf '%s' "$result"
 }
-PALETTE_SERIALIZED=$(serialize_palette)
 
-# List of conditional plugins (may not render)
-CONDITIONAL_PLUGINS="git docker homebrew yay"
+# List of conditional plugins that may not render (only show when they have content)
+readonly CONDITIONAL_PLUGINS="git docker homebrew yay spotify"
 
-# Function to check if a plugin is conditional
+# Check if a plugin is conditional (may not render)
 is_conditional_plugin() {
     local plugin="$1"
     [[ " $CONDITIONAL_PLUGINS " == *" $plugin "* ]]
 }
 
-# Check if there are any conditional plugins after a given plugin index
-has_conditional_plugins_after() {
-    local current_idx="$1"
-    local total="${#plugins[@]}"
-    
-    for ((i=current_idx+1; i<total; i++)); do
-        if is_conditional_plugin "${plugins[$i]}"; then
-            return 0  # true - there are conditional plugins after
-        fi
-    done
-    return 1  # false - no conditional plugins after
-}
-
-# Check if the NEXT plugin (immediately after) is conditional
-next_plugin_is_conditional() {
-    local current_idx="$1"
-    local total="${#plugins[@]}"
-    local next_idx=$((current_idx + 1))
-    
-    if [ "$next_idx" -lt "$total" ]; then
-        is_conditional_plugin "${plugins[$next_idx]}"
-        return $?
-    fi
-    return 1  # false - no next plugin
-}
-
-# Check if there are any STATIC (non-conditional) plugins after a given plugin index
+# Check if there are any static (non-conditional) plugins after a given index
 has_static_plugins_after() {
     local current_idx="$1"
     local total="${#plugins[@]}"
     
     for ((i=current_idx+1; i<total; i++)); do
         if ! is_conditional_plugin "${plugins[$i]}"; then
-            return 0  # true - there is a static plugin after
+            return 0
         fi
     done
-    return 1  # false - no static plugins after (only conditional or none)
+    return 1
 }
 
-# Check if plugins array is empty before proceeding
+# =============================================================================
+# Plugin Rendering
+# =============================================================================
+
 if [ "$theme_disable_plugins" -ne 1 ]; then
+	# Pre-calculate values used in the loop
+	PALETTE_SERIALIZED=$(serialize_palette)
 	last_plugin="${plugins[-1]}"
-	is_last_plugin=0
+	
+	# State tracking variables
 	plugin_index=0
-	prev_plugin_accent_color=""  # Track previous plugin's accent color
-	prev_was_last=0  # Track if previous plugin was treated as "last" (no separator_end)
-	prev_plugin_accent_color=""  # Track previous plugin's accent color for conditional plugins
+	prev_plugin_accent_color=""
+	prev_was_last=0
 
 	for plugin in "${plugins[@]}"; do
-
-		if [ ! -f "${CURRENT_DIR}/plugin/${plugin}.sh" ]; then
+		plugin_script_path="${CURRENT_DIR}/plugin/${plugin}.sh"
+		
+		# Skip non-existent plugins (display plugin name as-is)
+		if [ ! -f "$plugin_script_path" ]; then
 			tmux set-option -ga status-right "${plugin}"
+			plugin_index=$((plugin_index + 1))
+			continue
+		fi
+		
+		# Determine if this plugin should add a trailing separator
+		# A plugin is "last" (no separator_end) if:
+		#   - It's the actual last AND not conditional, OR
+		#   - Only conditional plugins follow (they handle their own entry separator)
+		if [ "$plugin" == "$last_plugin" ] && ! is_conditional_plugin "$plugin"; then
+			is_last_plugin=1
+		elif ! has_static_plugins_after "$plugin_index"; then
+			is_last_plugin=1
 		else
-			# A plugin is "last" (no separator_end) if:
-			# 1. It's the actual last plugin in the list AND not conditional, OR
-			# 2. There are only conditional plugins after it (they handle their own entry separator)
-			#
-			# When followed by conditional plugins, the static plugin does NOT add separator_end.
-			# The conditional plugin will add its own entry separator if it renders.
-			if [ "$plugin" == "$last_plugin" ] && ! is_conditional_plugin "$plugin"; then
-				is_last_plugin=1
-			elif ! has_static_plugins_after "$plugin_index"; then
-				# Only conditional plugins (or nothing) after - don't add separator
-				is_last_plugin=1
-			else
-				is_last_plugin=0
-			fi
+			is_last_plugin=0
+		fi
+		
+		# -----------------------------------------------------------------
+		# Load Plugin Configuration
+		# -----------------------------------------------------------------
+		# shellcheck source=src/plugin/datetime.sh
+		. "$plugin_script_path"
+		plugin_execution_string="$(load_plugin)"
 
-			plugin_script_path="${CURRENT_DIR}/plugin/${plugin}.sh"
-			# Source plugin once to get config variables and use load_plugin function
-			# shellcheck source=src/plugin/datetime.sh
-			. "$plugin_script_path"
-			# Get execution string from sourced load_plugin function (avoids double execution)
-			plugin_execution_string="$(load_plugin)"
+		# Get plugin-specific settings via indirect variable expansion
+		icon_var="plugin_${plugin}_icon"
+		accent_color_var="plugin_${plugin}_accent_color"
+		accent_color_icon_var="plugin_${plugin}_accent_color_icon"
+		
+		plugin_icon="${!icon_var}"
+		accent_color="${!accent_color_var}"
+		accent_color_icon="${!accent_color_icon_var}"
 
-			icon_var="plugin_${plugin}_icon"
-			accent_color_var="plugin_${plugin}_accent_color"
-			accent_color_icon_var="plugin_${plugin}_accent_color_icon"
+		# Resolve palette colors
+		accent_color="${PALLETE[$accent_color]}"
+		accent_color_icon="${PALLETE[$accent_color_icon]}"
 
-			plugin_icon="${!icon_var}"
-			accent_color="${!accent_color_var}"
-			accent_color_icon="${!accent_color_icon_var}"
+		# -----------------------------------------------------------------
+		# Build Separators (using functions from separators.sh)
+		# -----------------------------------------------------------------
+		separator_icon_start=$(build_separator_icon_start "$accent_color_icon" "${PALLETE[bg_highlight]}" "$right_separator" "$transparent")
+		separator_icon_end=$(build_separator_icon_end "$accent_color" "$accent_color_icon" "$right_separator")
+		separator_end=$(build_separator_end "$accent_color" "${PALLETE[bg_highlight]}" "$right_separator" "$transparent" "${right_separator_inverse:-}")
 
-			# For every plugin, turn accent_color and accent_color_icon into
-			# the colors from the palette
-			accent_color="${PALLETE[$accent_color]}"
-			accent_color_icon="${PALLETE[$accent_color_icon]}"
-
-			separator_end="#[fg=${PALLETE[bg_highlight]},bg=${accent_color}]${right_separator}#[bg=${PALLETE[bg_highlight]}]"
-			separator_icon_start="#[fg=${accent_color_icon},bg=${PALLETE[bg_highlight]}]${right_separator}#[none]"
-			separator_icon_end="#[fg=${accent_color},bg=${accent_color_icon}]${right_separator}#[none]"
-			if [ "$transparent" = "true" ]; then
-				separator_icon_start="#[fg=${accent_color_icon},bg=default]${right_separator}#[none]"
-				separator_icon_end="#[fg=${accent_color},bg=${accent_color_icon}]${right_separator}#[none]"
-				separator_end="#[fg=${accent_color},bg=default]${right_separator_inverse}#[bg=default]"
-			else
-				separator_icon_start="#[fg=${accent_color_icon},bg=${PALLETE[bg_highlight]}]${right_separator}#[none]"
-				separator_icon_end="#[fg=${accent_color},bg=${accent_color_icon}]${right_separator}#[none]"
-				separator_end="#[fg=${PALLETE[bg_highlight]},bg=${accent_color}]${right_separator}#[bg=${PALLETE[bg_highlight]}]"
-			fi
-
-			# Conditional plugins (git, docker, homebrew, yay) - only show when they have content
-			# Pass is_last=1 only if this is the actual last plugin in the list
-			# Only pass prev_plugin_accent if previous plugin didn't add separator_end
-			if [ "$plugin" == "git" ] || [ "$plugin" == "docker" ] || [ "$plugin" == "homebrew" ] || [ "$plugin" == "yay" ]; then
-				conditional_is_last=0
-				if [ "$plugin" == "$last_plugin" ]; then
-					conditional_is_last=1
-				fi
-				# Only pass prev_accent if previous plugin didn't add separator (prev was "last")
-				prev_accent_to_pass=""
-				if [ "$prev_was_last" == "1" ]; then
-					prev_accent_to_pass="$prev_plugin_accent_color"
-				fi
-				plugin_output_string="#(${CURRENT_DIR}/conditional_plugin.sh \"${plugin}\" \"${separator_icon_start}\" \"${separator_icon_end}\" \"${separator_end}\" \"${accent_color}\" \"${accent_color_icon}\" \"${plugin_icon}\" \"${conditional_is_last}\" \"${PALLETE[white]}\" \"${PALLETE[bg_highlight]}\" \"${right_separator}\" \"${transparent}\" \"${right_separator_inverse:-}\" \"${prev_accent_to_pass}\")"
-				tmux set-option -ga status-right "$plugin_output_string"
-				prev_plugin_accent_color="$accent_color"
-				prev_was_last="$conditional_is_last"
-				plugin_index=$((plugin_index + 1))
-				continue
-			fi
-
-			# Check if plugin has threshold mode or display threshold configured
-			# These plugins use the threshold_plugin.sh wrapper for dynamic colors and/or conditional display
-			threshold_mode=$(get_tmux_option "@theme_plugin_${plugin}_threshold_mode" "")
-			display_condition=$(get_tmux_option "@theme_plugin_${plugin}_display_condition" "always")
+		# -----------------------------------------------------------------
+		# Render Plugin Based on Type
+		# -----------------------------------------------------------------
+		
+		# CONDITIONAL PLUGINS: Only render when they have content
+		if is_conditional_plugin "$plugin"; then
+			conditional_is_last=$([ "$plugin" == "$last_plugin" ] && echo 1 || echo 0)
+			prev_accent_to_pass=$([ "$prev_was_last" == "1" ] && echo "$prev_plugin_accent_color" || echo "")
 			
-			if [ -n "$threshold_mode" ] || [ "$display_condition" != "always" ]; then
-				plugin_output_string="#(${CURRENT_DIR}/threshold_plugin.sh \"${plugin}\" \"${separator_icon_start}\" \"${separator_icon_end}\" \"${separator_end}\" \"${accent_color}\" \"${accent_color_icon}\" \"${plugin_icon}\" \"${is_last_plugin}\" \"${PALLETE[white]}\" \"${PALLETE[bg_highlight]}\" \"${right_separator}\" \"${transparent}\" \"${right_separator_inverse:-}\" \"${PALETTE_SERIALIZED}\")"
-				tmux set-option -ga status-right "$plugin_output_string"
-				prev_plugin_accent_color="$accent_color"
-				prev_was_last="$is_last_plugin"
-				plugin_index=$((plugin_index + 1))
-				continue
-			fi
-
-			plugin_output_string=""
-
-			# For datetime, we embed the content at load time (uses tmux strftime)
-			# For other plugins, we use #() to execute dynamically
-			if [ "$plugin" == "datetime" ]; then
-				plugin_output="#[fg=${PALLETE[white]},bg=${accent_color}]${plugin_execution_string}#[none]"
-			else
-				plugin_output="#[fg=${PALLETE[white]},bg=${accent_color}]#($plugin_script_path)#[none]"
-			fi
-
-			plugin_icon_output="${separator_icon_start}#[fg=${PALLETE[white]},bg=${accent_color_icon}]${plugin_icon}${separator_icon_end}"
-
-			if [ ! $is_last_plugin -eq 1 ] && [ "${#plugins[@]}" -gt 1 ]; then
-				plugin_output_string="${plugin_icon_output}${plugin_output} ${separator_end}"
-			else
-				plugin_output_string="${plugin_icon_output}${plugin_output} "
-			fi
-
+			plugin_output_string="#(${CURRENT_DIR}/conditional_plugin.sh \"${plugin}\" \"${separator_icon_start}\" \"${separator_icon_end}\" \"${separator_end}\" \"${accent_color}\" \"${accent_color_icon}\" \"${plugin_icon}\" \"${conditional_is_last}\" \"${PALLETE[white]}\" \"${PALLETE[bg_highlight]}\" \"${right_separator}\" \"${transparent}\" \"${right_separator_inverse:-}\" \"${prev_accent_to_pass}\")"
 			tmux set-option -ga status-right "$plugin_output_string"
+			
+			prev_plugin_accent_color="$accent_color"
+			prev_was_last="$conditional_is_last"
+		
+		# THRESHOLD PLUGINS: Dynamic colors based on value
+		elif [ -n "$(get_tmux_option "@theme_plugin_${plugin}_threshold_mode" "")" ] || \
+		     [ "$(get_tmux_option "@theme_plugin_${plugin}_display_condition" "always")" != "always" ]; then
+			
+			plugin_output_string="#(${CURRENT_DIR}/threshold_plugin.sh \"${plugin}\" \"${separator_icon_start}\" \"${separator_icon_end}\" \"${separator_end}\" \"${accent_color}\" \"${accent_color_icon}\" \"${plugin_icon}\" \"${is_last_plugin}\" \"${PALLETE[white]}\" \"${PALLETE[bg_highlight]}\" \"${right_separator}\" \"${transparent}\" \"${right_separator_inverse:-}\" \"${PALETTE_SERIALIZED}\")"
+			tmux set-option -ga status-right "$plugin_output_string"
+			
+			prev_plugin_accent_color="$accent_color"
+			prev_was_last="$is_last_plugin"
+		
+		# STATIC PLUGINS: Standard rendering
+		else
+			# datetime uses tmux strftime, others execute dynamically
+			if [ "$plugin" == "datetime" ]; then
+				content_output="$(build_content_section "${PALLETE[white]}" "$accent_color" "${plugin_execution_string# }")"
+			else
+				content_output="#[fg=${PALLETE[white]},bg=${accent_color}]#($plugin_script_path)#[none]"
+			fi
+			
+			icon_output="$(build_icon_section "$separator_icon_start" "$separator_icon_end" "${PALLETE[white]}" "$accent_color_icon" "$plugin_icon")"
+			plugin_output_string="$(build_plugin_segment "$icon_output" "$content_output" "$separator_end" "$is_last_plugin")"
+			
+			tmux set-option -ga status-right "$plugin_output_string"
+			
 			prev_plugin_accent_color="$accent_color"
 			prev_was_last="$is_last_plugin"
 		fi
+		
 		plugin_index=$((plugin_index + 1))
 	done
 fi
