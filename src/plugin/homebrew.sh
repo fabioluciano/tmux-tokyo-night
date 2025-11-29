@@ -71,13 +71,14 @@ homebrew_count_outdated() {
 # Format the output message
 # Arguments:
 #   $1 - Number of outdated packages
-# Returns: Formatted status string
+# Returns: Formatted status string (empty if no updates)
 # -----------------------------------------------------------------------------
 homebrew_format_output() {
     local count="$1"
 
+    # Return empty string if no updates (plugin won't be displayed)
     if [[ "$count" -eq 0 ]]; then
-        printf 'All updated'
+        printf ''
     elif [[ "$count" -eq 1 ]]; then
         printf '1 update'
     else

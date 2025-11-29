@@ -1,11 +1,25 @@
 #!/usr/bin/env bash
 # =============================================================================
 # Plugin: battery
-# Description: Display battery percentage and charging status
+# Description: Display battery percentage and charging status with dynamic colors
 # Dependencies: pmset (macOS), acpi/upower (Linux), or termux-battery-status
 # =============================================================================
 # Battery querying code adapted from https://github.com/tmux-plugins/tmux-battery
 # Copyright (C) 2014 Bruno Sutic - MIT License
+#
+# This plugin supports the threshold system for:
+#   - Dynamic colors based on battery level (descending mode - low is critical)
+#   - Conditional display (e.g., only show when battery <= 50%)
+#
+# Configuration options:
+#   @theme_plugin_battery_icon_charging      - Icon when charging (default: )
+#   @theme_plugin_battery_icon_discharging   - Icon when discharging (default: 󰁹)
+#   @theme_plugin_battery_threshold_mode     - Set to "descending" for dynamic colors
+#   @theme_plugin_battery_critical_threshold - Critical level (default: 10)
+#   @theme_plugin_battery_warning_threshold  - Warning level (default: 30)
+#   @theme_plugin_battery_display_threshold  - Show only when <= this value
+#   @theme_plugin_battery_display_condition  - Condition: le, lt, ge, gt, eq, always
+# =============================================================================
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -18,12 +32,19 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Plugin Configuration
 # =============================================================================
 
+# Icons for different states
+plugin_battery_icon_charging=$(get_tmux_option "@theme_plugin_battery_icon_charging" " ")
+plugin_battery_icon_discharging=$(get_tmux_option "@theme_plugin_battery_icon_discharging" "󰁹 ")
+
+# Default icon (will be updated based on status)
 # shellcheck disable=SC2034
-plugin_battery_icon=$(get_tmux_option "@theme_plugin_battery_icon" "󰁹 ")
+plugin_battery_icon="$plugin_battery_icon_discharging"
+
+# Default colors (used when threshold_mode is not set)
 # shellcheck disable=SC2034
-plugin_battery_accent_color=$(get_tmux_option "@theme_plugin_battery_accent_color" "blue7")
+plugin_battery_accent_color=$(get_tmux_option "@theme_plugin_battery_accent_color" "green")
 # shellcheck disable=SC2034
-plugin_battery_accent_color_icon=$(get_tmux_option "@theme_plugin_battery_accent_color_icon" "blue0")
+plugin_battery_accent_color_icon=$(get_tmux_option "@theme_plugin_battery_accent_color_icon" "green1")
 
 # Cache TTL in seconds (default: 30 seconds)
 BATTERY_CACHE_TTL=$(get_tmux_option "@theme_plugin_battery_cache_ttl" "30")
@@ -86,7 +107,7 @@ battery_get_percentage() {
     if is_wsl; then
         local battery_file
         battery_file=$(find /sys/class/power_supply/*/capacity 2>/dev/null | head -n1)
-        [[ -n "$battery_file" ]] && percentage=$(cat "$battery_file" 2>/dev/null)
+        [[ -n "$battery_file" ]] && percentage=$(\cat "$battery_file" 2>/dev/null)
     elif command_exists "pmset"; then
         percentage=$(pmset -g batt 2>/dev/null | grep -o "[0-9]\{1,3\}%" | tr -d '%')
     elif command_exists "acpi"; then
@@ -126,13 +147,29 @@ battery_is_available() {
 }
 
 # -----------------------------------------------------------------------------
+# Update icon based on charging status
+# -----------------------------------------------------------------------------
+update_battery_icon() {
+    local status="$1"
+    
+    case "$status" in
+        charging|charged)
+            plugin_battery_icon="$plugin_battery_icon_charging"
+            ;;
+        *)
+            plugin_battery_icon="$plugin_battery_icon_discharging"
+            ;;
+    esac
+    
+    export plugin_battery_icon
+}
+
+# -----------------------------------------------------------------------------
 # Format battery output
-# Returns: Formatted string with percentage and optional charging indicator
+# Returns: Formatted string with percentage
 # -----------------------------------------------------------------------------
 battery_format_output() {
     local percentage="$1"
-    local status="$2"
-    
     printf '%s%%' "$percentage"
 }
 
@@ -149,6 +186,10 @@ load_plugin() {
     # Try to get from cache first
     local cached_value
     if cached_value=$(cache_get "$BATTERY_CACHE_KEY" "$BATTERY_CACHE_TTL"); then
+        # Also update icon based on current status (not cached)
+        local status
+        status=$(battery_get_status)
+        update_battery_icon "$status"
         printf '%s' "$cached_value"
         return 0
     fi
@@ -157,7 +198,11 @@ load_plugin() {
     local percentage status result
     percentage=$(battery_get_percentage)
     status=$(battery_get_status)
-    result=$(battery_format_output "$percentage" "$status")
+    
+    # Update icon based on status
+    update_battery_icon "$status"
+    
+    result=$(battery_format_output "$percentage")
 
     # Update cache and output result
     cache_set "$BATTERY_CACHE_KEY" "$result"

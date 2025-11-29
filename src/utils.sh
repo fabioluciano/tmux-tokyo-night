@@ -19,7 +19,7 @@ _CACHED_OS="$(uname -s)"
 
 # Convenience functions for OS checks
 is_macos() { [[ "$_CACHED_OS" == "Darwin" ]]; }
-is_linux() { [[ "$_CACHED_OS" == Linux* ]]; }
+is_linux() { [[ "$_CACHED_OS" == Linux ]]; }
 
 # -----------------------------------------------------------------------------
 # Get tmux option value with fallback default
@@ -102,4 +102,127 @@ function generate_active_window_string() {
 	fi
 
 	echo "${separator_start}#[fg=${PALLETE[white]}]#I${separator_internal}#[fg=${PALLETE[white]}] #{?window_zoomed_flag,$zoomed_window_icon,$active_window_icon}${active_window_title}#{?pane_synchronized,$pane_synchronized_icon,}${separator_end}#[none]"
+}
+
+# =============================================================================
+# Threshold-based Color System
+# =============================================================================
+# These functions provide dynamic color selection based on numeric values
+# Can be used by any plugin that needs color changes based on thresholds
+#
+# The color selection works in two modes:
+#   - "ascending": low values = low_color, high values = high_color
+#     Example: CPU usage (low is good/green, high is bad/red)
+#   - "descending": low values = high_color, high values = low_color
+#     Example: Battery (low is bad/red, high is good/green)
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Get color based on value and thresholds (ascending mode)
+# Low value = low_color (good), High value = high_color (bad)
+# Arguments:
+#   $1 - Current numeric value
+#   $2 - Low threshold (below this = low_color)
+#   $3 - High threshold (above this = high_color, between = medium_color)
+#   $4 - Low color (for values below low threshold)
+#   $5 - Medium color (for values between thresholds)
+#   $6 - High color (for values above high threshold)
+# Output:
+#   Selected color name
+# -----------------------------------------------------------------------------
+get_threshold_color_ascending() {
+    local value="$1"
+    local low_threshold="$2"
+    local high_threshold="$3"
+    local low_color="$4"
+    local medium_color="$5"
+    local high_color="$6"
+    
+    # Remove any non-numeric characters (like %)
+    value="${value//[!0-9]/}"
+    
+    if [[ -z "$value" ]] || [[ ! "$value" =~ ^[0-9]+$ ]]; then
+        printf '%s' "$medium_color"
+        return
+    fi
+    
+    if (( value <= low_threshold )); then
+        printf '%s' "$low_color"
+    elif (( value >= high_threshold )); then
+        printf '%s' "$high_color"
+    else
+        printf '%s' "$medium_color"
+    fi
+}
+
+# -----------------------------------------------------------------------------
+# Get color based on value and thresholds (descending mode)
+# Low value = critical_color (bad), High value = normal_color (good)
+# Arguments:
+#   $1 - Current numeric value
+#   $2 - Critical threshold (below this = critical_color)
+#   $3 - Warning threshold (below this = warning_color, above = normal_color)
+#   $4 - Critical color (for values below critical threshold)
+#   $5 - Warning color (for values between thresholds)
+#   $6 - Normal color (for values above warning threshold)
+# Output:
+#   Selected color name
+# -----------------------------------------------------------------------------
+get_threshold_color_descending() {
+    local value="$1"
+    local critical_threshold="$2"
+    local warning_threshold="$3"
+    local critical_color="$4"
+    local warning_color="$5"
+    local normal_color="$6"
+    
+    # Remove any non-numeric characters (like %)
+    value="${value//[!0-9]/}"
+    
+    if [[ -z "$value" ]] || [[ ! "$value" =~ ^[0-9]+$ ]]; then
+        printf '%s' "$normal_color"
+        return
+    fi
+    
+    if (( value <= critical_threshold )); then
+        printf '%s' "$critical_color"
+    elif (( value <= warning_threshold )); then
+        printf '%s' "$warning_color"
+    else
+        printf '%s' "$normal_color"
+    fi
+}
+
+# -----------------------------------------------------------------------------
+# Check if value meets display threshold condition
+# Arguments:
+#   $1 - Current numeric value
+#   $2 - Threshold value
+#   $3 - Condition: "le" (<=), "lt" (<), "ge" (>=), "gt" (>), "eq" (==), "always"
+# Returns:
+#   0 if condition met, 1 otherwise
+# -----------------------------------------------------------------------------
+check_display_threshold() {
+    local value="$1"
+    local threshold="$2"
+    local condition="${3:-always}"
+    
+    # "always" means always display
+    [[ "$condition" == "always" ]] && return 0
+    
+    # Remove any non-numeric characters
+    value="${value//[!0-9]/}"
+    
+    if [[ -z "$value" ]] || [[ ! "$value" =~ ^[0-9]+$ ]]; then
+        return 1
+    fi
+    
+    case "$condition" in
+        le) (( value <= threshold )) ;;
+        lt) (( value < threshold )) ;;
+        ge) (( value >= threshold )) ;;
+        gt) (( value > threshold )) ;;
+        eq) (( value == threshold )) ;;
+        *)  return 0 ;;
+    esac
 }

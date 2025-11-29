@@ -68,13 +68,14 @@ yay_count_outdated() {
 # Format the output message
 # Arguments:
 #   $1 - Number of outdated packages
-# Returns: Formatted status string
+# Returns: Formatted status string (empty if no updates)
 # -----------------------------------------------------------------------------
 yay_format_output() {
     local count="$1"
 
+    # Return empty if no updates (conditional plugin won't render)
     if [[ "$count" -eq 0 ]]; then
-        printf 'All updated'
+        return 0
     elif [[ "$count" -eq 1 ]]; then
         printf '1 update'
     else

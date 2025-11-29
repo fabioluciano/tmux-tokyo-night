@@ -19,13 +19,16 @@
 ## ✨ Features
 
 - 🎨 **Multiple color variations**: Night, Storm, Moon, and Day
-- 🔌 **17 built-in plugins** for system monitoring and information display
+- 🔌 **18 built-in plugins** for system monitoring and information display
 - 🪟 **Transparency support** with customizable separators
 - 📊 **Double bar layout** option for separating windows and plugins
 - ⚡ **Smart caching system** for improved performance (configurable TTL per plugin)
 - 🚀 **Optimized performance** with cached OS detection and source guards
 - 🔧 **Highly customizable** with per-plugin configuration options
-- 🎯 **Conditional plugins** (git, docker) that only appear when relevant
+- 🎯 **Conditional plugins** (git, docker, homebrew, yay, spotify) that only appear when relevant
+- 🌈 **Dynamic threshold colors** - plugins change colors based on values (e.g., battery turns red when low)
+- 👁️ **Conditional display** - show plugins only when values meet threshold conditions
+- 🎵 **Cross-platform Spotify** - unified plugin supporting macOS (shpotify, osascript), Linux (playerctl), and spt
 
 ## 📸 Screenshots
 
@@ -298,9 +301,46 @@ Displays current weather information. Requires `curl`. Note: `jq` is optional an
 
 ### Media & Applications
 
-#### Playerctl
+#### Spotify (Recommended)
 
-Displays currently playing media. **Linux only** (uses MPRIS).
+Unified cross-platform Spotify plugin. **Only shows when music is playing.**
+
+Supports multiple backends (auto-detected in order of preference):
+- **macOS**: shpotify → osascript (AppleScript)
+- **Linux**: playerctl (MPRIS)
+- **Cross-platform**: spt (Spotify TUI)
+
+| Option | Description | Default |
+|--------|-------------|---------|  
+| `@theme_plugin_spotify_icon` | Plugin icon | ` ` |
+| `@theme_plugin_spotify_accent_color` | Background color | `green` |
+| `@theme_plugin_spotify_accent_color_icon` | Icon background color | `green1` |
+| `@theme_plugin_spotify_format` | Format string (`%artist%`, `%track%`, `%album%`) | `%artist% - %track%` |
+| `@theme_plugin_spotify_max_length` | Maximum output length (0 = no limit) | `40` |
+| `@theme_plugin_spotify_not_playing` | Text when not playing (empty = hide) | `""` |
+| `@theme_plugin_spotify_backend` | Force backend: `auto`, `shpotify`, `playerctl`, `spt`, `osascript` | `auto` |
+| `@theme_plugin_spotify_cache_ttl` | Cache TTL in seconds | `5` |
+
+**Installation (macOS with shpotify):**
+```bash
+brew install shpotify
+# Configure API credentials in ~/.shpotify.cfg
+```
+
+**Installation (Linux with playerctl):**
+```bash
+# Debian/Ubuntu
+sudo apt install playerctl
+
+# Arch
+sudo pacman -S playerctl
+```
+
+#### Playerctl (Legacy)
+
+Displays currently playing media via MPRIS. **Linux only.**
+
+> **Note:** Consider using the unified `spotify` plugin instead, which provides cross-platform support.
 
 | Option | Description | Default |
 |--------|-------------|---------|
@@ -310,9 +350,11 @@ Displays currently playing media. **Linux only** (uses MPRIS).
 | `@theme_plugin_playerctl_format` | Playerctl format | `{{artist}} - {{title}}` |
 | `@theme_plugin_playerctl_ignore_players` | Players to ignore | `""` |
 
-#### Spotify (spt)
+#### Spotify (spt) - Legacy
 
 Displays Spotify playback via `spt` CLI.
+
+> **Note:** Consider using the unified `spotify` plugin instead, which auto-detects the best available backend.
 
 | Option | Description | Default |
 |--------|-------------|---------|
@@ -325,7 +367,7 @@ Displays Spotify playback via `spt` CLI.
 
 #### Homebrew
 
-Displays number of outdated Homebrew packages. **macOS only.**
+Displays number of outdated Homebrew packages. **Only shows when updates are available.** Works on macOS and Linux.
 
 | Option | Description | Default |
 |--------|-------------|---------|
@@ -335,7 +377,7 @@ Displays number of outdated Homebrew packages. **macOS only.**
 
 #### Yay (AUR)
 
-Displays number of outdated AUR packages. **Arch Linux only.**
+Displays number of outdated AUR packages. **Only shows when updates are available.** Arch Linux only.
 
 | Option | Description | Default |
 |--------|-------------|---------|
@@ -345,20 +387,112 @@ Displays number of outdated AUR packages. **Arch Linux only.**
 
 ### Battery
 
-Displays battery status with dynamic colors based on charge level.
+Displays battery status with dynamic icons based on charging state.
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `@theme_plugin_battery_charging_icon` | Charging icon | `` |
-| `@theme_plugin_battery_discharging_icon` | Discharging icon | `󰁹` |
-| `@theme_plugin_battery_red_threshold` | Red warning threshold | `10` |
-| `@theme_plugin_battery_yellow_threshold` | Yellow warning threshold | `30` |
-| `@theme_plugin_battery_red_accent_color` | Color below red threshold | `red` |
-| `@theme_plugin_battery_red_accent_color_icon` | Icon color below red threshold | `magenta2` |
-| `@theme_plugin_battery_yellow_accent_color` | Color below yellow threshold | `yellow` |
-| `@theme_plugin_battery_yellow_accent_color_icon` | Icon color below yellow threshold | `orange` |
-| `@theme_plugin_battery_green_accent_color` | Color above yellow threshold | `blue7` |
-| `@theme_plugin_battery_green_accent_color_icon` | Icon color above yellow threshold | `blue0` |
+| `@theme_plugin_battery_icon_charging` | Icon when charging | ` ` |
+| `@theme_plugin_battery_icon_discharging` | Icon when discharging | `󰁹 ` |
+| `@theme_plugin_battery_accent_color` | Background color | `green` |
+| `@theme_plugin_battery_accent_color_icon` | Icon background color | `green1` |
+
+**Dynamic Colors Example:**
+
+To enable dynamic colors that change based on battery level:
+
+```bash
+set -g @theme_plugin_battery_threshold_mode 'descending'
+set -g @theme_plugin_battery_critical_threshold '10'
+set -g @theme_plugin_battery_warning_threshold '30'
+set -g @theme_plugin_battery_critical_color 'red'
+set -g @theme_plugin_battery_critical_color_icon 'red1'
+set -g @theme_plugin_battery_warning_color 'yellow'
+set -g @theme_plugin_battery_warning_color_icon 'orange'
+set -g @theme_plugin_battery_normal_color 'green'
+set -g @theme_plugin_battery_normal_color_icon 'green1'
+```
+
+**Conditional Display Example:**
+
+To only show battery when it's at 50% or below:
+
+```bash
+set -g @theme_plugin_battery_display_threshold '50'
+set -g @theme_plugin_battery_display_condition 'le'
+```
+
+---
+
+## 🎨 Threshold System (Dynamic Colors & Conditional Display)
+
+The theme includes a powerful threshold system that can be applied to any plugin that displays numeric values. This enables:
+
+1. **Dynamic Colors**: Change plugin colors based on the current value
+2. **Conditional Display**: Only show plugins when values meet certain conditions
+
+### Threshold Mode
+
+Set `@theme_plugin_<name>_threshold_mode` to enable dynamic colors:
+
+- **`descending`**: Low values are critical (red), high values are normal (green)
+  - Example: Battery (10% = red, 80% = green)
+- **`ascending`**: High values are critical (red), low values are normal (green)
+  - Example: CPU usage (10% = green, 90% = red)
+
+### Color Configuration
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `@theme_plugin_<name>_threshold_mode` | `ascending` or `descending` | (disabled) |
+| `@theme_plugin_<name>_critical_threshold` | Critical level threshold | `10` |
+| `@theme_plugin_<name>_warning_threshold` | Warning level threshold | `30` |
+| `@theme_plugin_<name>_critical_color` | Color for critical level | `red` |
+| `@theme_plugin_<name>_critical_color_icon` | Icon color for critical level | `red1` |
+| `@theme_plugin_<name>_warning_color` | Color for warning level | `yellow` |
+| `@theme_plugin_<name>_warning_color_icon` | Icon color for warning level | `orange` |
+| `@theme_plugin_<name>_normal_color` | Color for normal level | `green` |
+| `@theme_plugin_<name>_normal_color_icon` | Icon color for normal level | `green1` |
+
+### Conditional Display
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `@theme_plugin_<name>_display_threshold` | Value threshold for display | (none) |
+| `@theme_plugin_<name>_display_condition` | Condition for display | `always` |
+
+**Display conditions:**
+- `always`: Always display (default)
+- `le`: Display when value <= threshold
+- `lt`: Display when value < threshold
+- `ge`: Display when value >= threshold
+- `gt`: Display when value > threshold
+- `eq`: Display when value == threshold
+
+### Examples
+
+**CPU with ascending threshold (high = bad):**
+```bash
+set -g @theme_plugin_cpu_threshold_mode 'ascending'
+set -g @theme_plugin_cpu_critical_threshold '80'
+set -g @theme_plugin_cpu_warning_threshold '50'
+```
+
+**Memory - only show when usage >= 70%:**
+```bash
+set -g @theme_plugin_memory_display_threshold '70'
+set -g @theme_plugin_memory_display_condition 'ge'
+```
+
+**Disk with both dynamic colors and conditional display:**
+```bash
+# Dynamic colors
+set -g @theme_plugin_disk_threshold_mode 'ascending'
+set -g @theme_plugin_disk_critical_threshold '90'
+set -g @theme_plugin_disk_warning_threshold '70'
+# Only show when >= 50%
+set -g @theme_plugin_disk_display_threshold '50'
+set -g @theme_plugin_disk_display_condition 'ge'
+```
 
 ---
 
@@ -374,15 +508,20 @@ set -g @plugin 'fabioluciano/tmux-tokyo-night'
 
 # Tokyo Night Theme Configuration
 set -g @theme_variation 'night'
-set -g @theme_plugins 'datetime,cpu,loadavg,memory,disk,network,git,docker,kubernetes'
+set -g @theme_plugins 'datetime,cpu,memory,disk,network,battery,spotify,git,docker'
 
 # Plugin customization
 set -g @theme_plugin_datetime_format '%H:%M'
 set -g @theme_plugin_memory_format 'usage'
 set -g @theme_plugin_disk_format 'usage'
 set -g @theme_plugin_disk_mount '/'
-set -g @theme_plugin_loadavg_format '1'
-set -g @theme_plugin_kubernetes_show_namespace 'true'
+set -g @theme_plugin_spotify_format '%artist% - %track%'
+set -g @theme_plugin_spotify_max_length '30'
+
+# Battery with dynamic colors
+set -g @theme_plugin_battery_threshold_mode 'descending'
+set -g @theme_plugin_battery_critical_threshold '10'
+set -g @theme_plugin_battery_warning_threshold '30'
 
 # Initialize TPM (keep this at the bottom)
 run '~/.tmux/plugins/tpm/tpm'
@@ -423,13 +562,19 @@ Contributions are welcome! Feel free to:
 
 1. **Plugin Architecture Refactored**: All plugins now follow a standardized architecture with consistent variable naming and caching support.
 
-2. **Caching System**: Plugins now use a file-based caching system located at `~/.cache/tmux-tokyo-night/`. Each plugin has its own cache file with configurable TTL.
+2. **Modular Separator System**: Separator building logic has been extracted to `src/separators.sh` for better maintainability and consistency across all plugin types.
 
-3. **Conditional Plugins**: Git and Docker plugins are now conditional - they only appear when you're in a git repository or when Docker has containers.
+3. **Caching System**: Plugins now use a file-based caching system located at `~/.cache/tmux-tokyo-night/`. Each plugin has its own cache file with configurable TTL.
 
-4. **Weather Plugin**: Now uses wttr.in's IP-based auto-detection by default. The `jq` dependency is no longer required for basic functionality.
+4. **Conditional Plugins**: Git, Docker, Homebrew, Yay, and Spotify plugins are now conditional - they only appear when relevant (e.g., in a git repo, when Docker has containers, when package updates are available, when music is playing).
 
-5. **Battery Plugin**: Simplified architecture - no longer uses dynamic color changing via templates. Uses standard plugin format.
+5. **Weather Plugin**: Now uses wttr.in's IP-based auto-detection by default. The `jq` dependency is no longer required for basic functionality.
+
+6. **Battery Plugin**: Simplified architecture with support for dynamic threshold colors and charging/discharging icons.
+
+7. **Spotify Plugin**: New unified cross-platform plugin that auto-detects the best available backend (shpotify, playerctl, spt, or osascript). The `spt` and `playerctl` plugins are now considered legacy.
+
+8. **Cross-Platform Compatibility**: All plugins now properly detect and handle macOS vs Linux differences.
 
 ### Cache Management
 
@@ -458,6 +603,7 @@ All plugins support configurable cache TTL (Time To Live) via tmux options:
 | Docker | `@theme_plugin_docker_cache_ttl` | `10` | 10 seconds |
 | Kubernetes | `@theme_plugin_kubernetes_cache_ttl` | `30` | 30 seconds |
 | Weather | `@theme_plugin_weather_cache_ttl` | `900` | 15 minutes |
+| Spotify | `@theme_plugin_spotify_cache_ttl` | `5` | 5 seconds |
 | Homebrew | `@theme_plugin_homebrew_cache_ttl` | `1800` | 30 minutes |
 | Yay | `@theme_plugin_yay_cache_ttl` | `1800` | 30 minutes |
 

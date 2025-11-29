@@ -119,7 +119,7 @@ cache_get() {
     cache_init
     
     if cache_is_valid "$plugin_name" "$ttl_seconds"; then
-        cat "$cache_file"
+        \cat "$cache_file"
         return 0
     fi
     
