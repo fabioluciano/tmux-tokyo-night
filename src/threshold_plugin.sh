@@ -31,9 +31,13 @@ CURRENT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # Arguments passed from theme.sh
 PLUGIN_NAME="${1:-}"
-SEP_ICON_START_TEMPLATE="${2:-}"
-SEP_ICON_END_TEMPLATE="${3:-}"
-SEP_END_TEMPLATE="${4:-}"
+# Args 2-4 are separator templates (unused - we rebuild with dynamic colors)
+# shellcheck disable=SC2034
+_SEP_ICON_START_UNUSED="${2:-}"
+# shellcheck disable=SC2034
+_SEP_ICON_END_UNUSED="${3:-}"
+# shellcheck disable=SC2034
+_SEP_END_UNUSED="${4:-}"
 DEFAULT_ACCENT_COLOR="${5:-}"
 DEFAULT_ACCENT_COLOR_ICON="${6:-}"
 PLUGIN_ICON="${7:-}"
