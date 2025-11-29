@@ -71,18 +71,91 @@ tmux set-window-option -g window-status-current-format "$(generate_active_window
 ### Right side
 tmux set-option -g status-right ""
 
+# Serialize palette for threshold_plugin.sh
+serialize_palette() {
+    local result=""
+    for key in "${!PALLETE[@]}"; do
+        result+="${key}=${PALLETE[$key]};"
+    done
+    printf '%s' "$result"
+}
+PALETTE_SERIALIZED=$(serialize_palette)
+
+# List of conditional plugins (may not render)
+CONDITIONAL_PLUGINS="git docker homebrew yay"
+
+# Function to check if a plugin is conditional
+is_conditional_plugin() {
+    local plugin="$1"
+    [[ " $CONDITIONAL_PLUGINS " == *" $plugin "* ]]
+}
+
+# Check if there are any conditional plugins after a given plugin index
+has_conditional_plugins_after() {
+    local current_idx="$1"
+    local total="${#plugins[@]}"
+    
+    for ((i=current_idx+1; i<total; i++)); do
+        if is_conditional_plugin "${plugins[$i]}"; then
+            return 0  # true - there are conditional plugins after
+        fi
+    done
+    return 1  # false - no conditional plugins after
+}
+
+# Check if the NEXT plugin (immediately after) is conditional
+next_plugin_is_conditional() {
+    local current_idx="$1"
+    local total="${#plugins[@]}"
+    local next_idx=$((current_idx + 1))
+    
+    if [ "$next_idx" -lt "$total" ]; then
+        is_conditional_plugin "${plugins[$next_idx]}"
+        return $?
+    fi
+    return 1  # false - no next plugin
+}
+
+# Check if there are any STATIC (non-conditional) plugins after a given plugin index
+has_static_plugins_after() {
+    local current_idx="$1"
+    local total="${#plugins[@]}"
+    
+    for ((i=current_idx+1; i<total; i++)); do
+        if ! is_conditional_plugin "${plugins[$i]}"; then
+            return 0  # true - there is a static plugin after
+        fi
+    done
+    return 1  # false - no static plugins after (only conditional or none)
+}
+
 # Check if plugins array is empty before proceeding
 if [ "$theme_disable_plugins" -ne 1 ]; then
 	last_plugin="${plugins[-1]}"
 	is_last_plugin=0
+	plugin_index=0
+	prev_plugin_accent_color=""  # Track previous plugin's accent color
+	prev_was_last=0  # Track if previous plugin was treated as "last" (no separator_end)
+	prev_plugin_accent_color=""  # Track previous plugin's accent color for conditional plugins
 
 	for plugin in "${plugins[@]}"; do
 
 		if [ ! -f "${CURRENT_DIR}/plugin/${plugin}.sh" ]; then
 			tmux set-option -ga status-right "${plugin}"
 		else
-			if [ "$plugin" == "$last_plugin" ]; then
+			# A plugin is "last" (no separator_end) if:
+			# 1. It's the actual last plugin in the list AND not conditional, OR
+			# 2. There are only conditional plugins after it (they handle their own entry separator)
+			#
+			# When followed by conditional plugins, the static plugin does NOT add separator_end.
+			# The conditional plugin will add its own entry separator if it renders.
+			if [ "$plugin" == "$last_plugin" ] && ! is_conditional_plugin "$plugin"; then
 				is_last_plugin=1
+			elif ! has_static_plugins_after "$plugin_index"; then
+				# Only conditional plugins (or nothing) after - don't add separator
+				is_last_plugin=1
+			else
+				is_last_plugin=0
 			fi
 
 			plugin_script_path="${CURRENT_DIR}/plugin/${plugin}.sh"
@@ -105,23 +178,51 @@ if [ "$theme_disable_plugins" -ne 1 ]; then
 			accent_color="${PALLETE[$accent_color]}"
 			accent_color_icon="${PALLETE[$accent_color_icon]}"
 
-			separator_end="#[fg=${PALLETE[bg_highlight]},bg=${accent_color}]${right_separator}#[none]"
+			separator_end="#[fg=${PALLETE[bg_highlight]},bg=${accent_color}]${right_separator}#[bg=${PALLETE[bg_highlight]}]"
 			separator_icon_start="#[fg=${accent_color_icon},bg=${PALLETE[bg_highlight]}]${right_separator}#[none]"
 			separator_icon_end="#[fg=${accent_color},bg=${accent_color_icon}]${right_separator}#[none]"
 			if [ "$transparent" = "true" ]; then
 				separator_icon_start="#[fg=${accent_color_icon},bg=default]${right_separator}#[none]"
 				separator_icon_end="#[fg=${accent_color},bg=${accent_color_icon}]${right_separator}#[none]"
-				separator_end="#[fg=${accent_color},bg=default]${right_separator_inverse}#[none]"
+				separator_end="#[fg=${accent_color},bg=default]${right_separator_inverse}#[bg=default]"
 			else
 				separator_icon_start="#[fg=${accent_color_icon},bg=${PALLETE[bg_highlight]}]${right_separator}#[none]"
 				separator_icon_end="#[fg=${accent_color},bg=${accent_color_icon}]${right_separator}#[none]"
-				separator_end="#[fg=${PALLETE[bg_highlight]},bg=${accent_color}]${right_separator}#[none]"
+				separator_end="#[fg=${PALLETE[bg_highlight]},bg=${accent_color}]${right_separator}#[bg=${PALLETE[bg_highlight]}]"
 			fi
 
-			# Conditional plugins (git, docker) - only show when they have content
-			if [ "$plugin" == "git" ] || [ "$plugin" == "docker" ]; then
-				plugin_output_string="#(${CURRENT_DIR}/conditional_plugin.sh \"${plugin}\" \"${separator_icon_start}\" \"${separator_icon_end}\" \"${separator_end}\" \"${accent_color}\" \"${accent_color_icon}\" \"${plugin_icon}\" \"${is_last_plugin}\" \"${PALLETE[white]}\")"
+			# Conditional plugins (git, docker, homebrew, yay) - only show when they have content
+			# Pass is_last=1 only if this is the actual last plugin in the list
+			# Only pass prev_plugin_accent if previous plugin didn't add separator_end
+			if [ "$plugin" == "git" ] || [ "$plugin" == "docker" ] || [ "$plugin" == "homebrew" ] || [ "$plugin" == "yay" ]; then
+				conditional_is_last=0
+				if [ "$plugin" == "$last_plugin" ]; then
+					conditional_is_last=1
+				fi
+				# Only pass prev_accent if previous plugin didn't add separator (prev was "last")
+				prev_accent_to_pass=""
+				if [ "$prev_was_last" == "1" ]; then
+					prev_accent_to_pass="$prev_plugin_accent_color"
+				fi
+				plugin_output_string="#(${CURRENT_DIR}/conditional_plugin.sh \"${plugin}\" \"${separator_icon_start}\" \"${separator_icon_end}\" \"${separator_end}\" \"${accent_color}\" \"${accent_color_icon}\" \"${plugin_icon}\" \"${conditional_is_last}\" \"${PALLETE[white]}\" \"${PALLETE[bg_highlight]}\" \"${right_separator}\" \"${transparent}\" \"${right_separator_inverse:-}\" \"${prev_accent_to_pass}\")"
 				tmux set-option -ga status-right "$plugin_output_string"
+				prev_plugin_accent_color="$accent_color"
+				prev_was_last="$conditional_is_last"
+				plugin_index=$((plugin_index + 1))
+				continue
+			fi
+
+			# Check if plugin has threshold mode or display threshold configured
+			# These plugins use the threshold_plugin.sh wrapper for dynamic colors and/or conditional display
+			threshold_mode=$(get_tmux_option "@theme_plugin_${plugin}_threshold_mode" "")
+			display_condition=$(get_tmux_option "@theme_plugin_${plugin}_display_condition" "always")
+			
+			if [ -n "$threshold_mode" ] || [ "$display_condition" != "always" ]; then
+				plugin_output_string="#(${CURRENT_DIR}/threshold_plugin.sh \"${plugin}\" \"${separator_icon_start}\" \"${separator_icon_end}\" \"${separator_end}\" \"${accent_color}\" \"${accent_color_icon}\" \"${plugin_icon}\" \"${is_last_plugin}\" \"${PALLETE[white]}\" \"${PALLETE[bg_highlight]}\" \"${right_separator}\" \"${transparent}\" \"${right_separator_inverse:-}\" \"${PALETTE_SERIALIZED}\")"
+				tmux set-option -ga status-right "$plugin_output_string"
+				prev_plugin_accent_color="$accent_color"
+				prev_was_last="$is_last_plugin"
+				plugin_index=$((plugin_index + 1))
 				continue
 			fi
 
@@ -144,7 +245,10 @@ if [ "$theme_disable_plugins" -ne 1 ]; then
 			fi
 
 			tmux set-option -ga status-right "$plugin_output_string"
+			prev_plugin_accent_color="$accent_color"
+			prev_was_last="$is_last_plugin"
 		fi
+		plugin_index=$((plugin_index + 1))
 	done
 fi
 

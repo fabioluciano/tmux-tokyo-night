@@ -26,6 +26,8 @@
 - 🚀 **Optimized performance** with cached OS detection and source guards
 - 🔧 **Highly customizable** with per-plugin configuration options
 - 🎯 **Conditional plugins** (git, docker) that only appear when relevant
+- 🌈 **Dynamic threshold colors** - plugins change colors based on values (e.g., battery turns red when low)
+- 👁️ **Conditional display** - show plugins only when values meet threshold conditions
 
 ## 📸 Screenshots
 
@@ -345,20 +347,112 @@ Displays number of outdated AUR packages. **Arch Linux only.**
 
 ### Battery
 
-Displays battery status with dynamic colors based on charge level.
+Displays battery status with dynamic icons based on charging state.
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `@theme_plugin_battery_charging_icon` | Charging icon | `` |
-| `@theme_plugin_battery_discharging_icon` | Discharging icon | `󰁹` |
-| `@theme_plugin_battery_red_threshold` | Red warning threshold | `10` |
-| `@theme_plugin_battery_yellow_threshold` | Yellow warning threshold | `30` |
-| `@theme_plugin_battery_red_accent_color` | Color below red threshold | `red` |
-| `@theme_plugin_battery_red_accent_color_icon` | Icon color below red threshold | `magenta2` |
-| `@theme_plugin_battery_yellow_accent_color` | Color below yellow threshold | `yellow` |
-| `@theme_plugin_battery_yellow_accent_color_icon` | Icon color below yellow threshold | `orange` |
-| `@theme_plugin_battery_green_accent_color` | Color above yellow threshold | `blue7` |
-| `@theme_plugin_battery_green_accent_color_icon` | Icon color above yellow threshold | `blue0` |
+| `@theme_plugin_battery_icon_charging` | Icon when charging | ` ` |
+| `@theme_plugin_battery_icon_discharging` | Icon when discharging | `󰁹 ` |
+| `@theme_plugin_battery_accent_color` | Background color | `green` |
+| `@theme_plugin_battery_accent_color_icon` | Icon background color | `green1` |
+
+**Dynamic Colors Example:**
+
+To enable dynamic colors that change based on battery level:
+
+```bash
+set -g @theme_plugin_battery_threshold_mode 'descending'
+set -g @theme_plugin_battery_critical_threshold '10'
+set -g @theme_plugin_battery_warning_threshold '30'
+set -g @theme_plugin_battery_critical_color 'red'
+set -g @theme_plugin_battery_critical_color_icon 'red1'
+set -g @theme_plugin_battery_warning_color 'yellow'
+set -g @theme_plugin_battery_warning_color_icon 'orange'
+set -g @theme_plugin_battery_normal_color 'green'
+set -g @theme_plugin_battery_normal_color_icon 'green1'
+```
+
+**Conditional Display Example:**
+
+To only show battery when it's at 50% or below:
+
+```bash
+set -g @theme_plugin_battery_display_threshold '50'
+set -g @theme_plugin_battery_display_condition 'le'
+```
+
+---
+
+## 🎨 Threshold System (Dynamic Colors & Conditional Display)
+
+The theme includes a powerful threshold system that can be applied to any plugin that displays numeric values. This enables:
+
+1. **Dynamic Colors**: Change plugin colors based on the current value
+2. **Conditional Display**: Only show plugins when values meet certain conditions
+
+### Threshold Mode
+
+Set `@theme_plugin_<name>_threshold_mode` to enable dynamic colors:
+
+- **`descending`**: Low values are critical (red), high values are normal (green)
+  - Example: Battery (10% = red, 80% = green)
+- **`ascending`**: High values are critical (red), low values are normal (green)
+  - Example: CPU usage (10% = green, 90% = red)
+
+### Color Configuration
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `@theme_plugin_<name>_threshold_mode` | `ascending` or `descending` | (disabled) |
+| `@theme_plugin_<name>_critical_threshold` | Critical level threshold | `10` |
+| `@theme_plugin_<name>_warning_threshold` | Warning level threshold | `30` |
+| `@theme_plugin_<name>_critical_color` | Color for critical level | `red` |
+| `@theme_plugin_<name>_critical_color_icon` | Icon color for critical level | `red1` |
+| `@theme_plugin_<name>_warning_color` | Color for warning level | `yellow` |
+| `@theme_plugin_<name>_warning_color_icon` | Icon color for warning level | `orange` |
+| `@theme_plugin_<name>_normal_color` | Color for normal level | `green` |
+| `@theme_plugin_<name>_normal_color_icon` | Icon color for normal level | `green1` |
+
+### Conditional Display
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `@theme_plugin_<name>_display_threshold` | Value threshold for display | (none) |
+| `@theme_plugin_<name>_display_condition` | Condition for display | `always` |
+
+**Display conditions:**
+- `always`: Always display (default)
+- `le`: Display when value <= threshold
+- `lt`: Display when value < threshold
+- `ge`: Display when value >= threshold
+- `gt`: Display when value > threshold
+- `eq`: Display when value == threshold
+
+### Examples
+
+**CPU with ascending threshold (high = bad):**
+```bash
+set -g @theme_plugin_cpu_threshold_mode 'ascending'
+set -g @theme_plugin_cpu_critical_threshold '80'
+set -g @theme_plugin_cpu_warning_threshold '50'
+```
+
+**Memory - only show when usage >= 70%:**
+```bash
+set -g @theme_plugin_memory_display_threshold '70'
+set -g @theme_plugin_memory_display_condition 'ge'
+```
+
+**Disk with both dynamic colors and conditional display:**
+```bash
+# Dynamic colors
+set -g @theme_plugin_disk_threshold_mode 'ascending'
+set -g @theme_plugin_disk_critical_threshold '90'
+set -g @theme_plugin_disk_warning_threshold '70'
+# Only show when >= 50%
+set -g @theme_plugin_disk_display_threshold '50'
+set -g @theme_plugin_disk_display_condition 'ge'
+```
 
 ---
 
