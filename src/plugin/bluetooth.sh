@@ -265,7 +265,8 @@ load_plugin() {
     
     case "$status" in
         off)
-            result="off:OFF"
+            # Don't show anything when Bluetooth is off (conditional plugin)
+            return 0
             ;;
         connected)
             if [[ "$show_device" == "true" ]] && [[ -n "$devices_str" ]]; then

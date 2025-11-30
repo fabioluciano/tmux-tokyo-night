@@ -839,7 +839,7 @@ set -g @theme_plugin_wifi_show_signal 'true'
 
 ## 󰂯 Bluetooth
 
-Displays Bluetooth status and connected devices.
+Displays Bluetooth status and connected devices. **Only visible when Bluetooth is on or devices are connected.**
 
 | Option | Description | Default |
 |--------|-------------|---------|
