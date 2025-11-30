@@ -82,35 +82,16 @@ get_os_icon() {
 #   $2 - Default value
 # Output:
 #   Option value or default
-# -----------------------------------------------------------------------------
-# Global associative array for tmux option caching.
-# This cache persists for the duration of the shell session and should only be
-# modified via get_tmux_option. Declared global to avoid race conditions and
-# unexpected cache invalidation if sourced multiple times.
-if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
-    declare -gA _TMUX_OPTION_CACHE
-else
-    declare -A _TMUX_OPTION_CACHE
-fi
-
 get_tmux_option() {
     local option="$1"
     local default_value="$2"
-    
-    # Check cache first
-    if [[ -v "_TMUX_OPTION_CACHE[$option]" ]]; then
-        printf '%s' "${_TMUX_OPTION_CACHE[$option]}"
-        return
-    fi
     
     local option_value
     option_value=$(tmux show-option -gqv "$option")
     
     if [[ -z "$option_value" ]]; then
-        _TMUX_OPTION_CACHE["$option"]="$default_value"
         printf '%s' "$default_value"
     else
-        _TMUX_OPTION_CACHE["$option"]="$option_value"
         printf '%s' "$option_value"
     fi
 }
