@@ -1,0 +1,56 @@
+name: Validate Links
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**.md'
+      - '.github/workflows/link-validation.yml'
+  pull_request:
+    paths:
+      - '**.md'
+  workflow_dispatch:
+  schedule:
+    # Check links weekly on Mondays at 09:00 UTC
+    - cron: '0 9 * * 1'
+
+jobs:
+  link-validation:
+    name: Validate Markdown Links
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: false
+
+      - name: Check Links in README
+        uses: gaurav-nelson/github-action-markdown-link-check@v1
+        with:
+          use-quiet-mode: 'yes'
+          use-verbose-mode: 'yes'
+          config-file: '.github/workflows/link-check-config.json'
+          folder-path: '.'
+          file-path: './README.md'
+
+
+
+  wiki-links:
+    name: Validate Wiki Links
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout wiki
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ github.repository }}.wiki
+          path: wiki
+
+      - name: Check Links in Wiki
+        uses: gaurav-nelson/github-action-markdown-link-check@v1
+        with:
+          use-quiet-mode: 'yes'
+          use-verbose-mode: 'yes'
+          config-file: '.github/workflows/link-check-config.json'
+          folder-path: 'wiki'
+        continue-on-error: true

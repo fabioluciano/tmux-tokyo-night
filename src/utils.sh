@@ -56,7 +56,7 @@ get_os_icon() {
                 manjaro)            icon=$'\uf312' ;;
                 centos|rhel)        icon=$'\uf304' ;;
                 opensuse*)          icon=$'\uf314' ;;
-                alpine)             icon=$'\uf300' ;gi;
+                alpine)             icon=$'\uf300' ;;
                 gentoo)             icon=$'\uf30d' ;;
                 linuxmint)          icon=$'\uf30e' ;;
                 *)                  icon=$'\uf31a' ;; # Generic Linux

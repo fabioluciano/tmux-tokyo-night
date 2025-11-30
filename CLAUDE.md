@@ -9,6 +9,7 @@ Tokyo Night Tmux Theme is a tmux plugin that applies Tokyo Night color schemes t
 ## Development Commands
 
 ### Linting
+
 ```bash
 # Run shellcheck on all shell scripts
 shellcheck src/**/*.sh src/*.sh tmux-tokyo-night.tmux
@@ -17,7 +18,9 @@ shellcheck src/**/*.sh src/*.sh tmux-tokyo-night.tmux
 Note: The project uses GitHub Actions to run shellcheck automatically on push/PR (see `.github/workflows/shellcheck.yml`).
 
 ### Testing
+
 Manual testing is required:
+
 1. Install the plugin via TPM in a test tmux configuration
 2. Source the plugin: `tmux source ~/.tmux.conf`
 3. Verify visual appearance and plugin functionality
@@ -26,11 +29,13 @@ Manual testing is required:
 ## Architecture
 
 ### Entry Point
+
 - `tmux-tokyo-night.tmux` - Main entry point called by TPM, immediately delegates to `src/theme.sh`
 
 ### Core Components
 
 **`src/defaults.sh`** - Centralized Default Values
+
 - Contains ALL default values for the theme in one place
 - Modify this file to change defaults across the entire theme
 - Uses source guard (`_DEFAULTS_LOADED`) to prevent multiple sourcing
@@ -39,6 +44,7 @@ Manual testing is required:
 - Theme core options: `THEME_DEFAULT_VARIATION`, `THEME_DEFAULT_PLUGINS`, etc.
 
 **`src/theme.sh`** (142 lines)
+
 - Main orchestration script that configures tmux appearance
 - Sources `defaults.sh` first for centralized default values
 - Loads the selected color palette from `src/palletes/`
@@ -48,6 +54,7 @@ Manual testing is required:
 - Sources plugins once and calls `load_plugin()` function to avoid double execution
 
 **`src/utils.sh`** (76 lines)
+
 - `get_tmux_option()` - Retrieves tmux options with fallback defaults
 - `get_os()` - Returns cached OS name (avoids repeated `uname` calls)
 - `is_macos()` / `is_linux()` - Convenience functions for OS detection
@@ -58,6 +65,7 @@ Manual testing is required:
 - Uses source guard to prevent multiple sourcing
 
 **`src/cache.sh`** - Caching System
+
 - `cache_init()` - Ensures cache directory exists (runs only once per session)
 - `cache_get(plugin_name, ttl)` - Returns cached value if valid (not expired)
 - `cache_set(plugin_name, value)` - Stores value in cache file
@@ -71,6 +79,7 @@ Manual testing is required:
 ### Color Palettes
 
 Located in `src/palletes/*.sh` (night.sh, storm.sh, moon.sh, day.sh)
+
 - Each defines a bash associative array `PALLETE` with color keys
 - Colors reference Tokyo Night theme specifications
 - Exported globally for use by theme.sh and plugins
@@ -78,6 +87,7 @@ Located in `src/palletes/*.sh` (night.sh, storm.sh, moon.sh, day.sh)
 ### Plugin System
 
 **Plugin Architecture:**
+
 1. Each plugin in `src/plugin/*.sh` exports variables: `plugin_<name>_icon`, `plugin_<name>_accent_color`, `plugin_<name>_accent_color_icon`
 2. `theme.sh` iterates through enabled plugins (from `@theme_plugins` option)
 3. Plugins are rendered using wrapper scripts based on their features:
@@ -90,6 +100,7 @@ Located in `src/palletes/*.sh` (night.sh, storm.sh, moon.sh, day.sh)
 **Available Plugins:**
 
 System Monitoring:
+
 - `cpu.sh` - Shows CPU usage percentage (uses ps on macOS, /proc/stat on Linux)
 - `memory.sh` - Shows memory usage (percent or used/total format)
 - `loadavg.sh` - Shows system load average (1, 5, 15 min or all)
@@ -98,20 +109,24 @@ System Monitoring:
 - `uptime.sh` - Shows system uptime
 
 Development:
+
 - `git.sh` - Shows git branch and status (conditional - only in git repos)
 - `docker.sh` - Shows container counts (conditional - only when Docker running)
 - `kubernetes.sh` - Shows current k8s context/namespace
 
 Information:
+
 - `datetime.sh` - Shows date/time using tmux `strftime` format
 - `hostname.sh` - Shows system hostname
 - `weather.sh` - Fetches weather from wttr.in API
 
 Media:
+
 - `playerctl.sh` - Media player info via MPRIS (Linux only)
 - `spt.sh` - Spotify integration via spotify-tui
 
 Package Managers:
+
 - `homebrew.sh` - Homebrew outdated packages count (macOS)
 - `yay.sh` - AUR helper updates (Arch Linux)
 - `battery.sh` - Shows battery status with color-coded levels
@@ -119,6 +134,7 @@ Package Managers:
 **Plugin Cache Configuration:**
 
 All cacheable plugins support a TTL (Time To Live) option:
+
 - `@theme_plugin_cpu_cache_ttl` - CPU cache TTL in seconds (default: 2)
 - `@theme_plugin_memory_cache_ttl` - Memory cache TTL in seconds (default: 5)
 - `@theme_plugin_loadavg_cache_ttl` - Load average cache TTL in seconds (default: 5)
@@ -146,10 +162,12 @@ All cacheable plugins support a TTL (Time To Live) option:
 ## Key Implementation Details
 
 ### Transparency Support
+
 - When `@theme_transparent_status_bar` is `true`, background colors use `default` instead of palette colors
 - Requires separate inverse separator characters for proper visual appearance
 
 ### Plugin Rendering Strategy
+
 - **Static plugins** (datetime): Executed once at theme load, output embedded in status string
 - **Dynamic plugins** (weather, network, etc.): Executed by tmux on each status refresh via wrapper scripts
 - **Conditional plugins** (git, docker, kubernetes, homebrew, yay, spotify): Only render when they have output
@@ -158,18 +176,21 @@ All cacheable plugins support a TTL (Time To Live) option:
 ### Plugin Rendering Wrappers
 
 **`src/conditional_plugin.sh`**
+
 - Wraps plugins that may produce empty output (git, docker, kubernetes, etc.)
 - Only renders the segment if the plugin outputs content
 - Dynamically determines if it's the last visible plugin by checking subsequent plugins
 - Arguments: plugin_name, accent_color, accent_color_icon, plugin_icon, white_color, bg_highlight, transparent, prev_accent, plugins_after
 
 **`src/static_plugin.sh`**
+
 - Wraps static plugins (always produce output) that are followed by conditional plugins
 - Checks if any following conditional plugins have content to determine if it's the last visible
 - Uses `any_plugin_has_content()` to check subsequent plugins at runtime
 - Arguments: plugin_name, accent_color, accent_color_icon, plugin_icon, white_color, bg_highlight, transparent, plugins_after
 
 **`src/threshold_plugin.sh`**
+
 - Wraps plugins with display threshold or dynamic color support
 - Features:
   1. Conditional display based on value threshold (display_threshold + display_condition)
@@ -178,6 +199,7 @@ All cacheable plugins support a TTL (Time To Live) option:
 - Supports serialized palette for color resolution
 
 ### Separator System
+
 - Left separator: Used for session/windows (flows left to right)
 - Right separator: Used for plugins (flows right to left)
 - Each plugin gets: icon separator → icon → content separator → content → end separator
