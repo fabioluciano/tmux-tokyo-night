@@ -26,6 +26,10 @@ CURRENT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck source=src/separators.sh
 . "$CURRENT_DIR/separators.sh"
 
+# Source defaults to get separator values
+# shellcheck source=src/defaults.sh
+. "$CURRENT_DIR/defaults.sh"
+
 # =============================================================================
 # Configuration
 # =============================================================================
@@ -35,9 +39,9 @@ TRANSPARENT="${RENDER_TRANSPARENT:-false}"
 PALETTE_SERIALIZED="${RENDER_PALETTE:-}"
 PLUGINS_CONFIG="${1:-}"
 
-# Read separator directly from tmux
-RIGHT_SEPARATOR=$(get_tmux_option "@theme_right_separator" $'\ue0b2')
-RIGHT_SEPARATOR_INVERSE=$(get_tmux_option "@theme_transparent_right_separator_inverse" $'\ue0d6')
+# Read separator directly from tmux with proper defaults
+RIGHT_SEPARATOR=$(get_tmux_option "@theme_right_separator" "$THEME_DEFAULT_RIGHT_SEPARATOR")
+RIGHT_SEPARATOR_INVERSE=$(get_tmux_option "@theme_right_separator_inverse" "$THEME_DEFAULT_RIGHT_SEPARATOR_INVERSE")
 
 # =============================================================================
 # Palette Helper
