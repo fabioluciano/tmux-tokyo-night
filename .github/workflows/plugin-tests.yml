@@ -39,10 +39,18 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y tmux
           elif [[ "$RUNNER_OS" == "macOS" ]]; then
-            brew install tmux
+            brew install tmux bash
+          fi
+
+      - name: Set bash as default shell
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            echo "$(brew --prefix)/bin/bash" >> $GITHUB_PATH
           fi
 
       - name: Verify plugin scripts syntax
+        shell: bash
         run: |
           set -e
           for plugin in src/plugin/*.sh; do
@@ -51,6 +59,7 @@ jobs:
           done
 
       - name: Test plugin rendering (dry run)
+        shell: bash
         run: |
           set -e
           export TMUX_TOKYO_NIGHT_STYLE="night"
@@ -70,6 +79,7 @@ jobs:
           done
 
       - name: Test OS detection
+        shell: bash
         run: |
           set -e
           source src/utils.sh
@@ -86,6 +96,7 @@ jobs:
           echo "OS detection test passed"
 
       - name: Test available plugins on ${{ matrix.os }}
+        shell: bash
         run: |
           set -e
           source src/utils.sh
