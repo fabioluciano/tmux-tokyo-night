@@ -1,3 +1,10 @@
+# [2.6.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.5.0...v2.6.0) (2025-11-30)
+
+
+### Features
+
+* add external IP, temperature, VPN, and WiFi plugins ([#83](https://github.com/fabioluciano/tmux-tokyo-night/issues/83)) ([3eb8d57](https://github.com/fabioluciano/tmux-tokyo-night/commit/3eb8d57d180e405b632c53bef4c8463f272d9215))
+
 # [2.5.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.4.0...v2.5.0) (2025-11-30)
 
 
