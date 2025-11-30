@@ -367,6 +367,20 @@ PLUGIN_PLAYERCTL_IGNORE_PLAYERS="IGNORE"
 PLUGIN_PLAYERCTL_CACHE_TTL="5"
 
 # =============================================================================
+# PLUGIN: volume
+# =============================================================================
+
+PLUGIN_VOLUME_ICON="󰕾"
+PLUGIN_VOLUME_ICON_MUTED="󰖁"
+PLUGIN_VOLUME_ICON_LOW="󰕿"
+PLUGIN_VOLUME_ICON_MEDIUM="󰖀"
+PLUGIN_VOLUME_ACCENT_COLOR="blue7"
+PLUGIN_VOLUME_ACCENT_COLOR_ICON="blue0"
+PLUGIN_VOLUME_LOW_THRESHOLD="30"
+PLUGIN_VOLUME_MEDIUM_THRESHOLD="70"
+PLUGIN_VOLUME_CACHE_TTL="2"
+
+# =============================================================================
 # THRESHOLD SYSTEM DEFAULTS (applies to all plugins using thresholds)
 # =============================================================================
 

@@ -27,17 +27,13 @@ theme_disable_plugins=$(get_tmux_option "@theme_disable_plugins" "$THEME_DEFAULT
 theme_bar_layout=$(get_tmux_option "@theme_bar_layout" "$THEME_DEFAULT_BAR_LAYOUT")
 
 # shellcheck source=src/palletes/night.sh
+# shellcheck disable=SC1090
 . "$CURRENT_DIR/palletes/$theme_variation.sh"
 
 ### Load Options
 border_style_active_pane=$(get_tmux_option "@theme_active_pane_border_style" "${PALLETE['dark5']}")
 border_style_inactive_pane=$(get_tmux_option "@theme_inactive_pane_border_style" "${PALLETE[bg_highlight]}")
-right_separator=$(get_tmux_option "@theme_right_separator" "$THEME_DEFAULT_RIGHT_SEPARATOR")
 transparent=$(get_tmux_option "@theme_transparent_status_bar" "$THEME_DEFAULT_TRANSPARENT")
-
-if [ "$transparent" = "true" ]; then
-	right_separator_inverse=$(get_tmux_option "@theme_transparent_right_separator_inverse" "$THEME_DEFAULT_RIGHT_SEPARATOR_INVERSE")
-fi
 
 window_with_activity_style=$(get_tmux_option "@theme_window_with_activity_style" "$THEME_DEFAULT_WINDOW_WITH_ACTIVITY_STYLE")
 window_status_bell_style=$(get_tmux_option "@theme_status_bell_style" "$THEME_DEFAULT_STATUS_BELL_STYLE")
@@ -103,7 +99,7 @@ serialize_palette() {
 }
 
 # List of conditional plugins (only show when they have content)
-readonly CONDITIONAL_PLUGINS="git docker homebrew yay spotify kubernetes playerctl spt"
+readonly CONDITIONAL_PLUGINS=" git docker homebrew yay spotify kubernetes playerctl spt "
 
 # Get plugin type
 # Types: conditional (only show if has content), static (always show)
@@ -112,13 +108,11 @@ get_plugin_type() {
     local plugin="$1"
     
     # Check if it's a conditional plugin (only show when they have content)
-    if [[ " $CONDITIONAL_PLUGINS " == *" $plugin "* ]]; then
-        echo "conditional"
-        return
-    fi
+    # Fast string match with pre-padded string
+    [[ "$CONDITIONAL_PLUGINS" == *" $plugin "* ]] && printf 'conditional' && return
     
     # Default: always show (static)
-    echo "static"
+    printf 'static'
 }
 
 # =============================================================================
@@ -127,7 +121,6 @@ get_plugin_type() {
 
 if [ "$theme_disable_plugins" -ne 1 ]; then
 	PALETTE_SERIALIZED=$(serialize_palette)
-	total_plugins=${#plugins[@]}
 	
 	# Build unified plugin config for render_plugins.sh
 	# Format: "name:accent:accent_icon:icon:type;..."
@@ -142,7 +135,14 @@ if [ "$theme_disable_plugins" -ne 1 ]; then
 		fi
 		
 		# Source plugin to get its config variables
+		# shellcheck source=/dev/null
 		. "$plugin_script_path"
+		
+		# Check for keybindings function while plugin is already sourced
+		if declare -f setup_keybindings &>/dev/null; then
+			setup_keybindings
+			unset -f setup_keybindings
+		fi
 		
 		# Get plugin settings via indirect variable expansion
 		icon_var="plugin_${plugin}_icon"
@@ -192,24 +192,6 @@ if [ "$theme_bar_layout" = "double" ]; then
 fi
 
 tmux set-window-option -g window-status-separator ''
-
-# =============================================================================
-# Plugin Keybindings Setup
-# =============================================================================
-
-# Setup keybindings for plugins that define them
-for plugin in "${plugins[@]}"; do
-    plugin_script_path="${CURRENT_DIR}/plugin/${plugin}.sh"
-    
-    if [[ -f "$plugin_script_path" ]]; then
-        # Source plugin and call setup_keybindings if it exists
-        . "$plugin_script_path"
-        if declare -f setup_keybindings &>/dev/null; then
-            setup_keybindings
-            unset -f setup_keybindings
-        fi
-    fi
-done
 
 # =============================================================================
 # Theme Helper Keybindings

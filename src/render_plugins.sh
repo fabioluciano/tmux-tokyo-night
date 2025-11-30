@@ -42,11 +42,24 @@ RIGHT_SEPARATOR_INVERSE=$(get_tmux_option "@theme_transparent_right_separator_in
 # =============================================================================
 # Palette Helper
 # =============================================================================
+# Parse palette once into associative array for fast lookups
+declare -A _PALETTE_MAP
+_parse_palette() {
+    [[ -z "$PALETTE_SERIALIZED" ]] && return
+    local IFS=';'
+    local entry
+    for entry in $PALETTE_SERIALIZED; do
+        [[ -z "$entry" ]] && continue
+        local key="${entry%%=*}"
+        local value="${entry#*=}"
+        _PALETTE_MAP["$key"]="$value"
+    done
+}
+_parse_palette
+
 get_palette_color() {
     local color_name="$1"
-    local result
-    result=$(echo "$PALETTE_SERIALIZED" | tr ';' '\n' | grep "^${color_name}=" | cut -d'=' -f2)
-    printf '%s' "${result:-$color_name}"
+    printf '%s' "${_PALETTE_MAP[$color_name]:-$color_name}"
 }
 
 # =============================================================================
@@ -59,14 +72,14 @@ get_palette_color() {
 #
 # Output format: "show:accent:accent_icon:icon"
 query_plugin_display_info() {
-    local plugin_name="$1"
-    local plugin_script="$2"
-    local content="$3"
+    local plugin_script="$1"
+    local content="$2"
     
     # Source the plugin to get access to its functions
     # Use a subshell to avoid polluting our environment
     local display_info
     display_info=$(
+        # shellcheck source=/dev/null
         # Source the plugin
         . "$plugin_script" 2>/dev/null
         
@@ -105,6 +118,8 @@ for config in "${PLUGIN_CONFIGS[@]}"; do
     plugin_script="${CURRENT_DIR}/plugin/${name}.sh"
     [[ ! -f "$plugin_script" ]] && continue
     
+    # shellcheck source=/dev/null
+    
     # Execute plugin to get content
     content=$("$plugin_script" 2>/dev/null) || content=""
     
@@ -121,7 +136,7 @@ for config in "${PLUGIN_CONFIGS[@]}"; do
     esac
     
     # Query the plugin for display info (show/hide, color overrides)
-    display_info=$(query_plugin_display_info "$name" "$plugin_script" "$content")
+    display_info=$(query_plugin_display_info "$plugin_script" "$content")
     
     # Parse display info: "show:accent:accent_icon:icon"
     IFS=':' read -r should_show override_accent override_accent_icon override_icon <<< "$display_info"

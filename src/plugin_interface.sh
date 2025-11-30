@@ -45,6 +45,7 @@
 # =============================================================================
 
 # Source guard
+# shellcheck disable=SC2317
 if [[ -n "${_PLUGIN_INTERFACE_LOADED:-}" ]]; then
     return 0 2>/dev/null || true
 fi
@@ -57,8 +58,10 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # =============================================================================
 # Helper Functions for Plugins
+# These functions are called indirectly by plugins that source this file
 # =============================================================================
 
+# shellcheck disable=SC2317
 # Evaluate a display condition
 # Usage: evaluate_condition <value> <condition> <threshold>
 # Returns: 0 if condition is met, 1 otherwise

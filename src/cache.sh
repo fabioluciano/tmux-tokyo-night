@@ -119,7 +119,11 @@ cache_get() {
     cache_init
     
     if cache_is_valid "$plugin_name" "$ttl_seconds"; then
-        \cat "$cache_file"
+        # Use read with -r -d '' to preserve all content including newlines
+        # This is faster than cat for small files
+        local content
+        content=$(<"$cache_file")
+        printf '%s' "$content"
         return 0
     fi
     

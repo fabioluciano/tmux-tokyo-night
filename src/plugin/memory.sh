@@ -43,12 +43,15 @@ export plugin_memory_icon plugin_memory_accent_color plugin_memory_accent_color_
 # Convert bytes to human readable format
 bytes_to_human() {
     local bytes=$1
-    local gb=$((bytes / 1024 / 1024 / 1024))
-    local mb=$((bytes / 1024 / 1024))
+    local gb mb
+    
+    gb=$((bytes / 1073741824))
     
     if [[ $gb -gt 0 ]]; then
-        printf '%.1fG' "$(echo "scale=1; $bytes / 1024 / 1024 / 1024" | bc 2>/dev/null || echo "$gb")"
+        # Use awk for floating point (faster than bc and more portable)
+        awk -v b="$bytes" 'BEGIN {printf "%.1fG", b / 1073741824}'
     else
+        mb=$((bytes / 1048576))
         printf '%dM' "$mb"
     fi
 }
