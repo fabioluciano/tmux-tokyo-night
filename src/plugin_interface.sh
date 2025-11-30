@@ -57,21 +57,12 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$ROOT_DIR/utils.sh"
 
 # =============================================================================
-# Option Cache for plugin_get_display_info()
-# Avoids repeated tmux show-option calls during render
+# Helper function for getting tmux options in plugins
 # =============================================================================
-declare -gA _PLUGIN_OPTION_CACHE
-
-# Cached version of get_tmux_option for use in plugin_get_display_info
-# Results are cached for the duration of the render pass
+# Note: Previously cached options for performance, but removed for bash 3.2 compatibility
+# tmux show-option is fast enough that caching is not necessary
 get_cached_option() {
-    local option="$1"
-    local default="$2"
-    
-    if [[ -z "${_PLUGIN_OPTION_CACHE[$option]+isset}" ]]; then
-        _PLUGIN_OPTION_CACHE[$option]=$(get_tmux_option "$option" "$default")
-    fi
-    printf '%s' "${_PLUGIN_OPTION_CACHE[$option]}"
+    get_tmux_option "$@"
 }
 
 # =============================================================================

@@ -86,9 +86,11 @@ Learn more: **[Interactive Keybindings](../../wiki/Interactive-Keybindings)**
 The theme includes 24 built-in plugins organized by category:
 
 ### 📅 Time & Date
+
 - **[datetime](../../wiki/Datetime)** - Customizable date and time display
 
 ### 🌡️ System Monitoring
+
 - **[cpu](../../wiki/CPU)** - CPU usage with thresholds
 - **[memory](../../wiki/Memory)** - RAM usage monitoring
 - **[disk](../../wiki/Disk)** - Disk space tracking
@@ -97,6 +99,7 @@ The theme includes 24 built-in plugins organized by category:
 - **[uptime](../../wiki/Uptime)** - System uptime
 
 ### 🌐 Network & Connectivity
+
 - **[network](../../wiki/Network)** - Bandwidth monitoring
 - **[wifi](../../wiki/WiFi)** - WiFi status and signal
 - **[vpn](../../wiki/VPN)** - VPN connection status
@@ -105,24 +108,29 @@ The theme includes 24 built-in plugins organized by category:
 - **[weather](../../wiki/Weather)** - Weather conditions
 
 ### 💻 Development
+
 - **[git](../../wiki/Git)** - Git branch and status
 - **[docker](../../wiki/Docker)** - Container count
 - **[kubernetes](../../wiki/Kubernetes)** - K8s context/namespace
 
 ### 📦 Package Managers
+
 - **[homebrew](../../wiki/Homebrew)** - Brew updates (macOS)
 - **[yay](../../wiki/Yay)** - AUR updates (Arch)
 
 ### 🎵 Media
+
 - **[spotify](../../wiki/Spotify)** - Now playing
 - **[playerctl](../../wiki/Playerctl)** - Media player
 - **[volume](../../wiki/Volume)** - Volume level
 
 ### 🖥️ System Info
+
 - **[battery](../../wiki/Battery)** - Battery status
 - **[hostname](../../wiki/Hostname)** - System hostname
 
 **Enable plugins:**
+
 ```bash
 set -g @theme_plugins 'datetime,battery,cpu,memory,git,docker'
 ```
@@ -151,6 +159,7 @@ set -g @theme_session_icon 'auto'
 ### Plugin Customization
 
 Each plugin supports:
+
 - **Icon** - Custom icon character
 - **Accent color** - Background color
 - **Cache TTL** - Update frequency
@@ -163,6 +172,7 @@ set -g @theme_plugin_cpu_cache_ttl 2
 ```
 
 Learn more:
+
 - **[Global Configuration](../../wiki/Global-Configuration)**
 - **[Custom Colors & Theming](../../wiki/Custom-Colors-Theming)**
 - **[Performance & Caching](../../wiki/Performance-Caching)**
@@ -206,4 +216,3 @@ See **[Quick Start](../../wiki/Quick-Start)** for more configuration examples.
 ## 📄 License
 
 MIT License - see LICENSE file for details
-

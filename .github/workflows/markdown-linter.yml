@@ -1,0 +1,48 @@
+name: Markdown Linter
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**.md'
+      - '.markdownlint.json'
+      - '.github/workflows/markdown-linter.yml'
+  pull_request:
+    paths:
+      - '**.md'
+      - '.markdownlint.json'
+  workflow_dispatch:
+
+jobs:
+  lint-main-repo:
+    name: Lint Main Repository Markdown
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: false
+
+      - name: Lint Markdown files
+        uses: DavidAnson/markdownlint-cli2-action@v13
+        with:
+          globs: |
+            README.md
+            CLAUDE.md
+
+  lint-wiki:
+    name: Lint Wiki Markdown
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout wiki
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ github.repository }}.wiki
+          path: wiki
+
+      - name: Lint Wiki Markdown files
+        uses: DavidAnson/markdownlint-cli2-action@v13
+        with:
+          globs: 'wiki/**/*.md'
+        continue-on-error: true

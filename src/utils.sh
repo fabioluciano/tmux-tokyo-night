@@ -22,6 +22,59 @@ is_macos() { [[ "$_CACHED_OS" == "Darwin" ]]; }
 is_linux() { [[ "$_CACHED_OS" == Linux ]]; }
 
 # -----------------------------------------------------------------------------
+# Get OS/Distribution icon
+# Automatically detects the operating system and distribution to return
+# an appropriate icon. Result is cached for 24 hours.
+# Output:
+#   Icon string for the detected OS/distro
+# -----------------------------------------------------------------------------
+get_os_icon() {
+    local cache_key="os_icon"
+    local cache_ttl=86400  # 24 hours
+    
+    # Check cache first
+    local cached_value
+    if cached_value=$(cache_get "$cache_key" "$cache_ttl" 2>/dev/null); then
+        printf '%s' "$cached_value"
+        return 0
+    fi
+    
+    local icon=""
+    
+    if is_macos; then
+        icon=$'\uf302'
+    elif is_linux; then
+        # Try to detect Linux distribution
+        if [[ -f /etc/os-release ]]; then
+            # shellcheck disable=SC1091
+            . /etc/os-release
+            case "${ID:-}" in
+                ubuntu)             icon=$'\uf31b' ;;
+                debian)             icon=$'\uf306' ;;
+                fedora)             icon=$'\uf30a' ;;
+                arch)               icon=$'\uf303' ;;
+                manjaro)            icon=$'\uf312' ;;
+                centos|rhel)        icon=$'\uf304' ;;
+                opensuse*)          icon=$'\uf314' ;;
+                alpine)             icon=$'\uf300' ;;
+                gentoo)             icon=$'\uf30d' ;;
+                linuxmint)          icon=$'\uf30e' ;;
+                *)                  icon=$'\uf31a' ;; # Generic Linux
+            esac
+        else
+            icon=$'\uf31a' # Generic Linux
+        fi
+    else
+        icon=$'\uf11c' # Generic/Unknown
+    fi
+    
+    # Cache the result
+    cache_set "$cache_key" "$icon" 2>/dev/null || true
+    
+    printf '%s' "$icon"
+}
+
+# -----------------------------------------------------------------------------
 # Get tmux option value with fallback default
 # Uses caching to avoid repeated tmux calls within the same script execution
 # Arguments:
@@ -29,31 +82,16 @@ is_linux() { [[ "$_CACHED_OS" == Linux ]]; }
 #   $2 - Default value
 # Output:
 #   Option value or default
-# -----------------------------------------------------------------------------
-# Global associative array for tmux option caching.
-# This cache persists for the duration of the shell session and should only be
-# modified via get_tmux_option. Declared global to avoid race conditions and
-# unexpected cache invalidation if sourced multiple times.
-declare -gA _TMUX_OPTION_CACHE
-
 get_tmux_option() {
     local option="$1"
     local default_value="$2"
-    
-    # Check cache first
-    if [[ -v "_TMUX_OPTION_CACHE[$option]" ]]; then
-        printf '%s' "${_TMUX_OPTION_CACHE[$option]}"
-        return
-    fi
     
     local option_value
     option_value=$(tmux show-option -gqv "$option")
     
     if [[ -z "$option_value" ]]; then
-        _TMUX_OPTION_CACHE["$option"]="$default_value"
         printf '%s' "$default_value"
     else
-        _TMUX_OPTION_CACHE["$option"]="$option_value"
         printf '%s' "$option_value"
     fi
 }
@@ -61,6 +99,12 @@ get_tmux_option() {
 function generate_left_side_string() {
 
 	session_icon=$(get_tmux_option "@theme_session_icon" "$THEME_DEFAULT_SESSION_ICON")
+	
+	# Auto-detect OS icon if set to "auto"
+	if [[ "$session_icon" == "auto" ]]; then
+		session_icon=$(get_os_icon)
+	fi
+	
 	left_separator=$(get_tmux_option "@theme_left_separator" "$THEME_DEFAULT_LEFT_SEPARATOR")
 	transparent=$(get_tmux_option "@theme_transparent_status_bar" "false")
 
