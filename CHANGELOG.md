@@ -1,3 +1,10 @@
+## [2.7.1](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.7.0...v2.7.1) (2025-11-30)
+
+
+### Bug Fixes
+
+* separators ([325afc1](https://github.com/fabioluciano/tmux-tokyo-night/commit/325afc1421b0bdd6194cffc34eb36c1f4b40bd75))
+
 # [2.7.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.6.0...v2.7.0) (2025-11-30)
 
 
