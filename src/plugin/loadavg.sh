@@ -13,6 +13,8 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$ROOT_DIR/../utils.sh"
 # shellcheck source=src/cache.sh
 . "$ROOT_DIR/../cache.sh"
+# shellcheck source=src/plugin_interface.sh
+. "$ROOT_DIR/../plugin_interface.sh"
 
 # =============================================================================
 # Plugin Configuration
@@ -112,6 +114,76 @@ format_loadavg() {
             printf '%s' "$load1"
             ;;
     esac
+}
+
+# =============================================================================
+# Plugin Interface Implementation
+# =============================================================================
+
+# This function is called by render_plugins.sh to get display decisions
+# Output format: "show:accent:accent_icon:icon"
+#
+# Configuration options:
+#   @theme_plugin_loadavg_display_condition    - Condition: le, lt, ge, gt, eq, always
+#   @theme_plugin_loadavg_display_threshold    - Show only when condition is met
+#   @theme_plugin_loadavg_warning_threshold    - Warning level (default: 2.0 * cores)
+#   @theme_plugin_loadavg_critical_threshold   - Critical level (default: 4.0 * cores)
+#   @theme_plugin_loadavg_warning_accent_color - Color for warning level
+#   @theme_plugin_loadavg_critical_accent_color - Color for critical level
+plugin_get_display_info() {
+    local content="$1"
+    local show="1"
+    local accent=""
+    local accent_icon=""
+    local icon=""
+    
+    # Get number of CPU cores for default thresholds
+    local num_cores
+    num_cores=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
+    
+    # Extract numeric value from content (first number, could be decimal)
+    local value
+    value=$(echo "$content" | grep -oE '[0-9]+\.?[0-9]*' | head -1)
+    # Convert to integer for comparison (multiply by 100)
+    local value_int
+    value_int=$(awk "BEGIN {printf \"%d\", $value * 100}" 2>/dev/null || echo 0)
+    
+    # Check display condition (hide based on threshold)
+    local display_condition display_threshold
+    display_condition=$(get_tmux_option "@theme_plugin_loadavg_display_condition" "always")
+    display_threshold=$(get_tmux_option "@theme_plugin_loadavg_display_threshold" "")
+    
+    if [[ "$display_condition" != "always" ]] && [[ -n "$display_threshold" ]]; then
+        local threshold_int
+        threshold_int=$(awk "BEGIN {printf \"%d\", $display_threshold * 100}" 2>/dev/null || echo 0)
+        if ! evaluate_condition "$value_int" "$display_condition" "$threshold_int"; then
+            show="0"
+        fi
+    fi
+    
+    # Check warning/critical thresholds for color changes
+    # Default: warning at 2x cores, critical at 4x cores
+    local warning_multiplier critical_multiplier
+    warning_multiplier=$(get_tmux_option "@theme_plugin_loadavg_warning_threshold_multiplier" "$PLUGIN_LOADAVG_WARNING_THRESHOLD_MULTIPLIER")
+    critical_multiplier=$(get_tmux_option "@theme_plugin_loadavg_critical_threshold_multiplier" "$PLUGIN_LOADAVG_CRITICAL_THRESHOLD_MULTIPLIER")
+    
+    local warning_threshold critical_threshold
+    warning_threshold=$(get_tmux_option "@theme_plugin_loadavg_warning_threshold" "$((num_cores * warning_multiplier))")
+    critical_threshold=$(get_tmux_option "@theme_plugin_loadavg_critical_threshold" "$((num_cores * critical_multiplier))")
+    
+    local warning_int critical_int
+    warning_int=$(awk "BEGIN {printf \"%d\", $warning_threshold * 100}" 2>/dev/null || echo 0)
+    critical_int=$(awk "BEGIN {printf \"%d\", $critical_threshold * 100}" 2>/dev/null || echo 0)
+    
+    if [[ "$value_int" -ge "$critical_int" ]]; then
+        accent=$(get_tmux_option "@theme_plugin_loadavg_critical_accent_color" "$PLUGIN_LOADAVG_CRITICAL_ACCENT_COLOR")
+        accent_icon=$(get_tmux_option "@theme_plugin_loadavg_critical_accent_color_icon" "$PLUGIN_LOADAVG_CRITICAL_ACCENT_COLOR_ICON")
+    elif [[ "$value_int" -ge "$warning_int" ]]; then
+        accent=$(get_tmux_option "@theme_plugin_loadavg_warning_accent_color" "$PLUGIN_LOADAVG_WARNING_ACCENT_COLOR")
+        accent_icon=$(get_tmux_option "@theme_plugin_loadavg_warning_accent_color_icon" "$PLUGIN_LOADAVG_WARNING_ACCENT_COLOR_ICON")
+    fi
+    
+    build_display_info "$show" "$accent" "$accent_icon" "$icon"
 }
 
 # =============================================================================

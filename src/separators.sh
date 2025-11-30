@@ -127,7 +127,7 @@ build_icon_section() {
     local accent_color_icon="$4"
     local plugin_icon="$5"
     
-    printf '%s' "${sep_icon_start}#[fg=${white_color},bg=${accent_color_icon}]${plugin_icon}${sep_icon_end}"
+    printf '%s' "${sep_icon_start}#[fg=${white_color},bg=${accent_color_icon}]${plugin_icon} ${sep_icon_end}"
 }
 
 # -----------------------------------------------------------------------------
@@ -147,9 +147,9 @@ build_content_section() {
     local is_last="${4:-0}"
     
     if [[ "$is_last" == "1" ]]; then
-        printf '%s' "#[fg=${white_color},bg=${accent_color}] ${content}#[none]"
+        printf '%s' "#[fg=${white_color},bg=${accent_color}]${content}#[none]"
     else
-        printf '%s' "#[fg=${white_color},bg=${accent_color}] ${content} #[none]"
+        printf '%s' "#[fg=${white_color},bg=${accent_color}]${content} #[none]"
     fi
 }
 

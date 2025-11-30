@@ -56,7 +56,7 @@ THEME_DEFAULT_PLUGINS="datetime,weather"
 
 # Status bar lengths
 THEME_DEFAULT_STATUS_LEFT_LENGTH="100"
-THEME_DEFAULT_STATUS_RIGHT_LENGTH="250"
+THEME_DEFAULT_STATUS_RIGHT_LENGTH="220"
 
 # =============================================================================
 # SEPARATORS
@@ -96,6 +96,22 @@ THEME_DEFAULT_WINDOW_WITH_ACTIVITY_STYLE="italics"
 
 # Style for bell status
 THEME_DEFAULT_STATUS_BELL_STYLE="bold"
+
+# =============================================================================
+# THEME HELPER KEYBINDINGS
+# =============================================================================
+
+# Key to open theme options reference popup (prefix + key)
+# Set to empty string to disable
+THEME_DEFAULT_HELPER_KEY="?"
+THEME_DEFAULT_HELPER_WIDTH="80%"
+THEME_DEFAULT_HELPER_HEIGHT="80%"
+
+# Key to open keybindings viewer popup (prefix + key)
+# Set to empty string to disable
+THEME_DEFAULT_KEYBINDINGS_KEY="B"
+THEME_DEFAULT_KEYBINDINGS_WIDTH="80%"
+THEME_DEFAULT_KEYBINDINGS_HEIGHT="80%"
 
 # =============================================================================
 # PLUGIN: datetime
@@ -162,6 +178,14 @@ PLUGIN_CPU_ACCENT_COLOR="blue7"
 PLUGIN_CPU_ACCENT_COLOR_ICON="blue0"
 PLUGIN_CPU_CACHE_TTL="2"
 
+# Threshold settings for dynamic colors
+PLUGIN_CPU_WARNING_THRESHOLD="70"
+PLUGIN_CPU_CRITICAL_THRESHOLD="90"
+PLUGIN_CPU_WARNING_ACCENT_COLOR="yellow"
+PLUGIN_CPU_WARNING_ACCENT_COLOR_ICON="orange"
+PLUGIN_CPU_CRITICAL_ACCENT_COLOR="red"
+PLUGIN_CPU_CRITICAL_ACCENT_COLOR_ICON="red1"
+
 # =============================================================================
 # PLUGIN: memory
 # =============================================================================
@@ -171,6 +195,14 @@ PLUGIN_MEMORY_ACCENT_COLOR="blue7"
 PLUGIN_MEMORY_ACCENT_COLOR_ICON="blue0"
 PLUGIN_MEMORY_FORMAT="percent"
 PLUGIN_MEMORY_CACHE_TTL="5"
+
+# Threshold settings for dynamic colors
+PLUGIN_MEMORY_WARNING_THRESHOLD="70"
+PLUGIN_MEMORY_CRITICAL_THRESHOLD="90"
+PLUGIN_MEMORY_WARNING_ACCENT_COLOR="yellow"
+PLUGIN_MEMORY_WARNING_ACCENT_COLOR_ICON="orange"
+PLUGIN_MEMORY_CRITICAL_ACCENT_COLOR="red"
+PLUGIN_MEMORY_CRITICAL_ACCENT_COLOR_ICON="red1"
 
 # =============================================================================
 # PLUGIN: disk
@@ -182,6 +214,14 @@ PLUGIN_DISK_ACCENT_COLOR_ICON="blue0"
 PLUGIN_DISK_MOUNT="/"
 PLUGIN_DISK_FORMAT="percent"
 PLUGIN_DISK_CACHE_TTL="60"
+
+# Threshold settings for dynamic colors
+PLUGIN_DISK_WARNING_THRESHOLD="70"
+PLUGIN_DISK_CRITICAL_THRESHOLD="90"
+PLUGIN_DISK_WARNING_ACCENT_COLOR="yellow"
+PLUGIN_DISK_WARNING_ACCENT_COLOR_ICON="orange"
+PLUGIN_DISK_CRITICAL_ACCENT_COLOR="red"
+PLUGIN_DISK_CRITICAL_ACCENT_COLOR_ICON="red1"
 
 # =============================================================================
 # PLUGIN: network
@@ -202,6 +242,15 @@ PLUGIN_LOADAVG_ACCENT_COLOR="blue7"
 PLUGIN_LOADAVG_ACCENT_COLOR_ICON="blue0"
 PLUGIN_LOADAVG_FORMAT="1"
 PLUGIN_LOADAVG_CACHE_TTL="5"
+
+# Threshold settings for dynamic colors (multipliers of CPU cores)
+# Default: warning at 2x cores, critical at 4x cores
+PLUGIN_LOADAVG_WARNING_THRESHOLD_MULTIPLIER="2"
+PLUGIN_LOADAVG_CRITICAL_THRESHOLD_MULTIPLIER="4"
+PLUGIN_LOADAVG_WARNING_ACCENT_COLOR="yellow"
+PLUGIN_LOADAVG_WARNING_ACCENT_COLOR_ICON="orange"
+PLUGIN_LOADAVG_CRITICAL_ACCENT_COLOR="red"
+PLUGIN_LOADAVG_CRITICAL_ACCENT_COLOR_ICON="red1"
 
 # =============================================================================
 # PLUGIN: uptime
@@ -240,8 +289,20 @@ PLUGIN_KUBERNETES_ACCENT_COLOR_ICON="blue0"
 PLUGIN_KUBERNETES_DISPLAY_MODE="connected"
 PLUGIN_KUBERNETES_SHOW_NAMESPACE="false"
 PLUGIN_KUBERNETES_CONNECTIVITY_TIMEOUT="2"
-PLUGIN_KUBERNETES_CONNECTIVITY_CACHE_TTL="300"
+PLUGIN_KUBERNETES_CONNECTIVITY_CACHE_TTL="120"
 PLUGIN_KUBERNETES_CACHE_TTL="30"
+
+# Keybinding for context selector popup (requires kubectl-ctx from krew)
+# Set to empty string to disable the keybinding
+PLUGIN_KUBERNETES_CONTEXT_SELECTOR_KEY="K"
+PLUGIN_KUBERNETES_CONTEXT_SELECTOR_WIDTH="50%"
+PLUGIN_KUBERNETES_CONTEXT_SELECTOR_HEIGHT="50%"
+
+# Keybinding for namespace selector popup (requires kubectl-ns from krew)
+# Set to empty string to disable the keybinding
+PLUGIN_KUBERNETES_NAMESPACE_SELECTOR_KEY="N"
+PLUGIN_KUBERNETES_NAMESPACE_SELECTOR_WIDTH="50%"
+PLUGIN_KUBERNETES_NAMESPACE_SELECTOR_HEIGHT="50%"
 
 # =============================================================================
 # PLUGIN: hostname

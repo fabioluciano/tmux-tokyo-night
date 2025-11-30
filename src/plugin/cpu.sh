@@ -13,6 +13,8 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$ROOT_DIR/../utils.sh"
 # shellcheck source=src/cache.sh
 . "$ROOT_DIR/../cache.sh"
+# shellcheck source=src/plugin_interface.sh
+. "$ROOT_DIR/../plugin_interface.sh"
 
 # =============================================================================
 # Plugin Configuration
@@ -98,6 +100,60 @@ get_cpu_macos() {
     ')
     
     printf '%s%%' "${cpu_usage:-0}"
+}
+
+# =============================================================================
+# Plugin Interface Implementation
+# =============================================================================
+
+# This function is called by render_plugins.sh to get display decisions
+# Output format: "show:accent:accent_icon:icon"
+#
+# Configuration options:
+#   @theme_plugin_cpu_display_condition    - Condition: le, lt, ge, gt, eq, always
+#   @theme_plugin_cpu_display_threshold    - Show only when condition is met
+#   @theme_plugin_cpu_warning_threshold    - Warning level (default: 70)
+#   @theme_plugin_cpu_critical_threshold   - Critical level (default: 90)
+#   @theme_plugin_cpu_warning_accent_color - Color for warning level
+#   @theme_plugin_cpu_critical_accent_color - Color for critical level
+plugin_get_display_info() {
+    local content="$1"
+    local show="1"
+    local accent=""
+    local accent_icon=""
+    local icon=""
+    
+    # Extract numeric value from content
+    local value
+    value=$(extract_numeric "$content")
+    
+    # Check display condition (hide based on threshold)
+    local display_condition display_threshold
+    display_condition=$(get_tmux_option "@theme_plugin_cpu_display_condition" "always")
+    display_threshold=$(get_tmux_option "@theme_plugin_cpu_display_threshold" "")
+    
+    if [[ "$display_condition" != "always" ]] && [[ -n "$display_threshold" ]]; then
+        if ! evaluate_condition "$value" "$display_condition" "$display_threshold"; then
+            show="0"
+        fi
+    fi
+    
+    # Check warning/critical thresholds for color changes
+    local warning_threshold critical_threshold
+    warning_threshold=$(get_tmux_option "@theme_plugin_cpu_warning_threshold" "$PLUGIN_CPU_WARNING_THRESHOLD")
+    critical_threshold=$(get_tmux_option "@theme_plugin_cpu_critical_threshold" "$PLUGIN_CPU_CRITICAL_THRESHOLD")
+    
+    if [[ -n "$value" ]]; then
+        if [[ "$value" -ge "$critical_threshold" ]]; then
+            accent=$(get_tmux_option "@theme_plugin_cpu_critical_accent_color" "$PLUGIN_CPU_CRITICAL_ACCENT_COLOR")
+            accent_icon=$(get_tmux_option "@theme_plugin_cpu_critical_accent_color_icon" "$PLUGIN_CPU_CRITICAL_ACCENT_COLOR_ICON")
+        elif [[ "$value" -ge "$warning_threshold" ]]; then
+            accent=$(get_tmux_option "@theme_plugin_cpu_warning_accent_color" "$PLUGIN_CPU_WARNING_ACCENT_COLOR")
+            accent_icon=$(get_tmux_option "@theme_plugin_cpu_warning_accent_color_icon" "$PLUGIN_CPU_WARNING_ACCENT_COLOR_ICON")
+        fi
+    fi
+    
+    build_display_info "$show" "$accent" "$accent_icon" "$icon"
 }
 
 # =============================================================================

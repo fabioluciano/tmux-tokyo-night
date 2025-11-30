@@ -102,27 +102,47 @@ run_background_connectivity_check() {
 # Returns: 0 if connected, 1 otherwise
 # -----------------------------------------------------------------------------
 check_cluster_connectivity() {
-    # Try cache first (within TTL)
-    local cached_status
-    if cached_status=$(cache_get "$CONNECTIVITY_CACHE_KEY" "$plugin_kubernetes_connectivity_cache_ttl"); then
+    local cache_file="${CACHE_DIR:-$HOME/.cache/tmux-tokyo-night}/${CONNECTIVITY_CACHE_KEY}.cache"
+    local cached_status=""
+    local cache_age=999999
+    
+    # Read current cache status and age
+    if [[ -f "$cache_file" ]]; then
+        cached_status=$(<"$cache_file")
+        local file_mtime
+        file_mtime=$(stat -f %m "$cache_file" 2>/dev/null || stat -c %Y "$cache_file" 2>/dev/null || echo 0)
+        cache_age=$(( $(date +%s) - file_mtime ))
+    fi
+    
+    # Determine TTL based on status:
+    # - Connected: use configured TTL (default 300s) - we trust it's still connected
+    # - Disconnected: use shorter TTL (30s) - retry sooner to detect reconnection
+    local effective_ttl
+    if [[ "$cached_status" == "connected" ]]; then
+        effective_ttl="$plugin_kubernetes_connectivity_cache_ttl"
+    else
+        effective_ttl=30  # Retry disconnected status more frequently
+    fi
+    
+    # If cache is valid (within TTL), use it
+    if [[ $cache_age -lt $effective_ttl ]]; then
         [[ "$cached_status" == "connected" ]] && return 0
         return 1
     fi
     
-    # Cache expired or missing - trigger background refresh
+    # Cache expired - trigger background refresh if not already running
     if ! connectivity_check_is_running; then
         run_background_connectivity_check
     fi
     
-    # Return last known status (even if expired) - be pessimistic if unknown
-    # Read raw cache file to get last known status regardless of TTL
-    local cache_file="${CACHE_DIR:-$HOME/.cache/tmux-tokyo-night}/${CONNECTIVITY_CACHE_KEY}.cache"
-    if [[ -f "$cache_file" ]]; then
-        cached_status=$(<"$cache_file")
-        [[ "$cached_status" == "connected" ]] && return 0
+    # Return last known status while waiting for background check
+    # Be optimistic: if we were connected before, assume still connected
+    # This prevents flicker when cache expires but cluster is still up
+    if [[ "$cached_status" == "connected" ]]; then
+        return 0
     fi
     
-    # No previous data - assume disconnected (pessimistic)
+    # Unknown or disconnected - return disconnected
     return 1
 }
 
@@ -187,24 +207,67 @@ get_k8s_info() {
 }
 
 # =============================================================================
+# Keybinding Setup
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Setup context selector keybinding (called during theme initialization)
+# Requires: kubectl-ctx from krew, fzf
+# -----------------------------------------------------------------------------
+setup_keybindings() {
+    local context_key namespace_key popup_width popup_height ns_popup_width ns_popup_height cache_dir
+    
+    # Context selector settings
+    context_key=$(get_tmux_option "@theme_plugin_kubernetes_context_selector_key" "$PLUGIN_KUBERNETES_CONTEXT_SELECTOR_KEY")
+    popup_width=$(get_tmux_option "@theme_plugin_kubernetes_context_selector_width" "$PLUGIN_KUBERNETES_CONTEXT_SELECTOR_WIDTH")
+    popup_height=$(get_tmux_option "@theme_plugin_kubernetes_context_selector_height" "$PLUGIN_KUBERNETES_CONTEXT_SELECTOR_HEIGHT")
+    
+    # Namespace selector settings
+    namespace_key=$(get_tmux_option "@theme_plugin_kubernetes_namespace_selector_key" "$PLUGIN_KUBERNETES_NAMESPACE_SELECTOR_KEY")
+    ns_popup_width=$(get_tmux_option "@theme_plugin_kubernetes_namespace_selector_width" "$PLUGIN_KUBERNETES_NAMESPACE_SELECTOR_WIDTH")
+    ns_popup_height=$(get_tmux_option "@theme_plugin_kubernetes_namespace_selector_height" "$PLUGIN_KUBERNETES_NAMESPACE_SELECTOR_HEIGHT")
+    
+    # Cache directory for invalidation after context/namespace switch
+    cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/tmux-tokyo-night"
+    
+    # Context selector: select context with fzf, switch if selected, update cache, refresh
+    if [[ -n "$context_key" ]]; then
+        tmux bind-key "$context_key" display-popup -E -w "$popup_width" -h "$popup_height" \
+            "selected=\$(kubectl ctx | fzf --header='Select Kubernetes Context' --reverse) && [ -n \"\$selected\" ] && kubectl ctx \"\$selected\" && rm -f '${cache_dir}/kubernetes.cache' && tmux refresh-client -S"
+    fi
+    
+    # Namespace selector: select namespace with fzf, switch if selected, invalidate cache, refresh
+    if [[ -n "$namespace_key" ]]; then
+        tmux bind-key "$namespace_key" display-popup -E -w "$ns_popup_width" -h "$ns_popup_height" \
+            "selected=\$(kubectl ns | fzf --header='Select Kubernetes Namespace' --reverse) && [ -n \"\$selected\" ] && kubectl ns \"\$selected\" && rm -f '${cache_dir}/kubernetes.cache' && tmux refresh-client -S"
+    fi
+}
+
+# =============================================================================
 # Main Plugin Logic
 # =============================================================================
 
 load_plugin() {
-    # For "connected" mode, check connectivity (non-blocking with background updates)
+    # Check cache for context/namespace info FIRST (fast path)
+    local cached_value
+    if cached_value=$(cache_get "$CACHE_KEY" "$CACHE_TTL"); then
+        # For "connected" mode, also verify connectivity (non-blocking)
+        if [[ "$plugin_kubernetes_display_mode" == "connected" ]]; then
+            if ! check_cluster_connectivity; then
+                return
+            fi
+        fi
+        printf '%s' "$cached_value"
+        return
+    fi
+    
+    # Cache miss - need to fetch context info
+    # For "connected" mode, check connectivity first
     if [[ "$plugin_kubernetes_display_mode" == "connected" ]]; then
         if ! check_cluster_connectivity; then
-            # Clear the context cache when disconnected to ensure clean state
             cache_set "$CACHE_KEY" ""
             return
         fi
-    fi
-    
-    # Check cache for context/namespace info
-    local cached_value
-    if cached_value=$(cache_get "$CACHE_KEY" "$CACHE_TTL"); then
-        printf '%s' "$cached_value"
-        return
     fi
 
     local result

@@ -2,7 +2,8 @@
 
 A clean, dark tmux theme inspired by the [Tokyo Night](https://github.com/enkia/tokyo-night-vscode-theme) color scheme. Features a modular plugin system for displaying system information, development tools, and media status in your status bar.
 
-![Tokyo Night Theme](./assets/screenshot.png)
+![Tokyo Night Theme](./assets/tokyo-night-bar.png)
+![Tokyo Night Theme](./assets/tokyo-night-theme.png)
 
 ## ✨ Features
 
@@ -12,6 +13,8 @@ A clean, dark tmux theme inspired by the [Tokyo Night](https://github.com/enkia/
 - 🎯 Fully customizable colors, icons, and formats
 - 🖥️ Cross-platform support (macOS and Linux)
 - 🔤 Powerline-style separators with transparent mode support
+- 📊 Dynamic threshold colors for system monitoring (CPU, memory, disk, etc.)
+- ⌨️ Interactive popup helpers and selectors
 
 ---
 
@@ -58,6 +61,67 @@ set -g @theme_variation 'night'
 
 ---
 
+## ⌨️ Built-in Keybindings
+
+The theme provides interactive popup keybindings to help you explore options and navigate your tmux setup.
+
+### Theme Helpers
+
+| Keybinding | Description |
+|------------|-------------|
+| `prefix + ?` | Options viewer - Shows all available theme options |
+| `prefix + B` | Keybindings viewer - Shows all keybindings grouped by plugin |
+
+### Kubernetes Selectors (requires [kubectx/kubens](https://github.com/ahmetb/kubectx))
+
+| Keybinding | Description |
+|------------|-------------|
+| `prefix + K` | Kubernetes context selector popup |
+| `prefix + N` | Kubernetes namespace selector popup |
+
+### Options Viewer (`prefix + ?`)
+
+Displays all available theme options with their default values and current settings. Options are grouped by category and plugin. Also scans and displays options from **all other installed TPM plugins**.
+
+![Options Viewer](./assets/keybinding-options-viewer.gif)
+
+### Keybindings Viewer (`prefix + B`)
+
+Dynamically detects and displays all keybindings from your installed TPM plugins, grouped by plugin name. Also shows tmux built-in keybindings.
+
+![Keybindings Viewer](./assets/keybinding-keybindings-viewer.gif)
+
+### Kubernetes Context Selector (`prefix + K`)
+
+Interactive popup to switch between Kubernetes contexts using fzf. Requires `kubectl-ctx` from [krew](https://krew.sigs.k8s.io/).
+
+![Kubernetes Context Selector](./assets/keybinding-kubernetes-ctx.gif)
+
+### Kubernetes Namespace Selector (`prefix + N`)
+
+Interactive popup to switch between Kubernetes namespaces using fzf. Requires `kubectl-ns` from [krew](https://krew.sigs.k8s.io/).
+
+![Kubernetes Namespace Selector](./assets/keybinding-kubernetes-ns.gif)
+
+### Customizing Keybindings
+
+```bash
+# Theme helper keys (set to empty string to disable)
+set -g @theme_helper_key "?"           # Options viewer
+set -g @theme_helper_width "80%"       # Options viewer popup width
+set -g @theme_helper_height "80%"      # Options viewer popup height
+
+set -g @theme_keybindings_key "B"      # Keybindings viewer
+set -g @theme_keybindings_width "80%"  # Keybindings viewer popup width
+set -g @theme_keybindings_height "80%" # Keybindings viewer popup height
+
+# Kubernetes selector keys (see Kubernetes plugin section)
+set -g @theme_plugin_kubernetes_context_selector_key "K"
+set -g @theme_plugin_kubernetes_namespace_selector_key "N"
+```
+
+---
+
 ## ⚙️ Global Options
 
 | Option | Description | Default |
@@ -65,12 +129,20 @@ set -g @theme_variation 'night'
 | `@theme_variation` | Color scheme: `night`, `storm`, `moon`, `day` | `night` |
 | `@theme_plugins` | Comma-separated list of enabled plugins | `datetime,weather` |
 | `@theme_disable_plugins` | Disable all plugins: `0` or `1` | `0` |
-| `@theme_transparent` | Transparent status bar: `true` or `false` | `false` |
-| `@theme_bar_layout` | Status bar layout | `single` |
+| `@theme_transparent_status_bar` | Transparent status bar: `true` or `false` | `false` |
+| `@theme_bar_layout` | Status bar layout: `single` or `double` | `single` |
 | `@theme_left_separator` | Left powerline separator | `` |
 | `@theme_right_separator` | Right powerline separator | `` |
-| `@theme_left_separator_inverse` | Inverse left separator (transparent mode) | `` |
-| `@theme_right_separator_inverse` | Inverse right separator (transparent mode) | `` |
+| `@theme_transparent_left_separator_inverse` | Inverse left separator (transparent mode) | `` |
+| `@theme_transparent_right_separator_inverse` | Inverse right separator (transparent mode) | `` |
+| `@theme_status_left_length` | Maximum length of left status | `100` |
+| `@theme_status_right_length` | Maximum length of right status | `250` |
+| `@theme_helper_key` | Key for options viewer popup | `?` |
+| `@theme_helper_width` | Options viewer popup width | `80%` |
+| `@theme_helper_height` | Options viewer popup height | `80%` |
+| `@theme_keybindings_key` | Key for keybindings viewer popup | `B` |
+| `@theme_keybindings_width` | Keybindings viewer popup width | `80%` |
+| `@theme_keybindings_height` | Keybindings viewer popup height | `80%` |
 
 ### Session & Window Icons
 
@@ -91,12 +163,12 @@ set -g @theme_variation 'night'
 | `@theme_window_with_activity_style` | Style for windows with activity | `italics` |
 | `@theme_status_bell_style` | Style for bell status | `bold` |
 
-### Status Bar Length
+### Pane Border
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `@theme_status_left_length` | Maximum length of left status | `100` |
-| `@theme_status_right_length` | Maximum length of right status | `250` |
+| `@theme_active_pane_border_style` | Active pane border color | `dark5` |
+| `@theme_inactive_pane_border_style` | Inactive pane border color | `bg_highlight` |
 
 ---
 
@@ -105,7 +177,7 @@ set -g @theme_variation 'night'
 Enable plugins by adding them to `@theme_plugins`:
 
 ```bash
-set -g @theme_plugins 'datetime,cpu,memory,battery'
+set -g @theme_plugins 'datetime,cpu,memory,battery,kubernetes'
 ```
 
 ### Available Plugins
@@ -115,11 +187,11 @@ set -g @theme_plugins 'datetime,cpu,memory,battery'
 | `datetime` | Date and time display | None |
 | `weather` | Current weather conditions | `curl` |
 | `battery` | Battery status with charging indicator | None |
-| `cpu` | CPU usage percentage | None |
-| `memory` | Memory usage | None |
-| `disk` | Disk usage | None |
+| `cpu` | CPU usage percentage with thresholds | None |
+| `memory` | Memory usage with thresholds | None |
+| `disk` | Disk usage with thresholds | None |
 | `network` | Network upload/download speeds | None |
-| `loadavg` | System load average | None |
+| `loadavg` | System load average with thresholds | None |
 | `uptime` | System uptime | None |
 | `git` | Git branch and status | `git` |
 | `docker` | Docker container count | `docker` |
@@ -142,6 +214,7 @@ Each plugin supports common options for customization:
 | `@theme_plugin_<name>_icon` | Plugin icon |
 | `@theme_plugin_<name>_accent_color` | Background color |
 | `@theme_plugin_<name>_accent_color_icon` | Icon background color |
+| `@theme_plugin_<name>_cache_ttl` | Cache duration in seconds |
 
 ### Available Colors
 
@@ -272,7 +345,7 @@ set -g @theme_plugin_weather_cache_ttl '3600'
 
 ## 🔋 Battery
 
-Displays battery percentage with dynamic icons and charging indicator.
+Displays battery percentage with dynamic icons and charging indicator. Colors change based on battery level.
 
 | Option | Description | Default |
 |--------|-------------|---------|
@@ -304,39 +377,52 @@ set -g @theme_plugin_battery_low_accent_color 'orange'
 
 ## 💻 CPU
 
-Displays current CPU usage percentage.
+Displays current CPU usage percentage with dynamic threshold colors.
 
 | Option | Description | Default |
 |--------|-------------|---------|
 | `@theme_plugin_cpu_icon` | Plugin icon | `` |
-| `@theme_plugin_cpu_accent_color` | Background color | `blue7` |
-| `@theme_plugin_cpu_accent_color_icon` | Icon background color | `blue0` |
+| `@theme_plugin_cpu_accent_color` | Background color (normal) | `blue7` |
+| `@theme_plugin_cpu_accent_color_icon` | Icon background color (normal) | `blue0` |
 | `@theme_plugin_cpu_cache_ttl` | Cache duration in seconds | `2` |
+| `@theme_plugin_cpu_warning_threshold` | Warning threshold (%) | `70` |
+| `@theme_plugin_cpu_critical_threshold` | Critical threshold (%) | `90` |
+| `@theme_plugin_cpu_warning_accent_color` | Warning background color | `yellow` |
+| `@theme_plugin_cpu_warning_accent_color_icon` | Warning icon color | `orange` |
+| `@theme_plugin_cpu_critical_accent_color` | Critical background color | `red` |
+| `@theme_plugin_cpu_critical_accent_color_icon` | Critical icon color | `red1` |
 
 ### Examples
 
 ```bash
-# Custom icon
-set -g @theme_plugin_cpu_icon '󰻠'
+# Change thresholds
+set -g @theme_plugin_cpu_warning_threshold '60'
+set -g @theme_plugin_cpu_critical_threshold '80'
 
-# Change colors
-set -g @theme_plugin_cpu_accent_color 'yellow'
-set -g @theme_plugin_cpu_accent_color_icon 'orange'
+# Custom warning colors
+set -g @theme_plugin_cpu_warning_accent_color 'orange'
+set -g @theme_plugin_cpu_warning_accent_color_icon 'yellow'
 ```
 
 ---
 
 ## 🧠 Memory
 
-Displays current memory usage.
+Displays current memory usage with dynamic threshold colors.
 
 | Option | Description | Default |
 |--------|-------------|---------|
 | `@theme_plugin_memory_icon` | Plugin icon | `` |
-| `@theme_plugin_memory_accent_color` | Background color | `blue7` |
-| `@theme_plugin_memory_accent_color_icon` | Icon background color | `blue0` |
+| `@theme_plugin_memory_accent_color` | Background color (normal) | `blue7` |
+| `@theme_plugin_memory_accent_color_icon` | Icon background color (normal) | `blue0` |
 | `@theme_plugin_memory_format` | Format: `percent` or `usage` | `percent` |
 | `@theme_plugin_memory_cache_ttl` | Cache duration in seconds | `5` |
+| `@theme_plugin_memory_warning_threshold` | Warning threshold (%) | `70` |
+| `@theme_plugin_memory_critical_threshold` | Critical threshold (%) | `90` |
+| `@theme_plugin_memory_warning_accent_color` | Warning background color | `yellow` |
+| `@theme_plugin_memory_warning_accent_color_icon` | Warning icon color | `orange` |
+| `@theme_plugin_memory_critical_accent_color` | Critical background color | `red` |
+| `@theme_plugin_memory_critical_accent_color_icon` | Critical icon color | `red1` |
 
 ### Format Options
 
@@ -349,24 +435,31 @@ Displays current memory usage.
 # Show used/total memory
 set -g @theme_plugin_memory_format 'usage'
 
-# Custom colors
-set -g @theme_plugin_memory_accent_color 'magenta'
+# Custom thresholds
+set -g @theme_plugin_memory_warning_threshold '80'
+set -g @theme_plugin_memory_critical_threshold '95'
 ```
 
 ---
 
 ## 💾 Disk
 
-Displays disk usage for a specified mount point.
+Displays disk usage for a specified mount point with dynamic threshold colors.
 
 | Option | Description | Default |
 |--------|-------------|---------|
 | `@theme_plugin_disk_icon` | Plugin icon | `󰋊` |
-| `@theme_plugin_disk_accent_color` | Background color | `blue7` |
-| `@theme_plugin_disk_accent_color_icon` | Icon background color | `blue0` |
+| `@theme_plugin_disk_accent_color` | Background color (normal) | `blue7` |
+| `@theme_plugin_disk_accent_color_icon` | Icon background color (normal) | `blue0` |
 | `@theme_plugin_disk_mount` | Mount point to monitor | `/` |
 | `@theme_plugin_disk_format` | Format: `percent`, `usage`, or `free` | `percent` |
 | `@theme_plugin_disk_cache_ttl` | Cache duration in seconds | `60` |
+| `@theme_plugin_disk_warning_threshold` | Warning threshold (%) | `70` |
+| `@theme_plugin_disk_critical_threshold` | Critical threshold (%) | `90` |
+| `@theme_plugin_disk_warning_accent_color` | Warning background color | `yellow` |
+| `@theme_plugin_disk_warning_accent_color_icon` | Warning icon color | `orange` |
+| `@theme_plugin_disk_critical_accent_color` | Critical background color | `red` |
+| `@theme_plugin_disk_critical_accent_color_icon` | Critical icon color | `red1` |
 
 ### Format Options
 
@@ -382,6 +475,10 @@ set -g @theme_plugin_disk_mount '/home'
 
 # Show free space
 set -g @theme_plugin_disk_format 'free'
+
+# Higher thresholds for disk
+set -g @theme_plugin_disk_warning_threshold '80'
+set -g @theme_plugin_disk_critical_threshold '95'
 ```
 
 ---
@@ -412,15 +509,21 @@ set -g @theme_plugin_network_accent_color 'cyan'
 
 ## 📊 Load Average
 
-Displays system load average.
+Displays system load average with dynamic threshold colors based on CPU core count.
 
 | Option | Description | Default |
 |--------|-------------|---------|
 | `@theme_plugin_loadavg_icon` | Plugin icon | `󰊚` |
-| `@theme_plugin_loadavg_accent_color` | Background color | `blue7` |
-| `@theme_plugin_loadavg_accent_color_icon` | Icon background color | `blue0` |
+| `@theme_plugin_loadavg_accent_color` | Background color (normal) | `blue7` |
+| `@theme_plugin_loadavg_accent_color_icon` | Icon background color (normal) | `blue0` |
 | `@theme_plugin_loadavg_format` | Format: `1`, `5`, `15`, or `all` | `1` |
 | `@theme_plugin_loadavg_cache_ttl` | Cache duration in seconds | `5` |
+| `@theme_plugin_loadavg_warning_threshold_multiplier` | Warning at N × CPU cores | `2` |
+| `@theme_plugin_loadavg_critical_threshold_multiplier` | Critical at N × CPU cores | `4` |
+| `@theme_plugin_loadavg_warning_accent_color` | Warning background color | `yellow` |
+| `@theme_plugin_loadavg_warning_accent_color_icon` | Warning icon color | `orange` |
+| `@theme_plugin_loadavg_critical_accent_color` | Critical background color | `red` |
+| `@theme_plugin_loadavg_critical_accent_color_icon` | Critical icon color | `red1` |
 
 ### Format Options
 
@@ -434,6 +537,9 @@ Displays system load average.
 ```bash
 # Show all load averages
 set -g @theme_plugin_loadavg_format 'all'
+
+# Lower warning threshold (1.5x cores)
+set -g @theme_plugin_loadavg_warning_threshold_multiplier '1.5'
 ```
 
 ---
@@ -448,13 +554,6 @@ Displays system uptime.
 | `@theme_plugin_uptime_accent_color` | Background color | `blue7` |
 | `@theme_plugin_uptime_accent_color_icon` | Icon background color | `blue0` |
 | `@theme_plugin_uptime_cache_ttl` | Cache duration in seconds | `60` |
-
-### Examples
-
-```bash
-# Custom icon
-set -g @theme_plugin_uptime_icon '⏰'
-```
 
 ---
 
@@ -498,19 +597,11 @@ Displays Docker container count. **Only visible when Docker is running.**
 - `N`: N running containers
 - `⏹N`: N stopped containers
 
-### Examples
-
-```bash
-# Custom colors
-set -g @theme_plugin_docker_accent_color 'blue'
-set -g @theme_plugin_docker_accent_color_icon 'blue0'
-```
-
 ---
 
 ## ☸️ Kubernetes
 
-Displays current Kubernetes context and namespace.
+Displays current Kubernetes context and namespace with interactive selectors.
 
 | Option | Description | Default |
 |--------|-------------|---------|
@@ -522,6 +613,17 @@ Displays current Kubernetes context and namespace.
 | `@theme_plugin_kubernetes_connectivity_timeout` | Connection timeout in seconds | `2` |
 | `@theme_plugin_kubernetes_connectivity_cache_ttl` | Connectivity cache duration | `300` |
 | `@theme_plugin_kubernetes_cache_ttl` | Cache duration in seconds | `30` |
+
+### Interactive Selectors (requires [kubectl-ctx/ns](https://github.com/ahmetb/kubectx))
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `@theme_plugin_kubernetes_context_selector_key` | Key for context selector | `K` |
+| `@theme_plugin_kubernetes_context_selector_width` | Popup width | `50%` |
+| `@theme_plugin_kubernetes_context_selector_height` | Popup height | `50%` |
+| `@theme_plugin_kubernetes_namespace_selector_key` | Key for namespace selector | `N` |
+| `@theme_plugin_kubernetes_namespace_selector_width` | Popup width | `50%` |
+| `@theme_plugin_kubernetes_namespace_selector_height` | Popup height | `50%` |
 
 ### Display Modes
 
@@ -540,6 +642,13 @@ set -g @theme_plugin_kubernetes_show_namespace 'true'
 
 # Change colors
 set -g @theme_plugin_kubernetes_accent_color 'purple'
+
+# Change keybindings
+set -g @theme_plugin_kubernetes_context_selector_key 'k'
+set -g @theme_plugin_kubernetes_namespace_selector_key 'n'
+
+# Disable namespace selector
+set -g @theme_plugin_kubernetes_namespace_selector_key ''
 ```
 
 ---
@@ -555,13 +664,6 @@ Displays the system hostname.
 | `@theme_plugin_hostname_accent_color_icon` | Icon background color | `blue0` |
 | `@theme_plugin_hostname_format` | Format: `short` or `full` | `short` |
 
-### Examples
-
-```bash
-# Show full hostname
-set -g @theme_plugin_hostname_format 'full'
-```
-
 ---
 
 ## 🍺 Homebrew
@@ -575,16 +677,6 @@ Displays number of outdated Homebrew packages. **macOS/Linux only.**
 | `@theme_plugin_homebrew_accent_color_icon` | Icon background color | `blue0` |
 | `@theme_plugin_homebrew_additional_options` | Additional options for `brew outdated` | `--greedy` |
 | `@theme_plugin_homebrew_cache_ttl` | Cache duration in seconds | `1800` |
-
-### Examples
-
-```bash
-# Disable greedy option
-set -g @theme_plugin_homebrew_additional_options ''
-
-# Check more frequently
-set -g @theme_plugin_homebrew_cache_ttl '900'
-```
 
 ---
 
@@ -613,7 +705,7 @@ Displays currently playing Spotify track.
 | `@theme_plugin_spotify_format` | Display format | `%artist% - %track%` |
 | `@theme_plugin_spotify_max_length` | Maximum text length | `40` |
 | `@theme_plugin_spotify_not_playing` | Text when not playing | (empty) |
-| `@theme_plugin_spotify_backend` | Backend: `auto`, `osascript`, `playerctl`, `spt` | `auto` |
+| `@theme_plugin_spotify_backend` | Backend: `auto`, `osascript`, `playerctl`, `spt`, `shpotify` | `auto` |
 | `@theme_plugin_spotify_cache_ttl` | Cache duration in seconds | `5` |
 
 ### Format Variables
@@ -621,30 +713,6 @@ Displays currently playing Spotify track.
 - `%artist%`: Artist name
 - `%track%`: Track name
 - `%album%`: Album name
-
-### Backend Options
-
-- `auto`: Auto-detect best available backend (default)
-- `osascript`: Use AppleScript (macOS only)
-- `playerctl`: Use playerctl (Linux)
-- `shpotify`: Use shpotify CLI (macOS)
-- `spt`: Use spotify-tui
-
-### Examples
-
-```bash
-# Show only track name
-set -g @theme_plugin_spotify_format '%track%'
-
-# Longer text
-set -g @theme_plugin_spotify_max_length '60'
-
-# Force specific backend
-set -g @theme_plugin_spotify_backend 'osascript'
-
-# Show text when not playing
-set -g @theme_plugin_spotify_not_playing '♫ No music'
-```
 
 ---
 
@@ -659,12 +727,6 @@ Displays currently playing track via [spotify-tui](https://github.com/Rigellute/
 | `@theme_plugin_spt_accent_color_icon` | Icon background color | `blue0` |
 | `@theme_plugin_spt_format` | Display format | `%a - %t` |
 | `@theme_plugin_spt_cache_ttl` | Cache duration in seconds | `5` |
-
-### Format Variables
-
-- `%a`: Artist name
-- `%t`: Track name
-- `%b`: Album name
 
 ---
 
@@ -681,16 +743,6 @@ Displays media player status using [playerctl](https://github.com/altdesktop/pla
 | `@theme_plugin_playerctl_ignore_players` | Players to ignore | `IGNORE` |
 | `@theme_plugin_playerctl_cache_ttl` | Cache duration in seconds | `5` |
 
-### Examples
-
-```bash
-# Custom format
-set -g @theme_plugin_playerctl_format '{{title}}'
-
-# Ignore specific players
-set -g @theme_plugin_playerctl_ignore_players 'chromium,firefox'
-```
-
 ---
 
 ## 📝 Complete Configuration Example
@@ -702,10 +754,10 @@ set -g @theme_plugin_playerctl_ignore_players 'chromium,firefox'
 set -g @theme_variation 'night'
 
 # Enable plugins
-set -g @theme_plugins 'datetime,weather,battery,cpu,memory,git,kubernetes,spotify'
+set -g @theme_plugins 'datetime,weather,battery,cpu,memory,disk,git,kubernetes,spotify'
 
 # Transparent mode (optional)
-set -g @theme_transparent 'false'
+set -g @theme_transparent_status_bar 'false'
 
 # Session icon
 set -g @theme_session_icon ''
@@ -723,6 +775,17 @@ set -g @theme_plugin_weather_format 'full'
 set -g @theme_plugin_battery_display_mode 'percentage'
 set -g @theme_plugin_battery_low_threshold '20'
 
+# CPU with custom thresholds
+set -g @theme_plugin_cpu_warning_threshold '60'
+set -g @theme_plugin_cpu_critical_threshold '85'
+
+# Memory with custom format
+set -g @theme_plugin_memory_format 'usage'
+
+# Disk monitoring /home
+set -g @theme_plugin_disk_mount '/home'
+set -g @theme_plugin_disk_format 'free'
+
 # Kubernetes configuration
 set -g @theme_plugin_kubernetes_display_mode 'connected'
 set -g @theme_plugin_kubernetes_show_namespace 'true'
@@ -732,11 +795,7 @@ set -g @theme_plugin_kubernetes_accent_color 'purple'
 set -g @theme_plugin_spotify_format '%artist% - %track%'
 set -g @theme_plugin_spotify_max_length '30'
 
-# Custom colors for CPU
-set -g @theme_plugin_cpu_accent_color 'yellow'
-set -g @theme_plugin_cpu_accent_color_icon 'orange'
-
-# Git colors
+# Custom colors for git
 set -g @theme_plugin_git_accent_color 'green'
 set -g @theme_plugin_git_accent_color_icon 'green2'
 
@@ -782,6 +841,14 @@ If you experience stale data:
 rm -rf ~/.cache/tmux-tokyo-night/
 tmux source ~/.tmux.conf
 ```
+
+### View all options
+
+Press `prefix + ?` to open the options viewer popup with all available options and their current values.
+
+### View all keybindings
+
+Press `prefix + B` to see all keybindings from your installed plugins, dynamically grouped by plugin.
 
 ---
 

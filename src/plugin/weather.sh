@@ -178,7 +178,12 @@ weather_fetch() {
     # Clean up the response
     # - Remove trailing % that wttr.in adds at the end
     # - Trim whitespace
+    # - Remove Unicode variation selectors (U+FE0E, U+FE0F) that cause width issues in tmux
     weather=$(printf '%s' "$weather" | sed 's/%$//; s/^[[:space:]]*//; s/[[:space:]]*$//')
+    # Remove variation selectors using perl if available, otherwise use sed
+    if command -v perl &>/dev/null; then
+        weather=$(printf '%s' "$weather" | perl -CS -pe 's/\x{FE0E}|\x{FE0F}//g')
+    fi
     
     # Validate response
     if [[ -z "$weather" || "$weather" == *"Unknown"* || "$weather" == *"ERROR"* || ${#weather} -gt 100 ]]; then
