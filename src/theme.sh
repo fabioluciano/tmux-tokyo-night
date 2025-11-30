@@ -99,7 +99,7 @@ serialize_palette() {
 }
 
 # List of conditional plugins (only show when they have content)
-readonly CONDITIONAL_PLUGINS=" git docker homebrew yay spotify kubernetes playerctl spt "
+readonly CONDITIONAL_PLUGINS=" git docker homebrew yay spotify kubernetes playerctl spt vpn temperature external_ip "
 
 # Get plugin type
 # Types: conditional (only show if has content), static (always show)
