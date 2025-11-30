@@ -89,7 +89,8 @@ check_forticlient() {
             forti_status=$(scutil --nc list 2>/dev/null | grep -i "forti" | grep -E "^\*.*Connected")
             if [[ -n "$forti_status" ]]; then
                 local vpn_name
-                vpn_name=$(echo "$forti_status" | sed 's/.*"\([^"]*\)".*/\1/')
+                vpn_name=${forti_status##*\"}
+                vpn_name=${vpn_name%%\"*}
                 printf 'connected:%s' "$vpn_name"
                 return 0
             fi
@@ -168,7 +169,7 @@ check_openvpn() {
     if pgrep -x "openvpn" &>/dev/null; then
         # Try to get config name from process
         local config
-        config=$(ps aux | grep "[o]penvpn.*--config" | grep -o -- '--config [^ ]*' | head -1 | awk '{print $2}')
+        config=$(pgrep -a openvpn | grep -o -- '--config [^ ]*' | head -1 | awk '{print $2}')
         
         if [[ -n "$config" ]]; then
             local name
@@ -194,7 +195,8 @@ check_macos_vpn() {
     if [[ -n "$vpn_status" ]]; then
         # Extract VPN name
         local vpn_name
-        vpn_name=$(echo "$vpn_status" | sed 's/.*"\([^"]*\)".*/\1/')
+        vpn_name=${vpn_status##*\"}
+        vpn_name=${vpn_name%%\"*}
         printf 'connected:%s' "$vpn_name"
         return 0
     fi
@@ -226,9 +228,9 @@ check_tun_interface() {
     local tun_interfaces
     
     if is_linux; then
-        tun_interfaces=$(ip link show 2>/dev/null | grep -E "tun[0-9]+|tap[0-9]+" | wc -l)
+        tun_interfaces=$(ip link show 2>/dev/null | grep -cE "tun[0-9]+|tap[0-9]+")
     else
-        tun_interfaces=$(ifconfig 2>/dev/null | grep -E "^tun[0-9]+|^tap[0-9]+" | wc -l)
+        tun_interfaces=$(ifconfig 2>/dev/null | grep -cE "^tun[0-9]+|^tap[0-9]+")
     fi
     
     if [[ "$tun_interfaces" -gt 0 ]]; then

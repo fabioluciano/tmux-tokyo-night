@@ -163,7 +163,7 @@ get_wifi_macos_networksetup() {
     fi
     
     local ssid
-    ssid=$(echo "$output" | sed 's/Current Wi-Fi Network: //')
+    ssid=${output#Current Wi-Fi Network: }
     
     [[ -z "$ssid" ]] && return 1
     
