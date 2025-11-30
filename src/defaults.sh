@@ -381,6 +381,75 @@ PLUGIN_VOLUME_MEDIUM_THRESHOLD="70"
 PLUGIN_VOLUME_CACHE_TTL="2"
 
 # =============================================================================
+# PLUGIN: wifi
+# =============================================================================
+
+PLUGIN_WIFI_ICON="󰤨"
+PLUGIN_WIFI_ICON_DISCONNECTED="󰤭"
+PLUGIN_WIFI_ACCENT_COLOR="blue7"
+PLUGIN_WIFI_ACCENT_COLOR_ICON="blue0"
+PLUGIN_WIFI_SHOW_SSID="true"
+PLUGIN_WIFI_SHOW_IP="false"
+PLUGIN_WIFI_SHOW_SIGNAL="false"
+PLUGIN_WIFI_CACHE_TTL="10"
+
+# =============================================================================
+# PLUGIN: bluetooth
+# =============================================================================
+
+PLUGIN_BLUETOOTH_ICON="󰂯"
+PLUGIN_BLUETOOTH_ICON_OFF="󰂲"
+PLUGIN_BLUETOOTH_ICON_CONNECTED="󰂱"
+PLUGIN_BLUETOOTH_ACCENT_COLOR="blue7"
+PLUGIN_BLUETOOTH_ACCENT_COLOR_ICON="blue0"
+PLUGIN_BLUETOOTH_SHOW_DEVICE="true"
+PLUGIN_BLUETOOTH_SHOW_BATTERY="true"
+PLUGIN_BLUETOOTH_FORMAT="all"
+PLUGIN_BLUETOOTH_MAX_LENGTH="25"
+PLUGIN_BLUETOOTH_CACHE_TTL="10"
+
+# =============================================================================
+# PLUGIN: vpn
+# =============================================================================
+
+PLUGIN_VPN_ICON="󰌾"
+PLUGIN_VPN_ICON_DISCONNECTED="󰦞"
+PLUGIN_VPN_ACCENT_COLOR="blue7"
+PLUGIN_VPN_ACCENT_COLOR_ICON="blue0"
+PLUGIN_VPN_SHOW_NAME="true"
+PLUGIN_VPN_SHOW_WHEN_DISCONNECTED="false"
+PLUGIN_VPN_MAX_LENGTH="20"
+PLUGIN_VPN_CACHE_TTL="10"
+
+# =============================================================================
+# PLUGIN: temperature
+# =============================================================================
+
+PLUGIN_TEMPERATURE_ICON="󰔏"
+PLUGIN_TEMPERATURE_ICON_HOT="󰸁"
+PLUGIN_TEMPERATURE_ACCENT_COLOR="blue7"
+PLUGIN_TEMPERATURE_ACCENT_COLOR_ICON="blue0"
+PLUGIN_TEMPERATURE_UNIT="C"
+PLUGIN_TEMPERATURE_CACHE_TTL="5"
+
+# Threshold settings for dynamic colors
+PLUGIN_TEMPERATURE_WARNING_THRESHOLD="60"
+PLUGIN_TEMPERATURE_CRITICAL_THRESHOLD="80"
+PLUGIN_TEMPERATURE_WARNING_ACCENT_COLOR="yellow"
+PLUGIN_TEMPERATURE_WARNING_ACCENT_COLOR_ICON="orange"
+PLUGIN_TEMPERATURE_CRITICAL_ACCENT_COLOR="red"
+PLUGIN_TEMPERATURE_CRITICAL_ACCENT_COLOR_ICON="red1"
+
+# =============================================================================
+# PLUGIN: external_ip
+# =============================================================================
+
+PLUGIN_EXTERNAL_IP_ICON="󰩟"
+PLUGIN_EXTERNAL_IP_ACCENT_COLOR="blue7"
+PLUGIN_EXTERNAL_IP_ACCENT_COLOR_ICON="blue0"
+PLUGIN_EXTERNAL_IP_CACHE_TTL="300"
+
+# =============================================================================
 # THRESHOLD SYSTEM DEFAULTS (applies to all plugins using thresholds)
 # =============================================================================
 

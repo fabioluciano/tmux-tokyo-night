@@ -8,7 +8,7 @@ A clean, dark tmux theme inspired by the [Tokyo Night](https://github.com/enkia/
 ## ✨ Features
 
 - 🎨 Four color variations: **Night**, **Storm**, **Moon**, and **Day**
-- 🔌 Modular plugin system with 18 built-in plugins
+- 🔌 Modular plugin system with 24 built-in plugins
 - ⚡ Performance optimized with intelligent caching
 - 🎯 Fully customizable colors, icons, and formats
 - 🖥️ Cross-platform support (macOS and Linux)
@@ -202,6 +202,12 @@ set -g @theme_plugins 'datetime,cpu,memory,battery,kubernetes'
 | `spotify` | Currently playing Spotify track | See below |
 | `spt` | Spotify via spotify-tui | `spt` |
 | `playerctl` | Media player status (Linux) | `playerctl` |
+| `volume` | System volume percentage | None |
+| `wifi` | WiFi network and signal strength | None |
+| `bluetooth` | Bluetooth status and devices | None |
+| `vpn` | VPN connection status | None |
+| `temperature` | CPU/system temperature (Linux only) | See below |
+| `external_ip` | External (public) IP address | `curl` |
 
 ---
 
@@ -745,6 +751,247 @@ Displays media player status using [playerctl](https://github.com/altdesktop/pla
 
 ---
 
+## 🔊 Volume
+
+Displays system volume percentage with dynamic icons based on volume level and mute status.
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `@theme_plugin_volume_icon` | Plugin icon (high volume) | `󰕾` |
+| `@theme_plugin_volume_accent_color` | Background color | `blue7` |
+| `@theme_plugin_volume_accent_color_icon` | Icon background color | `blue0` |
+| `@theme_plugin_volume_icon_muted` | Icon when muted | `󰖁` |
+| `@theme_plugin_volume_icon_low` | Icon for low volume | `󰕿` |
+| `@theme_plugin_volume_icon_medium` | Icon for medium volume | `󰖀` |
+| `@theme_plugin_volume_low_threshold` | Low volume threshold (%) | `30` |
+| `@theme_plugin_volume_medium_threshold` | Medium volume threshold (%) | `70` |
+| `@theme_plugin_volume_cache_ttl` | Cache duration in seconds | `2` |
+
+### Platform Support
+
+| Platform | Backend |
+|----------|---------|
+| macOS | `osascript` (AppleScript) |
+| Linux | `wpctl`, `pactl`, `pamixer`, `amixer` |
+
+---
+
+## 📶 WiFi
+
+Displays WiFi network name, IP address, and/or signal strength.
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `@theme_plugin_wifi_icon` | Plugin icon | `󰤨` |
+| `@theme_plugin_wifi_icon_disconnected` | Icon when disconnected | `󰤭` |
+| `@theme_plugin_wifi_accent_color` | Background color | `blue7` |
+| `@theme_plugin_wifi_accent_color_icon` | Icon background color | `blue0` |
+| `@theme_plugin_wifi_show_ssid` | Show network name | `true` |
+| `@theme_plugin_wifi_show_ip` | Show IP address instead of SSID | `false` |
+| `@theme_plugin_wifi_show_signal` | Show signal strength | `false` |
+| `@theme_plugin_wifi_cache_ttl` | Cache duration in seconds | `10` |
+
+### Signal Strength Icons
+
+When `show_signal` is enabled, the icon changes based on signal strength:
+- `󰤯` - No signal (0-20%)
+- `󰤟` - Weak (21-40%)
+- `󰤢` - Fair (41-60%)
+- `󰤥` - Good (61-80%)
+- `󰤨` - Excellent (81-100%)
+
+### Platform Support
+
+| Platform | Backend |
+|----------|---------|
+| macOS | `ipconfig`, `system_profiler`, `networksetup` |
+| Linux | `nmcli`, `iw`, `iwconfig` |
+
+### macOS Sequoia (15.0+) Privacy Notice
+
+Starting with macOS Sequoia, Apple added a privacy feature that redacts WiFi SSID information by default. If you see "WiFi" instead of your actual network name, run this command once to enable verbose mode:
+
+```bash
+sudo ipconfig setverbose 1
+```
+
+This setting persists across reboots. The plugin will automatically detect if verbose mode is enabled and display the real SSID.
+
+### Examples
+
+```bash
+# Show IP address instead of SSID
+set -g @theme_plugin_wifi_show_ip 'true'
+
+# Show signal strength percentage
+set -g @theme_plugin_wifi_show_signal 'true'
+
+# Show IP and signal strength
+set -g @theme_plugin_wifi_show_ip 'true'
+set -g @theme_plugin_wifi_show_signal 'true'
+
+# Show both SSID and signal (default behavior)
+set -g @theme_plugin_wifi_show_ssid 'true'
+set -g @theme_plugin_wifi_show_signal 'true'
+```
+
+---
+
+## 󰂯 Bluetooth
+
+Displays Bluetooth status and connected devices.
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `@theme_plugin_bluetooth_icon` | Icon when on | `󰂯` |
+| `@theme_plugin_bluetooth_icon_off` | Icon when off | `󰂲` |
+| `@theme_plugin_bluetooth_icon_connected` | Icon when device connected | `󰂱` |
+| `@theme_plugin_bluetooth_accent_color` | Background color | `blue7` |
+| `@theme_plugin_bluetooth_accent_color_icon` | Icon background color | `blue0` |
+| `@theme_plugin_bluetooth_show_device` | Show connected device name | `true` |
+| `@theme_plugin_bluetooth_format` | Display format: `first`, `count`, `all` | `all` |
+| `@theme_plugin_bluetooth_max_length` | Max display length | `15` |
+| `@theme_plugin_bluetooth_cache_ttl` | Cache duration in seconds | `10` |
+
+### Display Formats
+
+| Format | Example | Description |
+|--------|---------|-------------|
+| `first` | `AirPods Pro` | Show first connected device only |
+| `count` | `2 devices` | Show number of connected devices |
+| `all` | `AirPods, Mouse` | Show all devices (comma-separated) |
+
+### Platform Support
+
+| Platform | Backend |
+|----------|---------|
+| macOS | `system_profiler`, `blueutil` |
+| Linux | `bluetoothctl`, `hcitool` |
+
+### Examples
+
+```bash
+# Show only device count
+set -g @theme_plugin_bluetooth_format 'count'
+
+# Show first device only
+set -g @theme_plugin_bluetooth_format 'first'
+
+# Longer display length for all devices
+set -g @theme_plugin_bluetooth_format 'all'
+set -g @theme_plugin_bluetooth_max_length '30'
+
+# Hide device name, just show status
+set -g @theme_plugin_bluetooth_show_device 'false'
+```
+
+---
+
+## 🔐 VPN
+
+Displays VPN connection status and server name. **Only visible when connected** (by default).
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `@theme_plugin_vpn_icon` | Icon when connected | `󰌾` |
+| `@theme_plugin_vpn_icon_disconnected` | Icon when disconnected | `󰦞` |
+| `@theme_plugin_vpn_accent_color` | Background color | `green` |
+| `@theme_plugin_vpn_accent_color_icon` | Icon background color | `green2` |
+| `@theme_plugin_vpn_show_name` | Show VPN/server name | `true` |
+| `@theme_plugin_vpn_show_when_disconnected` | Show when not connected | `false` |
+| `@theme_plugin_vpn_max_length` | Max name length | `20` |
+| `@theme_plugin_vpn_cache_ttl` | Cache duration in seconds | `10` |
+
+### Supported VPN Types
+
+- **WireGuard** (`wg`)
+- **Tailscale**
+- **OpenVPN**
+- **macOS System VPN** (IKEv2, L2TP, etc.)
+- **NetworkManager VPN** (Linux)
+
+### Examples
+
+```bash
+# Always show VPN status (even when disconnected)
+set -g @theme_plugin_vpn_show_when_disconnected 'true'
+
+# Custom colors when connected
+set -g @theme_plugin_vpn_connected_accent_color 'cyan'
+set -g @theme_plugin_vpn_connected_accent_color_icon 'blue'
+```
+
+---
+
+## 🌡️ Temperature
+
+Displays CPU/system temperature with dynamic threshold colors. **Linux only** - automatically disabled on macOS.
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `@theme_plugin_temperature_icon` | Plugin icon | `󰔏` |
+| `@theme_plugin_temperature_icon_hot` | Icon when hot | `󰸁` |
+| `@theme_plugin_temperature_accent_color` | Background color (normal) | `blue7` |
+| `@theme_plugin_temperature_accent_color_icon` | Icon background color (normal) | `blue0` |
+| `@theme_plugin_temperature_unit` | Unit: `C` or `F` | `C` |
+| `@theme_plugin_temperature_cache_ttl` | Cache duration in seconds | `5` |
+| `@theme_plugin_temperature_warning_threshold` | Warning threshold (°C) | `60` |
+| `@theme_plugin_temperature_critical_threshold` | Critical threshold (°C) | `80` |
+| `@theme_plugin_temperature_warning_accent_color` | Warning background color | `yellow` |
+| `@theme_plugin_temperature_warning_accent_color_icon` | Warning icon color | `orange` |
+| `@theme_plugin_temperature_critical_accent_color` | Critical background color | `red` |
+| `@theme_plugin_temperature_critical_accent_color_icon` | Critical icon color | `red1` |
+
+### Platform Support
+
+| Platform | Backend |
+|----------|---------|
+| Linux | `/sys/class/hwmon/`, `/sys/class/thermal/`, `sensors` |
+| macOS | Not supported (plugin automatically disabled) |
+
+### Examples
+
+```bash
+# Use Fahrenheit
+set -g @theme_plugin_temperature_unit 'F'
+
+# Custom thresholds
+set -g @theme_plugin_temperature_warning_threshold '70'
+set -g @theme_plugin_temperature_critical_threshold '85'
+```
+
+**Note:** This plugin is automatically disabled on macOS as reliable CPU temperature readings are not available without kernel extensions.
+
+---
+
+## 🌐 External IP
+
+Displays your external (public) IP address. **Only visible when connected to the internet.**
+
+| Option | Description | Default |
+|--------|-------------|---------||
+| `@theme_plugin_external_ip_icon` | Plugin icon | `󰩟` |
+| `@theme_plugin_external_ip_accent_color` | Background color | `blue7` |
+| `@theme_plugin_external_ip_accent_color_icon` | Icon background color | `blue0` |
+| `@theme_plugin_external_ip_cache_ttl` | Cache duration in seconds | `300` |
+
+### Platform Support
+
+Works on all platforms with `curl` installed.
+
+### Examples
+
+```bash
+# Longer cache (10 minutes)
+set -g @theme_plugin_external_ip_cache_ttl '600'
+
+# Custom colors
+set -g @theme_plugin_external_ip_accent_color 'cyan'
+set -g @theme_plugin_external_ip_accent_color_icon 'blue'
+```
+
+---
+
 ## 📝 Complete Configuration Example
 
 ```bash
@@ -754,7 +1001,7 @@ Displays media player status using [playerctl](https://github.com/altdesktop/pla
 set -g @theme_variation 'night'
 
 # Enable plugins
-set -g @theme_plugins 'datetime,weather,battery,cpu,memory,disk,git,kubernetes,spotify'
+set -g @theme_plugins 'datetime,weather,battery,cpu,memory,disk,wifi,vpn,bluetooth,external_ip,git,kubernetes'
 
 # Transparent mode (optional)
 set -g @theme_transparent_status_bar 'false'
