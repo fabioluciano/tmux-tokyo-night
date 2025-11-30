@@ -1,3 +1,11 @@
+# [2.5.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.4.0...v2.5.0) (2025-11-30)
+
+
+### Features
+
+* add tmux keybindings and options viewer scripts ([251bf57](https://github.com/fabioluciano/tmux-tokyo-night/commit/251bf57d507af1453b67e00e4824c4050776b568))
+* Enhance weather plugin with customizable formats and caching ([ea82a81](https://github.com/fabioluciano/tmux-tokyo-night/commit/ea82a81e24a41ce3b3a589f224de1db3e4ecc207))
+
 # [2.4.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.3.0...v2.4.0) (2025-11-29)
 
 
