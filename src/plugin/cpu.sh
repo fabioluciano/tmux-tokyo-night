@@ -128,9 +128,10 @@ plugin_get_display_info() {
     value=$(extract_numeric "$content")
     
     # Check display condition (hide based on threshold)
+    # Use get_cached_option for performance in render loop
     local display_condition display_threshold
-    display_condition=$(get_tmux_option "@theme_plugin_cpu_display_condition" "always")
-    display_threshold=$(get_tmux_option "@theme_plugin_cpu_display_threshold" "")
+    display_condition=$(get_cached_option "@theme_plugin_cpu_display_condition" "always")
+    display_threshold=$(get_cached_option "@theme_plugin_cpu_display_threshold" "")
     
     if [[ "$display_condition" != "always" ]] && [[ -n "$display_threshold" ]]; then
         if ! evaluate_condition "$value" "$display_condition" "$display_threshold"; then
@@ -140,16 +141,16 @@ plugin_get_display_info() {
     
     # Check warning/critical thresholds for color changes
     local warning_threshold critical_threshold
-    warning_threshold=$(get_tmux_option "@theme_plugin_cpu_warning_threshold" "$PLUGIN_CPU_WARNING_THRESHOLD")
-    critical_threshold=$(get_tmux_option "@theme_plugin_cpu_critical_threshold" "$PLUGIN_CPU_CRITICAL_THRESHOLD")
+    warning_threshold=$(get_cached_option "@theme_plugin_cpu_warning_threshold" "$PLUGIN_CPU_WARNING_THRESHOLD")
+    critical_threshold=$(get_cached_option "@theme_plugin_cpu_critical_threshold" "$PLUGIN_CPU_CRITICAL_THRESHOLD")
     
     if [[ -n "$value" ]]; then
         if [[ "$value" -ge "$critical_threshold" ]]; then
-            accent=$(get_tmux_option "@theme_plugin_cpu_critical_accent_color" "$PLUGIN_CPU_CRITICAL_ACCENT_COLOR")
-            accent_icon=$(get_tmux_option "@theme_plugin_cpu_critical_accent_color_icon" "$PLUGIN_CPU_CRITICAL_ACCENT_COLOR_ICON")
+            accent=$(get_cached_option "@theme_plugin_cpu_critical_accent_color" "$PLUGIN_CPU_CRITICAL_ACCENT_COLOR")
+            accent_icon=$(get_cached_option "@theme_plugin_cpu_critical_accent_color_icon" "$PLUGIN_CPU_CRITICAL_ACCENT_COLOR_ICON")
         elif [[ "$value" -ge "$warning_threshold" ]]; then
-            accent=$(get_tmux_option "@theme_plugin_cpu_warning_accent_color" "$PLUGIN_CPU_WARNING_ACCENT_COLOR")
-            accent_icon=$(get_tmux_option "@theme_plugin_cpu_warning_accent_color_icon" "$PLUGIN_CPU_WARNING_ACCENT_COLOR_ICON")
+            accent=$(get_cached_option "@theme_plugin_cpu_warning_accent_color" "$PLUGIN_CPU_WARNING_ACCENT_COLOR")
+            accent_icon=$(get_cached_option "@theme_plugin_cpu_warning_accent_color_icon" "$PLUGIN_CPU_WARNING_ACCENT_COLOR_ICON")
         fi
     fi
     

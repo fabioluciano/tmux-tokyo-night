@@ -196,22 +196,23 @@ plugin_get_display_info() {
     value=$(extract_numeric "$content")
     
     # Check if muted
+    # Use get_cached_option for performance in render loop
     if [[ "$content" == "MUTED" ]] || volume_is_muted; then
-        icon=$(get_tmux_option "@theme_plugin_volume_icon_muted" "${PLUGIN_VOLUME_ICON_MUTED:-󰖁}")
-        accent=$(get_tmux_option "@theme_plugin_volume_muted_accent_color" "")
-        accent_icon=$(get_tmux_option "@theme_plugin_volume_muted_accent_color_icon" "")
+        icon=$(get_cached_option "@theme_plugin_volume_icon_muted" "${PLUGIN_VOLUME_ICON_MUTED:-󰖁}")
+        accent=$(get_cached_option "@theme_plugin_volume_muted_accent_color" "")
+        accent_icon=$(get_cached_option "@theme_plugin_volume_muted_accent_color_icon" "")
     elif [[ -n "$value" ]]; then
         # Select icon based on volume level
         local low_threshold medium_threshold
-        low_threshold=$(get_tmux_option "@theme_plugin_volume_low_threshold" "${PLUGIN_VOLUME_LOW_THRESHOLD:-30}")
-        medium_threshold=$(get_tmux_option "@theme_plugin_volume_medium_threshold" "${PLUGIN_VOLUME_MEDIUM_THRESHOLD:-70}")
+        low_threshold=$(get_cached_option "@theme_plugin_volume_low_threshold" "${PLUGIN_VOLUME_LOW_THRESHOLD:-30}")
+        medium_threshold=$(get_cached_option "@theme_plugin_volume_medium_threshold" "${PLUGIN_VOLUME_MEDIUM_THRESHOLD:-70}")
         
         if [[ "$value" -le "$low_threshold" ]]; then
-            icon=$(get_tmux_option "@theme_plugin_volume_icon_low" "${PLUGIN_VOLUME_ICON_LOW:-󰕿}")
+            icon=$(get_cached_option "@theme_plugin_volume_icon_low" "${PLUGIN_VOLUME_ICON_LOW:-󰕿}")
         elif [[ "$value" -le "$medium_threshold" ]]; then
-            icon=$(get_tmux_option "@theme_plugin_volume_icon_medium" "${PLUGIN_VOLUME_ICON_MEDIUM:-󰖀}")
+            icon=$(get_cached_option "@theme_plugin_volume_icon_medium" "${PLUGIN_VOLUME_ICON_MEDIUM:-󰖀}")
         else
-            icon=$(get_tmux_option "@theme_plugin_volume_icon" "${PLUGIN_VOLUME_ICON:-󰕾}")
+            icon=$(get_cached_option "@theme_plugin_volume_icon" "${PLUGIN_VOLUME_ICON:-󰕾}")
         fi
     fi
     

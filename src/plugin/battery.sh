@@ -205,9 +205,10 @@ plugin_get_display_info() {
     value=$(extract_numeric "$content")
     
     # Check display condition (hide based on threshold)
+    # Use get_cached_option for performance in render loop
     local display_condition display_threshold
-    display_condition=$(get_tmux_option "@theme_plugin_battery_display_condition" "always")
-    display_threshold=$(get_tmux_option "@theme_plugin_battery_display_threshold" "")
+    display_condition=$(get_cached_option "@theme_plugin_battery_display_condition" "always")
+    display_threshold=$(get_cached_option "@theme_plugin_battery_display_threshold" "")
     
     if [[ "$display_condition" != "always" ]] && [[ -n "$display_threshold" ]]; then
         if ! evaluate_condition "$value" "$display_condition" "$display_threshold"; then
@@ -217,16 +218,16 @@ plugin_get_display_info() {
     
     # Check if charging - use charging icon, skip low threshold colors
     if battery_is_charging; then
-        icon=$(get_tmux_option "@theme_plugin_battery_icon_charging" "$PLUGIN_BATTERY_ICON_CHARGING")
+        icon=$(get_cached_option "@theme_plugin_battery_icon_charging" "$PLUGIN_BATTERY_ICON_CHARGING")
     else
         # Check low threshold for color and icon changes
         local low_threshold
-        low_threshold=$(get_tmux_option "@theme_plugin_battery_low_threshold" "$PLUGIN_BATTERY_LOW_THRESHOLD")
+        low_threshold=$(get_cached_option "@theme_plugin_battery_low_threshold" "$PLUGIN_BATTERY_LOW_THRESHOLD")
         
         if [[ -n "$value" ]] && [[ "$value" -le "$low_threshold" ]]; then
-            accent=$(get_tmux_option "@theme_plugin_battery_low_accent_color" "$PLUGIN_BATTERY_LOW_ACCENT_COLOR")
-            accent_icon=$(get_tmux_option "@theme_plugin_battery_low_accent_color_icon" "$PLUGIN_BATTERY_LOW_ACCENT_COLOR_ICON")
-            icon=$(get_tmux_option "@theme_plugin_battery_icon_low" "$PLUGIN_BATTERY_ICON_LOW")
+            accent=$(get_cached_option "@theme_plugin_battery_low_accent_color" "$PLUGIN_BATTERY_LOW_ACCENT_COLOR")
+            accent_icon=$(get_cached_option "@theme_plugin_battery_low_accent_color_icon" "$PLUGIN_BATTERY_LOW_ACCENT_COLOR_ICON")
+            icon=$(get_cached_option "@theme_plugin_battery_icon_low" "$PLUGIN_BATTERY_ICON_LOW")
         fi
     fi
     

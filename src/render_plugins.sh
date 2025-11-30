@@ -63,36 +63,50 @@ get_palette_color() {
 }
 
 # =============================================================================
-# Plugin Display Info Query
+# Plugin Display Info Query - Optimized
 # =============================================================================
+
+# Cache for plugin display functions - avoids re-sourcing plugins
+declare -A _PLUGIN_HAS_DISPLAY_INFO=()
 
 # Query a plugin for its display info
 # If the plugin defines plugin_get_display_info(), call it
 # Otherwise return default values (show=1, no color/icon overrides)
 #
 # Output format: "show:accent:accent_icon:icon"
+#
+# Optimization: Source plugin once and cache whether it has the function
 query_plugin_display_info() {
-    local plugin_script="$1"
-    local content="$2"
+    local plugin_name="$1"
+    local plugin_script="$2"
+    local content="$3"
     
-    # Source the plugin to get access to its functions
-    # Use a subshell to avoid polluting our environment
-    local display_info
-    display_info=$(
+    # Check cache first
+    local cache_key="$plugin_name"
+    
+    if [[ -z "${_PLUGIN_HAS_DISPLAY_INFO[$cache_key]+isset}" ]]; then
+        # First time - source and check
         # shellcheck source=/dev/null
-        # Source the plugin
         . "$plugin_script" 2>/dev/null
         
-        # Check if plugin defines the display info function
         if declare -f plugin_get_display_info &>/dev/null; then
-            plugin_get_display_info "$content"
+            _PLUGIN_HAS_DISPLAY_INFO[$cache_key]="1"
         else
-            # Default: show, no overrides
-            printf '1:::'
+            _PLUGIN_HAS_DISPLAY_INFO[$cache_key]="0"
         fi
-    )
+    elif [[ "${_PLUGIN_HAS_DISPLAY_INFO[$cache_key]}" == "1" ]]; then
+        # Re-source only if plugin has display info function
+        # shellcheck source=/dev/null
+        . "$plugin_script" 2>/dev/null
+    fi
     
-    printf '%s' "$display_info"
+    # Call display info function if available
+    if [[ "${_PLUGIN_HAS_DISPLAY_INFO[$cache_key]}" == "1" ]]; then
+        plugin_get_display_info "$content"
+    else
+        # Default: show, no overrides
+        printf '1:::'
+    fi
 }
 
 # =============================================================================
@@ -119,7 +133,7 @@ for config in "${PLUGIN_CONFIGS[@]}"; do
     [[ ! -f "$plugin_script" ]] && continue
     
     # shellcheck source=/dev/null
-    
+
     # Execute plugin to get content
     content=$("$plugin_script" 2>/dev/null) || content=""
     
@@ -136,7 +150,7 @@ for config in "${PLUGIN_CONFIGS[@]}"; do
     esac
     
     # Query the plugin for display info (show/hide, color overrides)
-    display_info=$(query_plugin_display_info "$plugin_script" "$content")
+    display_info=$(query_plugin_display_info "$name" "$plugin_script" "$content")
     
     # Parse display info: "show:accent:accent_icon:icon"
     IFS=':' read -r should_show override_accent override_accent_icon override_icon <<< "$display_info"
@@ -164,7 +178,7 @@ for config in "${PLUGIN_CONFIGS[@]}"; do
 done
 
 # =============================================================================
-# Render Output
+# Render Output - Optimized
 # =============================================================================
 
 total=${#PLUGIN_NAMES[@]}
@@ -180,20 +194,28 @@ for ((i=0; i<total; i++)); do
     
     is_last=$([[ $i -eq $((total - 1)) ]] && echo "1" || echo "0")
     
-    # Build separators
-    sep_icon_start=$(build_separator_icon_start "$accent_icon" "$BG_HIGHLIGHT" "$RIGHT_SEPARATOR" "$TRANSPARENT")
-    sep_icon_end=$(build_separator_icon_end "$accent" "$accent_icon" "$RIGHT_SEPARATOR")
+    # Build separators inline (avoiding function call overhead)
+    if [[ "$TRANSPARENT" == "true" ]]; then
+        sep_icon_start="#[fg=${accent_icon},bg=default]${RIGHT_SEPARATOR}#[none]"
+    else
+        sep_icon_start="#[fg=${accent_icon},bg=${BG_HIGHLIGHT}]${RIGHT_SEPARATOR}#[none]"
+    fi
     
-    # Build icon section
-    icon_output=$(build_icon_section "$sep_icon_start" "$sep_icon_end" "$WHITE_COLOR" "$accent_icon" "$icon")
+    sep_icon_end="#[fg=${accent},bg=${accent_icon}]${RIGHT_SEPARATOR}#[none]"
+    
+    # Build icon section inline
+    icon_output="${sep_icon_start}#[fg=${WHITE_COLOR},bg=${accent_icon}]${icon} ${sep_icon_end}"
     
     # Build content section - for last plugin, just end cleanly with no separator
     if [[ "$is_last" == "1" ]]; then
-        content_output="#[fg=${WHITE_COLOR},bg=${accent}] ${content}"
-        output+="${icon_output}${content_output}"
+        output+="${icon_output}#[fg=${WHITE_COLOR},bg=${accent}] ${content}"
     else
-        content_output=$(build_content_section "$WHITE_COLOR" "$accent" "$content" "$is_last")
-        sep_end=$(build_separator_end "$accent" "$BG_HIGHLIGHT" "$RIGHT_SEPARATOR" "$TRANSPARENT" "$RIGHT_SEPARATOR_INVERSE")
+        content_output="#[fg=${WHITE_COLOR},bg=${accent}]${content} #[none]"
+        if [[ "$TRANSPARENT" == "true" ]]; then
+            sep_end="#[fg=${accent},bg=default]${RIGHT_SEPARATOR_INVERSE}#[bg=default]"
+        else
+            sep_end="#[fg=${BG_HIGHLIGHT},bg=${accent}]${RIGHT_SEPARATOR}#[bg=${BG_HIGHLIGHT}]"
+        fi
         output+="${icon_output}${content_output}${sep_end}"
     fi
 done

@@ -30,7 +30,11 @@ is_linux() { [[ "$_CACHED_OS" == Linux ]]; }
 # Output:
 #   Option value or default
 # -----------------------------------------------------------------------------
-declare -A _TMUX_OPTION_CACHE
+# Global associative array for tmux option caching.
+# This cache persists for the duration of the shell session and should only be
+# modified via get_tmux_option. Declared global to avoid race conditions and
+# unexpected cache invalidation if sourced multiple times.
+declare -gA _TMUX_OPTION_CACHE
 
 get_tmux_option() {
     local option="$1"
