@@ -1,3 +1,10 @@
+# [2.8.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.7.2...v2.8.0) (2025-11-30)
+
+
+### Features
+
+* add workflows and icon per session ([#88](https://github.com/fabioluciano/tmux-tokyo-night/issues/88)) ([42414df](https://github.com/fabioluciano/tmux-tokyo-night/commit/42414df9f39d1760457553f189f8edf0ecb8c2c1))
+
 ## [2.7.2](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.7.1...v2.7.2) (2025-11-30)
 
 
