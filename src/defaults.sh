@@ -70,6 +70,7 @@ THEME_DEFAULT_RIGHT_SEPARATOR=$'\ue0b2'
 THEME_DEFAULT_LEFT_SEPARATOR_INVERSE=$'\ue0d4'
 THEME_DEFAULT_RIGHT_SEPARATOR_INVERSE=$'\ue0d6'
 
+
 # =============================================================================
 # SESSION & WINDOW ICONS
 # =============================================================================

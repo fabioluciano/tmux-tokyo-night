@@ -61,7 +61,7 @@ get_tmux_option() {
 function generate_left_side_string() {
 
 	session_icon=$(get_tmux_option "@theme_session_icon" "$THEME_DEFAULT_SESSION_ICON")
-	left_separator=$(get_tmux_option "@theme_left_separator" $'\ue0b0')
+	left_separator=$(get_tmux_option "@theme_left_separator" "$THEME_DEFAULT_LEFT_SEPARATOR")
 	transparent=$(get_tmux_option "@theme_transparent_status_bar" "false")
 
 	if [ "$transparent" = "true" ]; then
@@ -77,12 +77,12 @@ function generate_inactive_window_string() {
 
 	inactive_window_icon=$(get_tmux_option "@theme_plugin_inactive_window_icon" "$THEME_DEFAULT_INACTIVE_WINDOW_ICON")
 	zoomed_window_icon=$(get_tmux_option "@theme_plugin_zoomed_window_icon" "$THEME_DEFAULT_ZOOMED_WINDOW_ICON")
-	left_separator=$(get_tmux_option "@theme_left_separator" $'\ue0b0')
+	left_separator=$(get_tmux_option "@theme_left_separator" "$THEME_DEFAULT_LEFT_SEPARATOR")
 	transparent=$(get_tmux_option "@theme_transparent_status_bar" "false")
 	inactive_window_title=$(get_tmux_option "@theme_inactive_window_title" "$THEME_DEFAULT_INACTIVE_WINDOW_TITLE")
 
 	if [ "$transparent" = "true" ]; then
-		left_separator_inverse=$(get_tmux_option "@theme_transparent_left_separator_inverse" $'\ue0d4')
+		left_separator_inverse=$(get_tmux_option "@theme_left_separator_inverse" "$THEME_DEFAULT_LEFT_SEPARATOR_INVERSE")
 
 		local separator_start="#[bg=default,fg=${PALLETE['dark5']}]${left_separator_inverse}#[bg=${PALLETE['dark5']},fg=${PALLETE['bg_highlight']}]"
 		local separator_internal="#[bg=${PALLETE['dark3']},fg=${PALLETE['dark5']}]${left_separator:?}#[none]"
@@ -100,12 +100,12 @@ function generate_active_window_string() {
 	active_window_icon=$(get_tmux_option "@theme_plugin_active_window_icon" "$THEME_DEFAULT_ACTIVE_WINDOW_ICON")
 	zoomed_window_icon=$(get_tmux_option "@theme_plugin_zoomed_window_icon" "$THEME_DEFAULT_ZOOMED_WINDOW_ICON")
 	pane_synchronized_icon=$(get_tmux_option "@theme_plugin_pane_synchronized_icon" "$THEME_DEFAULT_PANE_SYNCHRONIZED_ICON")
-	left_separator=$(get_tmux_option "@theme_left_separator" $'\ue0b0')
+	left_separator=$(get_tmux_option "@theme_left_separator" "$THEME_DEFAULT_LEFT_SEPARATOR")
 	transparent=$(get_tmux_option "@theme_transparent_status_bar" "false")
 	active_window_title=$(get_tmux_option "@theme_active_window_title" "$THEME_DEFAULT_ACTIVE_WINDOW_TITLE")
 
 	if [ "$transparent" = "true" ]; then
-		left_separator_inverse=$(get_tmux_option "@theme_transparent_left_separator_inverse" $'\ue0d4')
+		left_separator_inverse=$(get_tmux_option "@theme_left_separator_inverse" "$THEME_DEFAULT_LEFT_SEPARATOR_INVERSE")
 		
 		separator_start="#[bg=default,fg=${PALLETE['magenta']}]${left_separator_inverse}#[bg=${PALLETE['magenta']},fg=${PALLETE['bg_highlight']}]"
 		separator_internal="#[bg=${PALLETE['purple']},fg=${PALLETE['magenta']}]${left_separator:?}#[none]"
