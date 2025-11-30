@@ -1,3 +1,10 @@
+# [2.7.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.6.0...v2.7.0) (2025-11-30)
+
+
+### Features
+
+* add conditional visibility for Bluetooth plugin ([#84](https://github.com/fabioluciano/tmux-tokyo-night/issues/84)) ([43c312d](https://github.com/fabioluciano/tmux-tokyo-night/commit/43c312d249f33824a113a522bdc23e956b2d513a))
+
 # [2.6.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.5.0...v2.6.0) (2025-11-30)
 
 
