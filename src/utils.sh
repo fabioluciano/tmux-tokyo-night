@@ -87,7 +87,11 @@ get_os_icon() {
 # This cache persists for the duration of the shell session and should only be
 # modified via get_tmux_option. Declared global to avoid race conditions and
 # unexpected cache invalidation if sourced multiple times.
-declare -gA _TMUX_OPTION_CACHE
+if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
+    declare -gA _TMUX_OPTION_CACHE
+else
+    declare -A _TMUX_OPTION_CACHE
+fi
 
 get_tmux_option() {
     local option="$1"
