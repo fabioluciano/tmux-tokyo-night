@@ -43,12 +43,16 @@ export plugin_memory_icon plugin_memory_accent_color plugin_memory_accent_color_
 # Convert bytes to human readable format
 bytes_to_human() {
     local bytes=$1
-    local gb=$((bytes / 1024 / 1024 / 1024))
-    local mb=$((bytes / 1024 / 1024))
+    local gb mb
+    
+    # 1 GiB in bytes (1024^3) 
+    gb=$((bytes / 1073741824))
     
     if [[ $gb -gt 0 ]]; then
-        printf '%.1fG' "$(echo "scale=1; $bytes / 1024 / 1024 / 1024" | bc 2>/dev/null || echo "$gb")"
-    else
+        # Use awk for floating point (faster than bc and more portable)
+        awk -v b="$bytes" 'BEGIN {printf "%.1fG", b / 1073741824}'
+        mb=$((bytes / 1048576)) # 1 MiB in bytes (1024^2)
+        mb=$((bytes / 1048576))
         printf '%dM' "$mb"
     fi
 }
@@ -135,9 +139,10 @@ plugin_get_display_info() {
     value=$(extract_numeric "$content")
     
     # Check display condition (hide based on threshold)
+    # Use get_cached_option for performance in render loop
     local display_condition display_threshold
-    display_condition=$(get_tmux_option "@theme_plugin_memory_display_condition" "always")
-    display_threshold=$(get_tmux_option "@theme_plugin_memory_display_threshold" "")
+    display_condition=$(get_cached_option "@theme_plugin_memory_display_condition" "always")
+    display_threshold=$(get_cached_option "@theme_plugin_memory_display_threshold" "")
     
     if [[ "$display_condition" != "always" ]] && [[ -n "$display_threshold" ]]; then
         if ! evaluate_condition "$value" "$display_condition" "$display_threshold"; then
@@ -147,16 +152,16 @@ plugin_get_display_info() {
     
     # Check warning/critical thresholds for color changes
     local warning_threshold critical_threshold
-    warning_threshold=$(get_tmux_option "@theme_plugin_memory_warning_threshold" "$PLUGIN_MEMORY_WARNING_THRESHOLD")
-    critical_threshold=$(get_tmux_option "@theme_plugin_memory_critical_threshold" "$PLUGIN_MEMORY_CRITICAL_THRESHOLD")
+    warning_threshold=$(get_cached_option "@theme_plugin_memory_warning_threshold" "$PLUGIN_MEMORY_WARNING_THRESHOLD")
+    critical_threshold=$(get_cached_option "@theme_plugin_memory_critical_threshold" "$PLUGIN_MEMORY_CRITICAL_THRESHOLD")
     
     if [[ -n "$value" ]]; then
         if [[ "$value" -ge "$critical_threshold" ]]; then
-            accent=$(get_tmux_option "@theme_plugin_memory_critical_accent_color" "$PLUGIN_MEMORY_CRITICAL_ACCENT_COLOR")
-            accent_icon=$(get_tmux_option "@theme_plugin_memory_critical_accent_color_icon" "$PLUGIN_MEMORY_CRITICAL_ACCENT_COLOR_ICON")
+            accent=$(get_cached_option "@theme_plugin_memory_critical_accent_color" "$PLUGIN_MEMORY_CRITICAL_ACCENT_COLOR")
+            accent_icon=$(get_cached_option "@theme_plugin_memory_critical_accent_color_icon" "$PLUGIN_MEMORY_CRITICAL_ACCENT_COLOR_ICON")
         elif [[ "$value" -ge "$warning_threshold" ]]; then
-            accent=$(get_tmux_option "@theme_plugin_memory_warning_accent_color" "$PLUGIN_MEMORY_WARNING_ACCENT_COLOR")
-            accent_icon=$(get_tmux_option "@theme_plugin_memory_warning_accent_color_icon" "$PLUGIN_MEMORY_WARNING_ACCENT_COLOR_ICON")
+            accent=$(get_cached_option "@theme_plugin_memory_warning_accent_color" "$PLUGIN_MEMORY_WARNING_ACCENT_COLOR")
+            accent_icon=$(get_cached_option "@theme_plugin_memory_warning_accent_color_icon" "$PLUGIN_MEMORY_WARNING_ACCENT_COLOR_ICON")
         fi
     fi
     

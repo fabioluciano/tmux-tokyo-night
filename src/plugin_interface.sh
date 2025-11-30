@@ -45,6 +45,7 @@
 # =============================================================================
 
 # Source guard
+# shellcheck disable=SC2317
 if [[ -n "${_PLUGIN_INTERFACE_LOADED:-}" ]]; then
     return 0 2>/dev/null || true
 fi
@@ -56,9 +57,29 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$ROOT_DIR/utils.sh"
 
 # =============================================================================
+# Option Cache for plugin_get_display_info()
+# Avoids repeated tmux show-option calls during render
+# =============================================================================
+declare -gA _PLUGIN_OPTION_CACHE
+
+# Cached version of get_tmux_option for use in plugin_get_display_info
+# Results are cached for the duration of the render pass
+get_cached_option() {
+    local option="$1"
+    local default="$2"
+    
+    if [[ -z "${_PLUGIN_OPTION_CACHE[$option]+isset}" ]]; then
+        _PLUGIN_OPTION_CACHE[$option]=$(get_tmux_option "$option" "$default")
+    fi
+    printf '%s' "${_PLUGIN_OPTION_CACHE[$option]}"
+}
+
+# =============================================================================
 # Helper Functions for Plugins
+# These functions are called indirectly by plugins that source this file
 # =============================================================================
 
+# shellcheck disable=SC2317
 # Evaluate a display condition
 # Usage: evaluate_condition <value> <condition> <threshold>
 # Returns: 0 if condition is met, 1 otherwise

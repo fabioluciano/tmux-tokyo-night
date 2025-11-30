@@ -20,10 +20,7 @@ BOLD='\033[1m'
 DIM='\033[2m'
 CYAN='\033[36m'
 GREEN='\033[32m'
-YELLOW='\033[33m'
-MAGENTA='\033[35m'
-BLUE='\033[34m'
-RED='\033[31m'
+
 RESET='\033[0m'
 
 # TPM plugins directory
@@ -339,7 +336,6 @@ scan_tpm_plugin_options() {
 
 display_options() {
     local filter="${1:-}"
-    local current_section=""
     
     print_header
     
@@ -365,9 +361,10 @@ display_options() {
     for opt in "${PLUGIN_OPTIONS[@]}"; do
         IFS='|' read -r option default possible description <<< "$opt"
         
-        # Extract plugin name
+        # Extract plugin name using parameter expansion
         local plugin_name
-        plugin_name=$(echo "$option" | sed 's/@theme_plugin_\([^_]*\)_.*/\1/')
+        local temp="${option#@theme_plugin_}"
+        plugin_name="${temp%%_*}"
         
         if [[ "$plugin_name" != "$current_plugin" ]]; then
             current_plugin="$plugin_name"

@@ -149,9 +149,10 @@ plugin_get_display_info() {
     value_int=$(awk "BEGIN {printf \"%d\", $value * 100}" 2>/dev/null || echo 0)
     
     # Check display condition (hide based on threshold)
+    # Use get_cached_option for performance in render loop
     local display_condition display_threshold
-    display_condition=$(get_tmux_option "@theme_plugin_loadavg_display_condition" "always")
-    display_threshold=$(get_tmux_option "@theme_plugin_loadavg_display_threshold" "")
+    display_condition=$(get_cached_option "@theme_plugin_loadavg_display_condition" "always")
+    display_threshold=$(get_cached_option "@theme_plugin_loadavg_display_threshold" "")
     
     if [[ "$display_condition" != "always" ]] && [[ -n "$display_threshold" ]]; then
         local threshold_int
@@ -164,23 +165,23 @@ plugin_get_display_info() {
     # Check warning/critical thresholds for color changes
     # Default: warning at 2x cores, critical at 4x cores
     local warning_multiplier critical_multiplier
-    warning_multiplier=$(get_tmux_option "@theme_plugin_loadavg_warning_threshold_multiplier" "$PLUGIN_LOADAVG_WARNING_THRESHOLD_MULTIPLIER")
-    critical_multiplier=$(get_tmux_option "@theme_plugin_loadavg_critical_threshold_multiplier" "$PLUGIN_LOADAVG_CRITICAL_THRESHOLD_MULTIPLIER")
+    warning_multiplier=$(get_cached_option "@theme_plugin_loadavg_warning_threshold_multiplier" "$PLUGIN_LOADAVG_WARNING_THRESHOLD_MULTIPLIER")
+    critical_multiplier=$(get_cached_option "@theme_plugin_loadavg_critical_threshold_multiplier" "$PLUGIN_LOADAVG_CRITICAL_THRESHOLD_MULTIPLIER")
     
     local warning_threshold critical_threshold
-    warning_threshold=$(get_tmux_option "@theme_plugin_loadavg_warning_threshold" "$((num_cores * warning_multiplier))")
-    critical_threshold=$(get_tmux_option "@theme_plugin_loadavg_critical_threshold" "$((num_cores * critical_multiplier))")
+    warning_threshold=$(get_cached_option "@theme_plugin_loadavg_warning_threshold" "$((num_cores * warning_multiplier))")
+    critical_threshold=$(get_cached_option "@theme_plugin_loadavg_critical_threshold" "$((num_cores * critical_multiplier))")
     
     local warning_int critical_int
     warning_int=$(awk "BEGIN {printf \"%d\", $warning_threshold * 100}" 2>/dev/null || echo 0)
     critical_int=$(awk "BEGIN {printf \"%d\", $critical_threshold * 100}" 2>/dev/null || echo 0)
     
     if [[ "$value_int" -ge "$critical_int" ]]; then
-        accent=$(get_tmux_option "@theme_plugin_loadavg_critical_accent_color" "$PLUGIN_LOADAVG_CRITICAL_ACCENT_COLOR")
-        accent_icon=$(get_tmux_option "@theme_plugin_loadavg_critical_accent_color_icon" "$PLUGIN_LOADAVG_CRITICAL_ACCENT_COLOR_ICON")
+        accent=$(get_cached_option "@theme_plugin_loadavg_critical_accent_color" "$PLUGIN_LOADAVG_CRITICAL_ACCENT_COLOR")
+        accent_icon=$(get_cached_option "@theme_plugin_loadavg_critical_accent_color_icon" "$PLUGIN_LOADAVG_CRITICAL_ACCENT_COLOR_ICON")
     elif [[ "$value_int" -ge "$warning_int" ]]; then
-        accent=$(get_tmux_option "@theme_plugin_loadavg_warning_accent_color" "$PLUGIN_LOADAVG_WARNING_ACCENT_COLOR")
-        accent_icon=$(get_tmux_option "@theme_plugin_loadavg_warning_accent_color_icon" "$PLUGIN_LOADAVG_WARNING_ACCENT_COLOR_ICON")
+        accent=$(get_cached_option "@theme_plugin_loadavg_warning_accent_color" "$PLUGIN_LOADAVG_WARNING_ACCENT_COLOR")
+        accent_icon=$(get_cached_option "@theme_plugin_loadavg_warning_accent_color_icon" "$PLUGIN_LOADAVG_WARNING_ACCENT_COLOR_ICON")
     fi
     
     build_display_info "$show" "$accent" "$accent_icon" "$icon"
