@@ -1,3 +1,10 @@
+## [2.7.2](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.7.1...v2.7.2) (2025-11-30)
+
+
+### Bug Fixes
+
+* improve memory display function by removing unused variable ([#87](https://github.com/fabioluciano/tmux-tokyo-night/issues/87)) ([5a909b8](https://github.com/fabioluciano/tmux-tokyo-night/commit/5a909b8e0413a1ee2efa8e76ce23dbaff48453cc))
+
 ## [2.7.1](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.7.0...v2.7.1) (2025-11-30)
 
 
