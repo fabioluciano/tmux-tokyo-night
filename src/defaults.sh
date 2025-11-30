@@ -75,7 +75,9 @@ THEME_DEFAULT_RIGHT_SEPARATOR_INVERSE=$'\ue0d6'
 # SESSION & WINDOW ICONS
 # =============================================================================
 
-THEME_DEFAULT_SESSION_ICON=" "
+# Auto-detect OS icon if not explicitly set
+# Users can override by setting @theme_session_icon manually
+THEME_DEFAULT_SESSION_ICON="auto"
 THEME_DEFAULT_ACTIVE_WINDOW_ICON=""
 THEME_DEFAULT_INACTIVE_WINDOW_ICON=""
 THEME_DEFAULT_ZOOMED_WINDOW_ICON=""
