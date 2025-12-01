@@ -1,3 +1,10 @@
+# [2.10.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.9.0...v2.10.0) (2025-12-01)
+
+
+### Features
+
+* add brightness and cloud plugins with configuration options ([#89](https://github.com/fabioluciano/tmux-tokyo-night/issues/89)) ([8274609](https://github.com/fabioluciano/tmux-tokyo-night/commit/8274609ad28c24922885f4d1a769d3663dfcc320))
+
 # [2.9.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.8.0...v2.9.0) (2025-12-01)
 
 
