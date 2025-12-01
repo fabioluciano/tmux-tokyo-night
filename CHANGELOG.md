@@ -1,3 +1,10 @@
+# [2.11.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.10.0...v2.11.0) (2025-12-01)
+
+
+### Features
+
+* weather plugin and enhance media management ([#92](https://github.com/fabioluciano/tmux-tokyo-night/issues/92)) ([11ccb0c](https://github.com/fabioluciano/tmux-tokyo-night/commit/11ccb0c05c4f12ee93065d3e8356714f6205f3ce))
+
 # [2.10.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.9.0...v2.10.0) (2025-12-01)
 
 
