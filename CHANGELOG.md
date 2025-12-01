@@ -1,3 +1,10 @@
+# [2.9.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.8.0...v2.9.0) (2025-12-01)
+
+
+### Features
+
+* enhance Bluetooth plugin to display connected devices and battery status ([ba92854](https://github.com/fabioluciano/tmux-tokyo-night/commit/ba92854625a9f3da3a09b8cd7e70c119e5137722))
+
 # [2.8.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.7.2...v2.8.0) (2025-11-30)
 
 
