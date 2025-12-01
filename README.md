@@ -83,7 +83,7 @@ Learn more: **[Interactive Keybindings](../../wiki/Interactive-Keybindings)**
 
 ## 🔌 Available Plugins
 
-The theme includes 24 built-in plugins organized by category:
+The theme includes 26 built-in plugins organized by category:
 
 ### 📅 Time & Date
 
@@ -95,8 +95,9 @@ The theme includes 24 built-in plugins organized by category:
 - **[memory](../../wiki/Memory)** - RAM usage with format options
 - **[disk](../../wiki/Disk)** - Disk space with threshold warnings
 - **[loadavg](../../wiki/LoadAvg)** - System load average monitoring
-- **[temperature](../../wiki/Temperature)** - CPU temperature (Linux only)
+- **[temperature](../../wiki/Temperature)** - CPU temperature <br> <sub>(Linux only; partial support on WSL/macOS, see docs)</sub>
 - **[uptime](../../wiki/Uptime)** - System uptime display
+- **[brightness](../../wiki/Brightness)** - Screen brightness level
 
 ### 🌐 Network & Connectivity
 
@@ -112,11 +113,12 @@ The theme includes 24 built-in plugins organized by category:
 - **[git](../../wiki/Git)** - Git branch with change indicators
 - **[docker](../../wiki/Docker)** - Container count (running/stopped)
 - **[kubernetes](../../wiki/Kubernetes)** - K8s context with interactive selectors
+- **[cloud](../../wiki/Cloud)** - Cloud provider context (AWS/GCP/Azure)
 
 ### 📦 Package Managers
 
-- **[homebrew](../../wiki/Homebrew)** - Brew updates (macOS)
-- **[yay](../../wiki/Yay)** - AUR updates (Arch)
+- **[homebrew](../../wiki/Homebrew)** - Brew updates
+- **[yay](../../wiki/Yay)** - AUR updates
 
 ### 🎵 Media
 
@@ -136,6 +138,43 @@ set -g @theme_plugins 'datetime,battery,cpu,memory,git,docker'
 ```
 
 See **[Plugin System Overview](../../wiki/Plugin-System-Overview)** for complete documentation.
+
+### Platform Compatibility
+
+| Plugin | Linux | macOS | WSL | Notes |
+|--------|-------|-------|-----|-------|
+| **battery** | ✅ | ✅ | ✅ | Requires `acpi`/`upower` (Linux), `pmset` (macOS) |
+| **bluetooth** | ✅ | ✅ | ⚠️ | Limited battery support on macOS |
+| **brightness** | ✅ | ❌ | ✅ | Requires `brightnessctl`/`light`/`xbacklight` |
+| **cloud** | ✅ | ✅ | ✅ | AWS/GCP/Azure context detection |
+| **cpu** | ✅ | ✅ | ✅ | Native support via `/proc/stat` or `vm_stat` |
+| **datetime** | ✅ | ✅ | ✅ | Universal |
+| **disk** | ✅ | ✅ | ✅ | Uses `df` command |
+| **docker** | ✅ | ✅ | ✅ | Requires Docker daemon |
+| **external_ip** | ✅ | ✅ | ✅ | Requires internet connection |
+| **git** | ✅ | ✅ | ✅ | Requires git repository |
+| **homebrew** | ✅ | ✅ | ✅ | Requires Homebrew installed |
+| **hostname** | ✅ | ✅ | ✅ | Universal |
+| **kubernetes** | ✅ | ✅ | ✅ | Requires `kubectl` |
+| **loadavg** | ✅ | ✅ | ✅ | Native support via `/proc/loadavg` or `sysctl` |
+| **memory** | ✅ | ✅ | ✅ | Native support via `/proc/meminfo` or `vm_stat` |
+| **network** | ✅ | ✅ | ✅ | Bandwidth monitoring |
+| **playerctl** | ✅ | ❌ | ✅ | Linux only - MPRIS protocol |
+| **spotify** | ✅ | ✅ | ✅ | macOS: native, Linux: playerctl/spt |
+| **spt** | ✅ | ✅ | ✅ | Requires `spotify-tui` |
+| **temperature** | ✅ | ✅ | ⚠️ | Linux: sensors/sysfs, macOS: requires `osx-cpu-temp` |
+| **uptime** | ✅ | ✅ | ✅ | Universal |
+| **volume** | ✅ | ✅ | ⚠️ | Linux: pactl/pamixer, macOS: osascript |
+| **vpn** | ✅ | ✅ | ⚠️ | Platform-specific VPN clients |
+| **weather** | ✅ | ✅ | ✅ | Requires internet connection |
+| **wifi** | ✅ | ✅ | ❌ | Linux: nmcli/iwconfig, macOS: airport |
+| **yay** | ✅ | ❌ | ✅ | Arch Linux only - AUR helper |
+
+**Legend:**
+
+- ✅ Fully supported
+- ⚠️ Partial support or requires specific setup
+- ❌ Not supported
 
 ## ⚙️ Configuration
 

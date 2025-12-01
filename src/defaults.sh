@@ -52,7 +52,7 @@ THEME_DEFAULT_BAR_LAYOUT="single"
 THEME_DEFAULT_TRANSPARENT="false"
 
 # Default plugins to enable (comma-separated)
-THEME_DEFAULT_PLUGINS="datetime,weather"
+THEME_DEFAULT_PLUGINS="datetime,hostname,git,battery,cpu,memory"
 
 # Status bar lengths
 THEME_DEFAULT_STATUS_LEFT_LENGTH="100"
@@ -451,6 +451,40 @@ PLUGIN_EXTERNAL_IP_ICON="󰩟"
 PLUGIN_EXTERNAL_IP_ACCENT_COLOR="blue7"
 PLUGIN_EXTERNAL_IP_ACCENT_COLOR_ICON="blue0"
 PLUGIN_EXTERNAL_IP_CACHE_TTL="300"
+
+# =============================================================================
+# PLUGIN: brightness
+# =============================================================================
+
+PLUGIN_BRIGHTNESS_ICON="󰃞"
+PLUGIN_BRIGHTNESS_ICON_LOW="󰃚"
+PLUGIN_BRIGHTNESS_ICON_MEDIUM="󰃝"
+PLUGIN_BRIGHTNESS_ICON_HIGH="󰃞"
+PLUGIN_BRIGHTNESS_ACCENT_COLOR="blue7"
+PLUGIN_BRIGHTNESS_ACCENT_COLOR_ICON="blue0"
+PLUGIN_BRIGHTNESS_CACHE_TTL="2"
+
+# =============================================================================
+# PLUGIN: cloud
+# =============================================================================
+
+PLUGIN_CLOUD_ICON=$'\udb80\udd5f'
+PLUGIN_CLOUD_ICON_AWS=$'\ue7ad'
+PLUGIN_CLOUD_ICON_GCP=$'\ue7f1'
+PLUGIN_CLOUD_ICON_AZURE=$'\ue754'
+PLUGIN_CLOUD_ICON_MULTI="☁️"
+PLUGIN_CLOUD_ACCENT_COLOR="blue7"
+PLUGIN_CLOUD_ACCENT_COLOR_ICON="blue0"
+PLUGIN_CLOUD_PROVIDERS="all"
+PLUGIN_CLOUD_FORMAT="short"
+PLUGIN_CLOUD_SHOW_ACCOUNT="false"
+PLUGIN_CLOUD_SHOW_REGION="true"
+PLUGIN_CLOUD_MAX_LENGTH="40"
+PLUGIN_CLOUD_SEPARATOR=" | "
+PLUGIN_CLOUD_WARN_ON_PROD="true"
+PLUGIN_CLOUD_PROD_KEYWORDS="prod,production,prd"
+PLUGIN_CLOUD_PROD_ACCENT_COLOR="red"
+PLUGIN_CLOUD_CACHE_TTL="30"
 
 # =============================================================================
 # THRESHOLD SYSTEM DEFAULTS (applies to all plugins using thresholds)
