@@ -45,7 +45,7 @@ get_cpu_linux() {
     local diff_idle diff_total cpu_usage
 
     # Read first measurement
-    cpu_line=$(grep '^cpu ' /proc/stat)
+    cpu_line=$(command grep '^cpu ' /proc/stat)
     read -ra cpu_values <<< "${cpu_line#cpu }"
     
     idle_prev=${cpu_values[3]}
@@ -58,7 +58,7 @@ get_cpu_linux() {
     sleep 0.1
 
     # Read second measurement
-    cpu_line=$(grep '^cpu ' /proc/stat)
+    cpu_line=$(command grep '^cpu ' /proc/stat)
     read -ra cpu_values <<< "${cpu_line#cpu }"
     
     idle_curr=${cpu_values[3]}
@@ -78,7 +78,7 @@ get_cpu_linux() {
         cpu_usage=0
     fi
 
-    printf '%d%%' "$cpu_usage"
+    printf '%d' "$cpu_usage"
 }
 
 # Get CPU usage on macOS using ps (much faster than top -l 1 which takes ~1s)
@@ -90,7 +90,7 @@ get_cpu_macos() {
     
     # Use ps to aggregate CPU usage across all processes
     # Then divide by number of cores to get average utilization
-    cpu_usage=$(ps -A -o %cpu | awk -v cores="$num_cores" '
+    cpu_usage=$(command ps -A -o %cpu | command awk -v cores="$num_cores" '
         NR>1 {sum+=$1} 
         END {
             avg = sum / cores
@@ -99,7 +99,7 @@ get_cpu_macos() {
         }
     ')
     
-    printf '%s%%' "${cpu_usage:-0}"
+    printf '%s' "${cpu_usage:-0}"
 }
 
 # =============================================================================
@@ -177,6 +177,11 @@ load_plugin() {
         result=$(get_cpu_macos)
     else
         result="N/A"
+    fi
+
+    # Add percentage symbol
+    if [[ "$result" != "N/A" ]]; then
+        result="${result}%"
     fi
 
     # Update cache

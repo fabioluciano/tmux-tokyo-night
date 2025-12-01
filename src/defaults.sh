@@ -97,6 +97,10 @@ THEME_DEFAULT_INACTIVE_WINDOW_TITLE="#W "
 # Style for windows with activity: italics, bold, none, etc.
 THEME_DEFAULT_WINDOW_WITH_ACTIVITY_STYLE="italics"
 
+# Active window colors (can use palette color names)
+THEME_DEFAULT_ACTIVE_WINDOW_NUMBER_BG="magenta"
+THEME_DEFAULT_ACTIVE_WINDOW_CONTENT_BG="purple"
+
 # Style for bell status
 THEME_DEFAULT_STATUS_BELL_STYLE="bold"
 
@@ -317,57 +321,29 @@ PLUGIN_HOSTNAME_ACCENT_COLOR_ICON="blue0"
 PLUGIN_HOSTNAME_FORMAT="short"
 
 # =============================================================================
-# PLUGIN: homebrew
+# PLUGIN: packages (unified: homebrew, yay, apt, dnf, pacman)
 # =============================================================================
 
-PLUGIN_HOMEBREW_ICON="󰚰"
-PLUGIN_HOMEBREW_ACCENT_COLOR="blue7"
-PLUGIN_HOMEBREW_ACCENT_COLOR_ICON="blue0"
-PLUGIN_HOMEBREW_ADDITIONAL_OPTIONS="--greedy"
-PLUGIN_HOMEBREW_CACHE_TTL="1800"
+PLUGIN_PACKAGES_ICON="󰚰"
+PLUGIN_PACKAGES_ACCENT_COLOR="blue7"
+PLUGIN_PACKAGES_ACCENT_COLOR_ICON="blue0"
+PLUGIN_PACKAGES_BACKEND="auto"
+PLUGIN_PACKAGES_BREW_OPTIONS="--greedy"
+PLUGIN_PACKAGES_CACHE_TTL="1800"
 
 # =============================================================================
-# PLUGIN: yay
+# PLUGIN: nowplaying (unified: spotify, spt, playerctl, osascript)
 # =============================================================================
 
-PLUGIN_YAY_ICON="󰚰"
-PLUGIN_YAY_ACCENT_COLOR="blue7"
-PLUGIN_YAY_ACCENT_COLOR_ICON="blue0"
-PLUGIN_YAY_CACHE_TTL="1800"
-
-# =============================================================================
-# PLUGIN: spotify
-# =============================================================================
-
-PLUGIN_SPOTIFY_ICON="󰝚"
-PLUGIN_SPOTIFY_ACCENT_COLOR="blue7"
-PLUGIN_SPOTIFY_ACCENT_COLOR_ICON="blue0"
-PLUGIN_SPOTIFY_FORMAT="%artist% - %track%"
-PLUGIN_SPOTIFY_MAX_LENGTH="40"
-PLUGIN_SPOTIFY_NOT_PLAYING=""
-PLUGIN_SPOTIFY_BACKEND="auto"
-PLUGIN_SPOTIFY_CACHE_TTL="5"
-
-# =============================================================================
-# PLUGIN: spt (spotify-tui)
-# =============================================================================
-
-PLUGIN_SPT_ICON="󰝚"
-PLUGIN_SPT_ACCENT_COLOR="blue7"
-PLUGIN_SPT_ACCENT_COLOR_ICON="blue0"
-PLUGIN_SPT_FORMAT="%a - %t"
-PLUGIN_SPT_CACHE_TTL="5"
-
-# =============================================================================
-# PLUGIN: playerctl
-# =============================================================================
-
-PLUGIN_PLAYERCTL_ICON="󰝚"
-PLUGIN_PLAYERCTL_ACCENT_COLOR="blue7"
-PLUGIN_PLAYERCTL_ACCENT_COLOR_ICON="blue0"
-PLUGIN_PLAYERCTL_FORMAT="{{artist}} - {{title}}"
-PLUGIN_PLAYERCTL_IGNORE_PLAYERS="IGNORE"
-PLUGIN_PLAYERCTL_CACHE_TTL="5"
+PLUGIN_NOWPLAYING_ICON="󰝚"
+PLUGIN_NOWPLAYING_ACCENT_COLOR="blue7"
+PLUGIN_NOWPLAYING_ACCENT_COLOR_ICON="blue0"
+PLUGIN_NOWPLAYING_FORMAT="%artist% - %track%"
+PLUGIN_NOWPLAYING_MAX_LENGTH="40"
+PLUGIN_NOWPLAYING_NOT_PLAYING=""
+PLUGIN_NOWPLAYING_BACKEND="auto"
+PLUGIN_NOWPLAYING_IGNORE_PLAYERS="IGNORE"
+PLUGIN_NOWPLAYING_CACHE_TTL="5"
 
 # =============================================================================
 # PLUGIN: volume
@@ -420,6 +396,7 @@ PLUGIN_VPN_ICON_DISCONNECTED="󰦞"
 PLUGIN_VPN_ACCENT_COLOR="blue7"
 PLUGIN_VPN_ACCENT_COLOR_ICON="blue0"
 PLUGIN_VPN_SHOW_NAME="true"
+PLUGIN_VPN_SHOW_IP="false"
 PLUGIN_VPN_SHOW_WHEN_DISCONNECTED="false"
 PLUGIN_VPN_MAX_LENGTH="20"
 PLUGIN_VPN_CACHE_TTL="10"
@@ -433,6 +410,8 @@ PLUGIN_TEMPERATURE_ICON_HOT="󰸁"
 PLUGIN_TEMPERATURE_ACCENT_COLOR="blue7"
 PLUGIN_TEMPERATURE_ACCENT_COLOR_ICON="blue0"
 PLUGIN_TEMPERATURE_UNIT="C"
+# Source options: cpu, cpu-pkg, cpu-acpi, nvme, wifi, acpi, dell, auto
+PLUGIN_TEMPERATURE_SOURCE="cpu"
 PLUGIN_TEMPERATURE_CACHE_TTL="5"
 
 # Threshold settings for dynamic colors

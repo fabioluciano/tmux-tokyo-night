@@ -66,39 +66,42 @@ BRIGHTNESS_CACHE_KEY="brightness"
 
 # Get brightness on Linux
 get_brightness_linux() {
-    # Method 1: Try using brightnessctl (most common)
-    if command -v brightnessctl &>/dev/null; then
-        brightnessctl get 2>/dev/null | awk -v max="$(brightnessctl max 2>/dev/null)" 'BEGIN {if(max>0) printf "%d", ($0/max)*100}'
-        return $?
-    fi
-    
-    # Method 2: Try using light
-    if command -v light &>/dev/null; then
-        light -G 2>/dev/null | awk '{printf "%d", $1}'
-        return $?
-    fi
-    
-    # Method 3: Try using xbacklight
-    if command -v xbacklight &>/dev/null; then
-        xbacklight -get 2>/dev/null | awk '{printf "%d", $1}'
-        return $?
-    fi
-    
-    # Method 4: Read directly from sysfs (intel_backlight or other)
+    # Method 1: Read directly from sysfs (fastest - no external commands)
     local backlight_dir="/sys/class/backlight"
     if [[ -d "$backlight_dir" ]]; then
         # Try to find any backlight device
+        shopt -s nullglob
         for device in "$backlight_dir"/*; do
+            [[ -d "$device" ]] || continue
             if [[ -f "$device/brightness" ]] && [[ -f "$device/max_brightness" ]]; then
                 local current max
-                current=$(cat "$device/brightness" 2>/dev/null)
-                max=$(cat "$device/max_brightness" 2>/dev/null)
-                if [[ -n "$current" ]] && [[ -n "$max" ]] && [[ "$max" -gt 0 ]]; then
-                    awk -v curr="$current" -v m="$max" 'BEGIN {printf "%d", (curr/m)*100}'
-                    return 0
-                fi
+                current=$(command cat "$device/brightness" 2>/dev/null)
+                max=$(command cat "$device/max_brightness" 2>/dev/null)
+                [[ -n "$current" ]] || continue
+                [[ -n "$max" ]] || continue
+                [[ "$max" -gt 0 ]] || continue
+                awk -v curr="$current" -v m="$max" 'BEGIN {printf "%d", (curr/m)*100}'
+                return 0
             fi
         done
+        shopt -u nullglob
+    fi
+    
+    # Method 2: Try using brightnessctl (if sysfs not available)
+    local max
+    max=$(brightnessctl max 2>/dev/null)
+    if brightnessctl get 2>/dev/null | awk -v max="$max" 'BEGIN {if(max>0) printf "%d", ($0/max)*100}'; then
+        return 0
+    fi
+    
+    # Method 3: Try using light
+    if light -G 2>/dev/null | awk '{printf "%d", $1}'; then
+        return 0
+    fi
+    
+    # Method 4: Try using xbacklight
+    if xbacklight -get 2>/dev/null | awk '{printf "%d", $1}'; then
+        return 0
     fi
     
     return 1
