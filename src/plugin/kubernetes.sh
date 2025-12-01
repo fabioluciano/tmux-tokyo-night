@@ -232,12 +232,14 @@ setup_keybindings() {
     
     # Context selector: select context with fzf, switch if selected, update cache, refresh
     if [[ -n "$context_key" ]]; then
+        # shellcheck disable=SC2016
         tmux bind-key "$context_key" display-popup -E -w "$popup_width" -h "$popup_height" \
             'selected=$(kubectl config get-contexts -o name | fzf --header="Select Kubernetes Context" --reverse) && [ -n "$selected" ] && kubectl config use-context "$selected" && rm -f '"'${cache_dir}/kubernetes.cache'"' && tmux refresh-client -S'
     fi
     
     # Namespace selector: select namespace with fzf, switch if selected, invalidate cache, refresh
     if [[ -n "$namespace_key" ]]; then
+        # shellcheck disable=SC2016
         tmux bind-key "$namespace_key" display-popup -E -w "$ns_popup_width" -h "$ns_popup_height" \
             'selected=$(kubectl get namespaces -o name | sed "s/namespace\///" | fzf --header="Select Kubernetes Namespace" --reverse) && [ -n "$selected" ] && kubectl config set-context --current --namespace="$selected" && rm -f '"'${cache_dir}/kubernetes.cache'"' && tmux refresh-client -S'
     fi

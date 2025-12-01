@@ -56,6 +56,7 @@ plugin_temperature_accent_color_icon=$(get_tmux_option "@theme_plugin_temperatur
 
 # Cache settings
 TEMPERATURE_CACHE_TTL=$(get_tmux_option "@theme_plugin_temperature_cache_ttl" "$PLUGIN_TEMPERATURE_CACHE_TTL")
+# shellcheck disable=SC2034
 TEMPERATURE_CACHE_KEY="temperature"
 
 # =============================================================================
@@ -171,35 +172,6 @@ get_temp_macos_smctemp() {
 
 # Get temperature on macOS using ioreg (battery temperature as fallback)
 # This works on Apple Silicon without any external tools
-
-# Get temperature from specific thermal zone by type
-get_temp_thermal_zone_by_type() {
-    local zone_type="$1"
-    
-    for zone in /sys/class/thermal/thermal_zone*; do
-        [[ -f "$zone/type" ]] || continue
-        
-        local type
-        type=$(<"$zone/type")
-        
-        if [[ "$type" == "$zone_type" ]]; then
-            local temp_file="$zone/temp"
-            [[ -f "$temp_file" ]] || continue
-            
-            local temp_millicelsius
-            temp_millicelsius=$(<"$temp_file")
-            
-            [[ -n "$temp_millicelsius" ]] || continue
-            
-            local temp
-            temp=$(awk "BEGIN {printf \"%.0f\", $temp_millicelsius / 1000}")
-            printf '%s' "$temp"
-            return 0
-        fi
-    done
-    
-    return 1
-}
 
 # Get temperature on Linux from /sys/class/thermal
 get_temp_linux_sys() {

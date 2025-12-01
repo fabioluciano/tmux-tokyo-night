@@ -147,7 +147,7 @@ count_packages_brew() {
     (
         # Count outdated packages (single command)
         local outdated
-        outdated=$(command brew outdated $plugin_packages_brew_options 2>/dev/null || echo "")
+        outdated=$(command brew outdated "$plugin_packages_brew_options" 2>/dev/null || echo "")
         
         if [[ -z "$outdated" ]]; then
             count=0

@@ -292,7 +292,7 @@ check_networkmanager_vpn() {
 
 # Check for tun/tap interfaces (generic VPN detection)
 check_tun_interface() {
-    local tun_interfaces vpn_ip
+    local vpn_ip
     
     if is_linux; then
         # Check for standard tun/tap interfaces
