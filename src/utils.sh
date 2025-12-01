@@ -147,17 +147,27 @@ function generate_active_window_string() {
 	left_separator=$(get_tmux_option "@theme_left_separator" "$THEME_DEFAULT_LEFT_SEPARATOR")
 	transparent=$(get_tmux_option "@theme_transparent_status_bar" "false")
 	active_window_title=$(get_tmux_option "@theme_active_window_title" "$THEME_DEFAULT_ACTIVE_WINDOW_TITLE")
+	
+	# Get customizable colors for active window
+	local number_bg_color
+	local content_bg_color
+	number_bg_color=$(get_tmux_option "@theme_active_window_number_bg" "$THEME_DEFAULT_ACTIVE_WINDOW_NUMBER_BG")
+	content_bg_color=$(get_tmux_option "@theme_active_window_content_bg" "$THEME_DEFAULT_ACTIVE_WINDOW_CONTENT_BG")
+	
+	# Resolve color names from palette
+	local number_bg="${PALLETE[$number_bg_color]:-$number_bg_color}"
+	local content_bg="${PALLETE[$content_bg_color]:-$content_bg_color}"
 
 	if [ "$transparent" = "true" ]; then
 		left_separator_inverse=$(get_tmux_option "@theme_left_separator_inverse" "$THEME_DEFAULT_LEFT_SEPARATOR_INVERSE")
 		
-		separator_start="#[bg=default,fg=${PALLETE['magenta']}]${left_separator_inverse}#[bg=${PALLETE['magenta']},fg=${PALLETE['bg_highlight']}]"
-		separator_internal="#[bg=${PALLETE['purple']},fg=${PALLETE['magenta']}]${left_separator:?}#[none]"
-		separator_end="#[bg=default,fg=${PALLETE['purple']}]${left_separator:?}#[none]"
+		separator_start="#[bg=default,fg=${number_bg}]${left_separator_inverse}#[bg=${number_bg},fg=${PALLETE['bg_highlight']}]"
+		separator_internal="#[bg=${content_bg},fg=${number_bg}]${left_separator:?}#[none]"
+		separator_end="#[bg=default,fg=${content_bg}]${left_separator:?}#[none]"
 	else
-		separator_start="#[bg=${PALLETE['magenta']},fg=${PALLETE['bg_highlight']}]${left_separator:?}#[none]"
-		separator_internal="#[bg=${PALLETE['purple']},fg=${PALLETE['magenta']}]${left_separator:?}#[none]"
-		separator_end="#[bg=${PALLETE[bg_highlight]},fg=${PALLETE['purple']}]${left_separator:?}#[none]"
+		separator_start="#[bg=${number_bg},fg=${PALLETE['bg_highlight']}]${left_separator:?}#[none]"
+		separator_internal="#[bg=${content_bg},fg=${number_bg}]${left_separator:?}#[none]"
+		separator_end="#[bg=${PALLETE[bg_highlight]},fg=${content_bg}]${left_separator:?}#[none]"
 	fi
 
 	echo "${separator_start}#[fg=${PALLETE[white]}]#I${separator_internal}#[fg=${PALLETE[white]}] #{?window_zoomed_flag,$zoomed_window_icon,$active_window_icon} ${active_window_title}#{?pane_synchronized,$pane_synchronized_icon,}${separator_end}#[none]"

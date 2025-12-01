@@ -84,7 +84,9 @@ get_brightness_linux() {
     fi
     
     # Method 2: Try using brightnessctl (if sysfs not available)
-    if brightnessctl get 2>/dev/null | awk -v max="$(brightnessctl max 2>/dev/null)" 'BEGIN {if(max>0) printf "%d", ($0/max)*100}'; then
+    local max
+    max=$(brightnessctl max 2>/dev/null)
+    if brightnessctl get 2>/dev/null | awk -v max="$max" 'BEGIN {if(max>0) printf "%d", ($0/max)*100}'; then
         return 0
     fi
     

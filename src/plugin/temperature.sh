@@ -220,35 +220,7 @@ get_temp_linux_sys() {
 }
 
 # Get temperature from hwmon by sensor name
-get_temp_hwmon_by_name() {
-    local sensor_name="$1"
-    
-    for dir in /sys/class/hwmon/hwmon*; do
-        [[ -d "$dir" ]] || continue
-        [[ -f "$dir/name" ]] || continue
-        
-        local name
-        name=$(<"$dir/name")
-        
-        if [[ "$name" == "$sensor_name" ]]; then
-            # Find first temp input file
-            for temp_file in "$dir"/temp*_input; do
-                [[ -f "$temp_file" ]] || continue
-                
-                local temp_millicelsius
-                temp_millicelsius=$(<"$temp_file")
-                [[ -n "$temp_millicelsius" ]] || continue
-                
-                local temp
-                temp=$(awk "BEGIN {printf \"%.0f\", $temp_millicelsius / 1000}")
-                printf '%s' "$temp"
-                return 0
-            done
-        fi
-    done
-    
-    return 1
-}
+
 
 # Get temperature on Linux from /sys/class/hwmon
 get_temp_linux_hwmon() {

@@ -58,6 +58,10 @@ VPN_CACHE_KEY="vpn"
 
 # Check Cloudflare WARP connection
 check_cloudflare_warp() {
+    # Check if warp-cli is available
+    if ! command -v warp-cli >/dev/null 2>&1; then
+        return 2  # Command not found
+    fi
     local status
     status=$(warp-cli status 2>/dev/null) || return 1
     
@@ -169,7 +173,7 @@ check_tailscale() {
     
     # Try tailscale command directly (faster than command -v check first)
     status=$(tailscale status --json 2>/dev/null) || return 1
-    status=$(tailscale status --json 2>/dev/null)
+    
     
     if [[ -z "$status" ]]; then
         return 1
@@ -188,7 +192,7 @@ check_tailscale() {
         vpn_ip=$(tailscale ip -4 2>/dev/null | head -1)
         
         if [[ -n "$self_name" ]]; then
-            printf 'connected:Tailscale|%s' "$vpn_ip"
+            printf 'connected:%s|%s' "$self_name" "$vpn_ip"
         else
             printf 'connected:Tailscale|%s' "$vpn_ip"
         fi

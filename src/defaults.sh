@@ -97,6 +97,10 @@ THEME_DEFAULT_INACTIVE_WINDOW_TITLE="#W "
 # Style for windows with activity: italics, bold, none, etc.
 THEME_DEFAULT_WINDOW_WITH_ACTIVITY_STYLE="italics"
 
+# Active window colors (can use palette color names)
+THEME_DEFAULT_ACTIVE_WINDOW_NUMBER_BG="magenta"
+THEME_DEFAULT_ACTIVE_WINDOW_CONTENT_BG="purple"
+
 # Style for bell status
 THEME_DEFAULT_STATUS_BELL_STYLE="bold"
 
