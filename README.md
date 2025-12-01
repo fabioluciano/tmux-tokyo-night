@@ -91,27 +91,27 @@ The theme includes 24 built-in plugins organized by category:
 
 ### 🌡️ System Monitoring
 
-- **[cpu](../../wiki/CPU)** - CPU usage with thresholds
-- **[memory](../../wiki/Memory)** - RAM usage monitoring
-- **[disk](../../wiki/Disk)** - Disk space tracking
-- **[loadavg](../../wiki/LoadAvg)** - System load average
+- **[cpu](../../wiki/CPU)** - CPU usage with dynamic thresholds
+- **[memory](../../wiki/Memory)** - RAM usage with format options
+- **[disk](../../wiki/Disk)** - Disk space with threshold warnings
+- **[loadavg](../../wiki/LoadAvg)** - System load average monitoring
 - **[temperature](../../wiki/Temperature)** - CPU temperature (Linux only)
-- **[uptime](../../wiki/Uptime)** - System uptime
+- **[uptime](../../wiki/Uptime)** - System uptime display
 
 ### 🌐 Network & Connectivity
 
 - **[network](../../wiki/Network)** - Bandwidth monitoring
-- **[wifi](../../wiki/WiFi)** - WiFi status and signal
-- **[vpn](../../wiki/VPN)** - VPN connection status
-- **[external_ip](../../wiki/External-IP)** - Public IP address
-- **[bluetooth](../../wiki/Bluetooth)** - Bluetooth status
-- **[weather](../../wiki/Weather)** - Weather conditions
+- **[wifi](../../wiki/WiFi)** - WiFi status with signal strength
+- **[vpn](../../wiki/VPN)** - VPN connection with multiple providers
+- **[external_ip](../../wiki/External-IP)** - Public IP address display
+- **[bluetooth](../../wiki/Bluetooth)** - Bluetooth devices with battery
+- **[weather](../../wiki/Weather)** - Weather with custom formats
 
 ### 💻 Development
 
-- **[git](../../wiki/Git)** - Git branch and status
-- **[docker](../../wiki/Docker)** - Container count
-- **[kubernetes](../../wiki/Kubernetes)** - K8s context/namespace
+- **[git](../../wiki/Git)** - Git branch with change indicators
+- **[docker](../../wiki/Docker)** - Container count (running/stopped)
+- **[kubernetes](../../wiki/Kubernetes)** - K8s context with interactive selectors
 
 ### 📦 Package Managers
 
@@ -126,8 +126,8 @@ The theme includes 24 built-in plugins organized by category:
 
 ### 🖥️ System Info
 
-- **[battery](../../wiki/Battery)** - Battery status
-- **[hostname](../../wiki/Hostname)** - System hostname
+- **[battery](../../wiki/Battery)** - Battery with charge/time modes
+- **[hostname](../../wiki/Hostname)** - System hostname display
 
 **Enable plugins:**
 
@@ -163,13 +163,24 @@ Each plugin supports:
 - **Icon** - Custom icon character
 - **Accent color** - Background color
 - **Cache TTL** - Update frequency
+- **Display conditions** - Show/hide based on thresholds
 
 ```bash
 # Example: Customize CPU plugin
 set -g @theme_plugin_cpu_icon ''
 set -g @theme_plugin_cpu_accent_color 'red'
 set -g @theme_plugin_cpu_cache_ttl 2
+
+# Hide battery when above 50%
+set -g @theme_plugin_battery_display_threshold '50'
+set -g @theme_plugin_battery_display_condition 'le'
+
+# Show CPU only when above 70%
+set -g @theme_plugin_cpu_display_threshold '70'
+set -g @theme_plugin_cpu_display_condition 'gt'
 ```
+
+**Available conditions:** `le` (≤), `lt` (<), `ge` (≥), `gt` (>), `eq` (=), `ne` (≠), `always`
 
 Learn more:
 

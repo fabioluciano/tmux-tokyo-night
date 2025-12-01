@@ -59,7 +59,38 @@ get_bluetooth_macos() {
             return 0
         fi
         
-        # blueutil doesn't provide battery info, fall through to system_profiler
+        # Try to get battery info using blueutil --connected with -info flag
+        # Note: This requires blueutil version that supports battery reporting
+        local connected_devices=""
+        local devices
+        devices=$(blueutil --connected 2>/dev/null)
+        
+        if [[ -n "$devices" ]]; then
+            while IFS= read -r line; do
+                # Parse: address: 40-ed-98-1d-47-a8, connected (master, -53 dBm), name: "RETRO NANO", recent access date: 2024-11-30
+                if [[ "$line" =~ name:\ \"([^\"]+)\" ]]; then
+                    local device_name="${BASH_REMATCH[1]}"
+                    local battery=""
+                    
+                    # Extract MAC address from the line
+                    if [[ "$line" =~ address:\ ([0-9a-f-]+) ]]; then
+                        local mac_addr="${BASH_REMATCH[1]}"
+                        # Try to get battery info (may not be supported by all blueutil versions)
+                        battery=$(blueutil --info "$mac_addr" 2>/dev/null | grep -i "battery" | grep -oE '[0-9]+%' | tr -d '%' | head -1)
+                    fi
+                    
+                    if [[ -n "$connected_devices" ]]; then
+                        connected_devices="${connected_devices}|"
+                    fi
+                    connected_devices="${connected_devices}${device_name}@${battery}"
+                fi
+            done <<< "$devices"
+            
+            if [[ -n "$connected_devices" ]]; then
+                printf 'connected:%s' "$connected_devices"
+                return 0
+            fi
+        fi
     fi
     
     # Use system_profiler to check status and connected devices
