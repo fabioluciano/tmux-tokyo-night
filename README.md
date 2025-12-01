@@ -95,7 +95,7 @@ The theme includes 26 built-in plugins organized by category:
 - **[memory](../../wiki/Memory)** - RAM usage with format options
 - **[disk](../../wiki/Disk)** - Disk space with threshold warnings
 - **[loadavg](../../wiki/LoadAvg)** - System load average monitoring
-- **[temperature](../../wiki/Temperature)** - CPU temperature
+- **[temperature](../../wiki/Temperature)** - CPU temperature <br> <sub>(Linux only; partial support on WSL/macOS, see docs)</sub>
 - **[uptime](../../wiki/Uptime)** - System uptime display
 - **[brightness](../../wiki/Brightness)** - Screen brightness level
 
