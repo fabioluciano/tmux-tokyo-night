@@ -1,6 +1,6 @@
 # 🌃 Tokyo Night for tmux
 
-A clean, dark tmux theme inspired by the [Tokyo Night](https://github.com/enkia/tokyo-night-vscode-theme) color scheme. Features a modular plugin system with 24 built-in plugins for displaying system information, development tools, and media status.
+A clean, dark tmux theme inspired by the [Tokyo Night](https://github.com/enkia/tokyo-night-vscode-theme) color scheme. Features a modular plugin system with 23 built-in plugins for displaying system information, development tools, and media status.
 
 ![Tokyo Night Theme](./assets/tokyo-night-bar.png)
 ![Tokyo Night Theme](./assets/tokyo-night-theme.png)
@@ -8,7 +8,7 @@ A clean, dark tmux theme inspired by the [Tokyo Night](https://github.com/enkia/
 ## ✨ Features
 
 - 🎨 **Four color variations** - Night, Storm, Moon, and Day
-- 🔌 **24 built-in plugins** - System monitoring, development tools, media players
+- 🔌 **23 built-in plugins** - System monitoring, development tools, media players
 - ⚡ **Performance optimized** - Intelligent caching system
 - 🎯 **Fully customizable** - Colors, icons, formats, and separators
 - 🖥️ **Cross-platform** - macOS, Linux, and BSD support
@@ -20,7 +20,7 @@ A clean, dark tmux theme inspired by the [Tokyo Night](https://github.com/enkia/
 - **[Quick Start](../../wiki/Quick-Start)** - Get up and running in minutes
 - **[Theme Variations](../../wiki/Theme-Variations)** - Explore Night, Storm, Moon, and Day
 - **[Global Configuration](../../wiki/Global-Configuration)** - Configure status bar layout and separators
-- **[Plugin System](../../wiki/Plugin-System-Overview)** - Complete reference for all 24 plugins
+- **[Plugin System](../../wiki/Plugin-System-Overview)** - Complete reference for all 23 plugins
 - **[Interactive Keybindings](../../wiki/Interactive-Keybindings)** - Popup helpers and selectors
 - **[Custom Colors & Theming](../../wiki/Custom-Colors-Theming)** - Advanced customization
 - **[Performance & Caching](../../wiki/Performance-Caching)** - Optimize for your workflow
@@ -83,7 +83,7 @@ Learn more: **[Interactive Keybindings](../../wiki/Interactive-Keybindings)**
 
 ## 🔌 Available Plugins
 
-The theme includes 26 built-in plugins organized by category:
+The theme includes 23 built-in plugins organized by category:
 
 ### 📅 Time & Date
 
@@ -103,9 +103,9 @@ The theme includes 26 built-in plugins organized by category:
 
 - **[network](../../wiki/Network)** - Bandwidth monitoring
 - **[wifi](../../wiki/WiFi)** - WiFi status with signal strength
-- **[vpn](../../wiki/VPN)** - VPN connection with multiple providers
+- **[vpn](../../wiki/VPN)** - VPN connection with multiple providers (FortiClient, WireGuard, Tailscale, OpenVPN, NetworkManager)
 - **[external_ip](../../wiki/External-IP)** - Public IP address display
-- **[bluetooth](../../wiki/Bluetooth)** - Bluetooth devices with battery
+- **[bluetooth](../../wiki/Bluetooth)** - Bluetooth devices with battery (supports multiple connected devices)
 - **[weather](../../wiki/Weather)** - Weather with custom formats
 
 ### 💻 Development
@@ -115,16 +115,14 @@ The theme includes 26 built-in plugins organized by category:
 - **[kubernetes](../../wiki/Kubernetes)** - K8s context with interactive selectors
 - **[cloud](../../wiki/Cloud)** - Cloud provider context (AWS/GCP/Azure)
 
-### 📦 Package Managers
-
-- **[homebrew](../../wiki/Homebrew)** - Brew updates
-- **[yay](../../wiki/Yay)** - AUR updates
-
 ### 🎵 Media
 
-- **[spotify](../../wiki/Spotify)** - Now playing
-- **[playerctl](../../wiki/Playerctl)** - Media player
+- **[nowplaying](../../wiki/NowPlaying)** - Unified media player (Spotify, Music.app, playerctl, spt, osascript)
 - **[volume](../../wiki/Volume)** - Volume level
+
+### 📦 Package Managers
+
+- **[packages](../../wiki/Packages)** - Unified package manager (brew, yay, apt, dnf, pacman)
 
 ### 🖥️ System Info
 
@@ -153,22 +151,19 @@ See **[Plugin System Overview](../../wiki/Plugin-System-Overview)** for complete
 | **docker** | ✅ | ✅ | ✅ | Requires Docker daemon |
 | **external_ip** | ✅ | ✅ | ✅ | Requires internet connection |
 | **git** | ✅ | ✅ | ✅ | Requires git repository |
-| **homebrew** | ✅ | ✅ | ✅ | Requires Homebrew installed |
 | **hostname** | ✅ | ✅ | ✅ | Universal |
 | **kubernetes** | ✅ | ✅ | ✅ | Requires `kubectl` |
 | **loadavg** | ✅ | ✅ | ✅ | Native support via `/proc/loadavg` or `sysctl` |
 | **memory** | ✅ | ✅ | ✅ | Native support via `/proc/meminfo` or `vm_stat` |
 | **network** | ✅ | ✅ | ✅ | Bandwidth monitoring |
-| **playerctl** | ✅ | ❌ | ✅ | Linux only - MPRIS protocol |
-| **spotify** | ✅ | ✅ | ✅ | macOS: native, Linux: playerctl/spt |
-| **spt** | ✅ | ✅ | ✅ | Requires `spotify-tui` |
-| **temperature** | ✅ | ✅ | ⚠️ | Linux: sensors/sysfs, macOS: requires `osx-cpu-temp` |
+| **nowplaying** | ✅ | ✅ | ✅ | Auto-detects: Spotify/Music.app/playerctl/spt/osascript |
+| **packages** | ✅ | ✅ | ✅ | Auto-detects: brew/yay/apt/dnf/pacman |
+| **temperature** | ✅ | ⚠️ | ⚠️ | Multiple sources: cpu/nvme/wifi/acpi/dell (see docs) |
 | **uptime** | ✅ | ✅ | ✅ | Universal |
 | **volume** | ✅ | ✅ | ⚠️ | Linux: pactl/pamixer, macOS: osascript |
-| **vpn** | ✅ | ✅ | ⚠️ | Platform-specific VPN clients |
+| **vpn** | ✅ | ✅ | ⚠️ | FortiClient/WireGuard/Tailscale/OpenVPN/NetworkManager/macOS VPN |
 | **weather** | ✅ | ✅ | ✅ | Requires internet connection |
 | **wifi** | ✅ | ✅ | ❌ | Linux: nmcli/iwconfig, macOS: airport |
-| **yay** | ✅ | ❌ | ✅ | Arch Linux only - AUR helper |
 
 **Legend:**
 

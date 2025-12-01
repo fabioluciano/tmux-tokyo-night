@@ -68,7 +68,7 @@ export plugin_kubernetes_icon plugin_kubernetes_accent_color plugin_kubernetes_a
 connectivity_check_is_running() {
     if [[ -f "$CONNECTIVITY_LOCK_FILE" ]]; then
         local lock_age
-        lock_age=$(( $(date +%s) - $(stat -f %m "$CONNECTIVITY_LOCK_FILE" 2>/dev/null || stat -c %Y "$CONNECTIVITY_LOCK_FILE" 2>/dev/null || echo 0) ))
+        lock_age=$(( $(date +%s) - $(stat -c %Y "$CONNECTIVITY_LOCK_FILE" 2>/dev/null || stat -f %m "$CONNECTIVITY_LOCK_FILE" 2>/dev/null || echo 0) ))
         if [[ $lock_age -lt 30 ]]; then
             return 0
         else
@@ -110,7 +110,7 @@ check_cluster_connectivity() {
     if [[ -f "$cache_file" ]]; then
         cached_status=$(<"$cache_file")
         local file_mtime
-        file_mtime=$(stat -f %m "$cache_file" 2>/dev/null || stat -c %Y "$cache_file" 2>/dev/null || echo 0)
+        file_mtime=$(stat -c %Y "$cache_file" 2>/dev/null || stat -f %m "$cache_file" 2>/dev/null || echo 0)
         cache_age=$(( $(date +%s) - file_mtime ))
     fi
     
@@ -233,13 +233,13 @@ setup_keybindings() {
     # Context selector: select context with fzf, switch if selected, update cache, refresh
     if [[ -n "$context_key" ]]; then
         tmux bind-key "$context_key" display-popup -E -w "$popup_width" -h "$popup_height" \
-            "selected=\$(kubectl ctx | fzf --header='Select Kubernetes Context' --reverse) && [ -n \"\$selected\" ] && kubectl ctx \"\$selected\" && rm -f '${cache_dir}/kubernetes.cache' && tmux refresh-client -S"
+            'selected=$(kubectl config get-contexts -o name | fzf --header="Select Kubernetes Context" --reverse) && [ -n "$selected" ] && kubectl config use-context "$selected" && rm -f '"'${cache_dir}/kubernetes.cache'"' && tmux refresh-client -S'
     fi
     
     # Namespace selector: select namespace with fzf, switch if selected, invalidate cache, refresh
     if [[ -n "$namespace_key" ]]; then
         tmux bind-key "$namespace_key" display-popup -E -w "$ns_popup_width" -h "$ns_popup_height" \
-            "selected=\$(kubectl ns | fzf --header='Select Kubernetes Namespace' --reverse) && [ -n \"\$selected\" ] && kubectl ns \"\$selected\" && rm -f '${cache_dir}/kubernetes.cache' && tmux refresh-client -S"
+            'selected=$(kubectl get namespaces -o name | sed "s/namespace\///" | fzf --header="Select Kubernetes Namespace" --reverse) && [ -n "$selected" ] && kubectl config set-context --current --namespace="$selected" && rm -f '"'${cache_dir}/kubernetes.cache'"' && tmux refresh-client -S'
     fi
 }
 

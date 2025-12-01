@@ -62,15 +62,15 @@ bytes_to_human() {
 get_memory_linux() {
     local mem_total mem_available mem_used percent
     
-    mem_total=$(grep '^MemTotal:' /proc/meminfo | awk '{print $2}')
-    mem_available=$(grep '^MemAvailable:' /proc/meminfo | awk '{print $2}')
+    mem_total=$(command grep '^MemTotal:' /proc/meminfo | command awk '{print $2}')
+    mem_available=$(command grep '^MemAvailable:' /proc/meminfo | command awk '{print $2}')
     
     # MemAvailable might not exist on older kernels
     if [[ -z "$mem_available" ]]; then
         local mem_free mem_buffers mem_cached
-        mem_free=$(grep '^MemFree:' /proc/meminfo | awk '{print $2}')
-        mem_buffers=$(grep '^Buffers:' /proc/meminfo | awk '{print $2}')
-        mem_cached=$(grep '^Cached:' /proc/meminfo | awk '{print $2}')
+        mem_free=$(command grep '^MemFree:' /proc/meminfo | command awk '{print $2}')
+        mem_buffers=$(command grep '^Buffers:' /proc/meminfo | command awk '{print $2}')
+        mem_cached=$(command grep '^Cached:' /proc/meminfo | command awk '{print $2}')
         mem_available=$((mem_free + mem_buffers + mem_cached))
     fi
     

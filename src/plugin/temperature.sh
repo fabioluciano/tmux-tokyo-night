@@ -10,6 +10,15 @@
 #   @theme_plugin_temperature_accent_color         - Default accent color
 #   @theme_plugin_temperature_accent_color_icon    - Default icon accent color
 #   @theme_plugin_temperature_unit                 - Unit: C or F (default: C)
+#   @theme_plugin_temperature_source               - Source (default: cpu)
+#       • cpu, coretemp    - CPU cores (Intel coretemp, AMD k10temp)
+#       • cpu-pkg          - CPU package (x86_pkg_temp)
+#       • cpu-acpi, tcpu   - CPU via ACPI (TCPU)
+#       • nvme, ssd        - NVMe SSD
+#       • wifi, wireless   - WiFi chip (iwlwifi)
+#       • acpi, ambient    - System ambient/chassis temperature
+#       • dell, dell_smm   - Dell system sensors
+#       • auto             - Auto-detect (prefer CPU)
 #   @theme_plugin_temperature_cache_ttl            - Cache time in seconds (default: 5)
 #
 # Threshold options:
@@ -59,6 +68,66 @@ celsius_to_fahrenheit() {
     awk "BEGIN {printf \"%.0f\", ($celsius * 9/5) + 32}"
 }
 
+# Get temperature from specific thermal zone by type
+get_temp_thermal_zone_by_type() {
+    local zone_type="$1"
+    
+    for zone in /sys/class/thermal/thermal_zone*; do
+        [[ -f "$zone/type" ]] || continue
+        
+        local type
+        type=$(<"$zone/type")
+        
+        if [[ "$type" == "$zone_type" ]]; then
+            local temp_file="$zone/temp"
+            [[ -f "$temp_file" ]] || continue
+            
+            local temp_millicelsius
+            temp_millicelsius=$(<"$temp_file")
+            
+            [[ -n "$temp_millicelsius" ]] || continue
+            
+            local temp
+            temp=$(awk "BEGIN {printf \"%.0f\", $temp_millicelsius / 1000}")
+            printf '%s' "$temp"
+            return 0
+        fi
+    done
+    
+    return 1
+}
+
+# Get temperature from hwmon by sensor name
+get_temp_hwmon_by_name() {
+    local sensor_name="$1"
+    
+    for dir in /sys/class/hwmon/hwmon*; do
+        [[ -d "$dir" ]] || continue
+        [[ -f "$dir/name" ]] || continue
+        
+        local name
+        name=$(<"$dir/name")
+        
+        if [[ "$name" == "$sensor_name" ]]; then
+            # Find first temp input file
+            for temp_file in "$dir"/temp*_input; do
+                [[ -f "$temp_file" ]] || continue
+                
+                local temp_millicelsius
+                temp_millicelsius=$(<"$temp_file")
+                [[ -n "$temp_millicelsius" ]] || continue
+                
+                local temp
+                temp=$(awk "BEGIN {printf \"%.0f\", $temp_millicelsius / 1000}")
+                printf '%s' "$temp"
+                return 0
+            done
+        fi
+    done
+    
+    return 1
+}
+
 # Get temperature on macOS using osx-cpu-temp
 get_temp_macos_osx_cpu_temp() {
     command -v osx-cpu-temp &>/dev/null || return 1
@@ -103,6 +172,35 @@ get_temp_macos_smctemp() {
 # Get temperature on macOS using ioreg (battery temperature as fallback)
 # This works on Apple Silicon without any external tools
 
+# Get temperature from specific thermal zone by type
+get_temp_thermal_zone_by_type() {
+    local zone_type="$1"
+    
+    for zone in /sys/class/thermal/thermal_zone*; do
+        [[ -f "$zone/type" ]] || continue
+        
+        local type
+        type=$(<"$zone/type")
+        
+        if [[ "$type" == "$zone_type" ]]; then
+            local temp_file="$zone/temp"
+            [[ -f "$temp_file" ]] || continue
+            
+            local temp_millicelsius
+            temp_millicelsius=$(<"$temp_file")
+            
+            [[ -n "$temp_millicelsius" ]] || continue
+            
+            local temp
+            temp=$(awk "BEGIN {printf \"%.0f\", $temp_millicelsius / 1000}")
+            printf '%s' "$temp"
+            return 0
+        fi
+    done
+    
+    return 1
+}
+
 # Get temperature on Linux from /sys/class/thermal
 get_temp_linux_sys() {
     local thermal_zone="/sys/class/thermal/thermal_zone0/temp"
@@ -119,6 +217,37 @@ get_temp_linux_sys() {
     temp=$(awk "BEGIN {printf \"%.0f\", $temp_millicelsius / 1000}")
     
     printf '%s' "$temp"
+}
+
+# Get temperature from hwmon by sensor name
+get_temp_hwmon_by_name() {
+    local sensor_name="$1"
+    
+    for dir in /sys/class/hwmon/hwmon*; do
+        [[ -d "$dir" ]] || continue
+        [[ -f "$dir/name" ]] || continue
+        
+        local name
+        name=$(<"$dir/name")
+        
+        if [[ "$name" == "$sensor_name" ]]; then
+            # Find first temp input file
+            for temp_file in "$dir"/temp*_input; do
+                [[ -f "$temp_file" ]] || continue
+                
+                local temp_millicelsius
+                temp_millicelsius=$(<"$temp_file")
+                [[ -n "$temp_millicelsius" ]] || continue
+                
+                local temp
+                temp=$(awk "BEGIN {printf \"%.0f\", $temp_millicelsius / 1000}")
+                printf '%s' "$temp"
+                return 0
+            done
+        fi
+    done
+    
+    return 1
 }
 
 # Get temperature on Linux from /sys/class/hwmon
@@ -178,10 +307,59 @@ get_temperature() {
     if is_macos; then
         return 0
     fi
+    
+    local source
+    source=$(get_tmux_option "@theme_plugin_temperature_source" "$PLUGIN_TEMPERATURE_SOURCE")
+    
     local temp=""
-    temp=$(get_temp_linux_hwmon) || \
-    temp=$(get_temp_linux_sys) || \
-    temp=$(get_temp_linux_sensors)
+    
+    case "$source" in
+        cpu|coretemp)
+            # CPU temperature from coretemp sensor (Intel physical cores)
+            temp=$(get_temp_hwmon_by_name "coretemp") || \
+            temp=$(get_temp_hwmon_by_name "k10temp") || \
+            temp=$(get_temp_hwmon_by_name "zenpower") || \
+            temp=$(get_temp_thermal_zone_by_type "x86_pkg_temp") || \
+            temp=$(get_temp_thermal_zone_by_type "TCPU") || \
+            temp=$(get_temp_hwmon_by_name "dell_smm") || \
+            temp=$(get_temp_linux_hwmon)
+            ;;
+        cpu-pkg|x86_pkg_temp)
+            # CPU package temperature (entire processor)
+            temp=$(get_temp_thermal_zone_by_type "x86_pkg_temp") || \
+            temp=$(get_temp_hwmon_by_name "coretemp")
+            ;;
+        cpu-acpi|tcpu)
+            # CPU temperature via ACPI
+            temp=$(get_temp_thermal_zone_by_type "TCPU")
+            ;;
+        nvme|ssd)
+            # NVMe SSD temperature
+            temp=$(get_temp_hwmon_by_name "nvme")
+            ;;
+        wifi|wireless|iwlwifi)
+            # WiFi chip temperature
+            temp=$(get_temp_hwmon_by_name "iwlwifi_1") || \
+            temp=$(get_temp_thermal_zone_by_type "iwlwifi_1")
+            ;;
+        acpi|ambient|chassis)
+            # System ambient/chassis temperature
+            temp=$(get_temp_thermal_zone_by_type "INT3400 Thermal") || \
+            temp=$(get_temp_linux_sys)
+            ;;
+        dell|dell_smm)
+            # Dell system sensors
+            temp=$(get_temp_hwmon_by_name "dell_smm") || \
+            temp=$(get_temp_hwmon_by_name "dell_ddv")
+            ;;
+        auto|*)
+            # Auto mode - prefer CPU temperature
+            temp=$(get_temp_linux_hwmon) || \
+            temp=$(get_temp_linux_sys) || \
+            temp=$(get_temp_linux_sensors)
+            ;;
+    esac
+    
     [[ -n "$temp" ]] && printf '%s' "$temp"
 }
 
@@ -246,9 +424,15 @@ load_plugin() {
     if is_macos; then
         return 0
     fi
+    
+    # Get source to make cache specific per source
+    local source
+    source=$(get_tmux_option "@theme_plugin_temperature_source" "$PLUGIN_TEMPERATURE_SOURCE")
+    local cache_key="temperature_${source}"
+    
     # Check cache first
     local cached_value
-    if cached_value=$(cache_get "$TEMPERATURE_CACHE_KEY" "$TEMPERATURE_CACHE_TTL"); then
+    if cached_value=$(cache_get "$cache_key" "$TEMPERATURE_CACHE_TTL"); then
         printf '%s' "$cached_value"
         return 0
     fi
@@ -269,7 +453,7 @@ load_plugin() {
     else
         result="${temp}°C"
     fi
-    cache_set "$TEMPERATURE_CACHE_KEY" "$result"
+    cache_set "$cache_key" "$result"
     printf '%s' "$result"
 }
 

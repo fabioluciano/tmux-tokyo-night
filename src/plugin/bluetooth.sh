@@ -169,25 +169,38 @@ get_bluetooth_linux_bluetoothctl() {
         return 0
     fi
     
-    # Get connected devices
-    local connected_device
-    connected_device=$(bluetoothctl devices Connected 2>/dev/null | head -1 | cut -d' ' -f3-)
+    # Get ALL connected devices (not just first one)
+    local connected_devices
+    connected_devices=$(bluetoothctl devices Connected 2>/dev/null | cut -d' ' -f3-)
     
-    # Fallback: check for any connected device
-    if [[ -z "$connected_device" ]]; then
-        local device_mac
-        device_mac=$(bluetoothctl devices 2>/dev/null | head -1 | awk '{print $2}')
-        if [[ -n "$device_mac" ]]; then
-            local info
-            info=$(bluetoothctl info "$device_mac" 2>/dev/null)
-            if echo "$info" | grep -q "Connected: yes"; then
-                connected_device=$(echo "$info" | grep "Name:" | cut -d' ' -f2-)
+    # Fallback: check each paired device for connection
+    if [[ -z "$connected_devices" ]]; then
+        local all_devices device_mac info device_name
+        all_devices=$(bluetoothctl devices 2>/dev/null)
+        
+        while IFS= read -r line; do
+            device_mac=$(echo "$line" | awk '{print $2}')
+            if [[ -n "$device_mac" ]]; then
+                info=$(bluetoothctl info "$device_mac" 2>/dev/null)
+                if echo "$info" | grep -q "Connected: yes"; then
+                    device_name=$(echo "$info" | grep "Name:" | cut -d' ' -f2-)
+                    if [[ -n "$device_name" ]]; then
+                        if [[ -z "$connected_devices" ]]; then
+                            connected_devices="$device_name"
+                        else
+                            connected_devices="${connected_devices}|${device_name}"
+                        fi
+                    fi
+                fi
             fi
-        fi
+        done <<< "$all_devices"
+    else
+        # Convert newlines to pipes for multiple devices
+        connected_devices=$(echo "$connected_devices" | tr '\n' '|' | sed 's/|$//')
     fi
     
-    if [[ -n "$connected_device" ]]; then
-        printf 'connected:%s' "$connected_device"
+    if [[ -n "$connected_devices" ]]; then
+        printf 'connected:%s' "$connected_devices"
     else
         printf 'on:'
     fi

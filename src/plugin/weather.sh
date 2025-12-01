@@ -74,11 +74,11 @@ resolve_format() {
     case "$format" in
         compact)
             # Temperature + condition icon (e.g., "25° ☀️")
-            printf '%s' '%t %c'
+            printf '%s' '%t %c  '
             ;;
         full)
             # Temperature + icon + humidity (e.g., "25°C ☀️ H:73%")
-            printf '%s' '%t %c H:%h'
+            printf '%s' '%t %c   H:%h'
             ;;
         minimal)
             # Just temperature (e.g., "25°")
@@ -86,7 +86,7 @@ resolve_format() {
             ;;
         detailed)
             # Location + temperature + icon (e.g., "São Paulo: 25°C ☀️")
-            printf '%s' '%l: %t %c'
+            printf '%s' '%l: %t %c  '
             ;;
         *)
             # Custom format - use as-is

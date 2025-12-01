@@ -80,7 +80,7 @@ battery_get_percentage() {
     
     if is_wsl; then
         local battery_file
-        battery_file=$(find /sys/class/power_supply/*/capacity 2>/dev/null | head -n1)
+        battery_file=$(command find /sys/class/power_supply/*/capacity 2>/dev/null | head -n1)
         [[ -n "$battery_file" ]] && percentage=$(\cat "$battery_file" 2>/dev/null)
     elif command_exists "pmset"; then
         percentage=$(pmset -g batt 2>/dev/null | grep -o "[0-9]\{1,3\}%" | tr -d '%')
@@ -112,7 +112,7 @@ battery_get_percentage() {
 battery_is_charging() {
     if is_wsl; then
         local status_file
-        status_file=$(find /sys/class/power_supply/*/status 2>/dev/null | head -n1)
+        status_file=$(command find /sys/class/power_supply/*/status 2>/dev/null | head -n1)
         [[ -n "$status_file" ]] && grep -qi "^charging$" "$status_file" 2>/dev/null && return 0
     elif command_exists "pmset"; then
         pmset -g batt 2>/dev/null | grep -q "AC Power" && return 0

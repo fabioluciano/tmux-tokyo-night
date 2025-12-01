@@ -139,7 +139,7 @@ for config in "${PLUGIN_CONFIGS[@]}"; do
     # shellcheck source=/dev/null
 
     # Execute plugin to get content
-    content=$("$plugin_script" 2>/dev/null) || content=""
+    content=$(bash "$plugin_script" 2>/dev/null) || content=""
     
     # Handle special types first
     case "$plugin_type" in
@@ -191,12 +191,20 @@ total=${#PLUGIN_NAMES[@]}
 output=""
 
 for ((i=0; i<total; i++)); do
+    name="${PLUGIN_NAMES[$i]}"
     content="${PLUGIN_CONTENTS[$i]}"
     accent="${PLUGIN_ACCENTS[$i]}"
     accent_icon="${PLUGIN_ACCENT_ICONS[$i]}"
     icon="${PLUGIN_ICONS[$i]}"
     
     is_last=$([[ $i -eq $((total - 1)) ]] && echo "1" || echo "0")
+    
+    # Add extra padding for plugins with wide-width emojis
+    extra_padding=""
+    if [[ "$name" == "weather" ]]; then
+        # Weather plugin uses emojis that may have double-width, add extra space
+        extra_padding=" "
+    fi
     
     # Build separators inline (avoiding function call overhead)
     if [[ "$TRANSPARENT" == "true" ]]; then
@@ -212,9 +220,9 @@ for ((i=0; i<total; i++)); do
     
     # Build content section - for last plugin, just end cleanly with no separator
     if [[ "$is_last" == "1" ]]; then
-        output+="${icon_output}#[fg=${WHITE_COLOR},bg=${accent}] ${content}"
+        output+="${icon_output}#[fg=${WHITE_COLOR},bg=${accent}] ${content}${extra_padding} "
     else
-        content_output="#[fg=${WHITE_COLOR},bg=${accent}]${content} #[none]"
+        content_output="#[fg=${WHITE_COLOR},bg=${accent}]${content}${extra_padding} #[none]"
         if [[ "$TRANSPARENT" == "true" ]]; then
             sep_end="#[fg=${accent},bg=default]${RIGHT_SEPARATOR_INVERSE}#[bg=default]"
         else
