@@ -171,6 +171,7 @@ See **[Plugin System Overview](../../wiki/Plugin-System-Overview)** for complete
 | **yay** | ✅ | ❌ | ✅ | Arch Linux only - AUR helper |
 
 **Legend:**
+
 - ✅ Fully supported
 - ⚠️ Partial support or requires specific setup
 - ❌ Not supported
