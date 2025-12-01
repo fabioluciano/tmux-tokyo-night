@@ -70,17 +70,21 @@ get_brightness_linux() {
     local backlight_dir="/sys/class/backlight"
     if [[ -d "$backlight_dir" ]]; then
         # Try to find any backlight device
+        shopt -s nullglob
         for device in "$backlight_dir"/*; do
+            [[ -d "$device" ]] || continue
             if [[ -f "$device/brightness" ]] && [[ -f "$device/max_brightness" ]]; then
                 local current max
-                current=$(<"$device/brightness" 2>/dev/null)
-                max=$(<"$device/max_brightness" 2>/dev/null)
-                if [[ -n "$current" ]] && [[ -n "$max" ]] && [[ "$max" -gt 0 ]]; then
-                    awk -v curr="$current" -v m="$max" 'BEGIN {printf "%d", (curr/m)*100}'
-                    return 0
-                fi
+                current=$(command cat "$device/brightness" 2>/dev/null)
+                max=$(command cat "$device/max_brightness" 2>/dev/null)
+                [[ -n "$current" ]] || continue
+                [[ -n "$max" ]] || continue
+                [[ "$max" -gt 0 ]] || continue
+                awk -v curr="$current" -v m="$max" 'BEGIN {printf "%d", (curr/m)*100}'
+                return 0
             fi
         done
+        shopt -u nullglob
     fi
     
     # Method 2: Try using brightnessctl (if sysfs not available)
