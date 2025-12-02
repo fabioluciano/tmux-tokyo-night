@@ -95,7 +95,7 @@ detect_camera_usage_macos() {
     fi
     
     # Method 2: Check for VDCAssistant process (most reliable indicator)
-    if ps aux | grep -q "[V]DCAssistant" 2>/dev/null; then
+    if pgrep -q "VDCAssistant" 2>/dev/null; then
         echo "active"
         return
     fi
@@ -175,8 +175,7 @@ detect_camera_usage_linux() {
     fi
     
     # Method 6: Check /proc/*/fd for video device file descriptors
-    if find /proc/[0-9]*/fd -type l 2>/dev/null | \
-       xargs ls -l 2>/dev/null | \
+    if find /proc/[0-9]*/fd -type l -exec ls -l {} + 2>/dev/null | \
        grep -q "/dev/video" 2>/dev/null; then
         echo "active"
         return

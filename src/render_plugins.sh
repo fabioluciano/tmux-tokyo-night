@@ -200,7 +200,6 @@ for ((i=0; i<total; i++)); do
     is_last=$([[ $i -eq $((total - 1)) ]] && echo "1" || echo "0")
     
     # Plugins handle their own formatting and padding needs
-    extra_padding=""
     
     # Build separators inline (avoiding function call overhead)
     if [[ "$TRANSPARENT" == "true" ]]; then
