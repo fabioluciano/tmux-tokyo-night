@@ -51,17 +51,20 @@ format_uptime() {
 }
 
 get_uptime_linux() {
-    local uptime_seconds
-    uptime_seconds=$(awk '{print int($1)}' /proc/uptime 2>/dev/null)
-    format_uptime "$uptime_seconds"
+    # Single awk call to read and parse /proc/uptime (faster)
+    awk '{printf "%d", $1}' /proc/uptime 2>/dev/null | {
+        read -r uptime_seconds
+        format_uptime "$uptime_seconds"
+    }
 }
 
 get_uptime_macos() {
-    local boot_time current_time uptime_seconds
-    boot_time=$(sysctl -n kern.boottime 2>/dev/null | awk '{print $4}' | tr -d ',')
-    current_time=$(date +%s)
-    uptime_seconds=$((current_time - boot_time))
-    format_uptime "$uptime_seconds"
+    # More efficient: get boot time and current time in awk
+    sysctl -n kern.boottime 2>/dev/null | awk -v current="$(date +%s)" '
+        {gsub(/[{},:]/," "); print current - $4}' | {
+        read -r uptime_seconds
+        format_uptime "$uptime_seconds"
+    }
 }
 
 # =============================================================================

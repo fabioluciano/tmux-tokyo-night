@@ -128,15 +128,28 @@ THEME_DEFAULT_PLUGIN_AUDIODEVICES_SHOW="both"                   # off|input|outp
 
 THEME_DEFAULT_PLUGIN_AUDIODEVICES_ICON=$'\uf0ec'  
 THEME_DEFAULT_PLUGIN_AUDIODEVICES_INPUT_ICON=$'\uec1c'               # Input device icon
-THEME_DEFAULT_PLUGIN_AUDIODEVICES_OUTPUT_ICON="🔊"              # Output device icon  
+THEME_DEFAULT_PLUGIN_AUDIODEVICES_OUTPUT_ICON=$'\uf027'              # Output device icon  
 THEME_DEFAULT_PLUGIN_AUDIODEVICES_SEPARATOR=" | "               # Separator between devices
-THEME_DEFAULT_PLUGIN_AUDIODEVICES_CACHE_TTL="5"                 # Cache time in seconds
+THEME_DEFAULT_PLUGIN_AUDIODEVICES_CACHE_TTL="8"                 # Cache time in seconds
 THEME_DEFAULT_PLUGIN_AUDIODEVICES_MAX_LENGTH="15"               # Max device name length
 THEME_DEFAULT_PLUGIN_AUDIODEVICES_INPUT_KEY="I"                 # Input selection key (prefix + key)
 THEME_DEFAULT_PLUGIN_AUDIODEVICES_OUTPUT_KEY="O"                # Output selection key (prefix + key)
 
 PLUGIN_AUDIODEVICES_ACCENT_COLOR="blue7"
 PLUGIN_AUDIODEVICES_ACCENT_COLOR_ICON="blue0"
+
+# =============================================================================
+# PLUGIN: camera
+# =============================================================================
+# Camera status plugin - shows when camera is active/inactive
+THEME_DEFAULT_PLUGIN_CAMERA_SHOW="on"                          # on|off
+THEME_DEFAULT_PLUGIN_CAMERA_ICON="📷"                          # Camera icon when inactive
+THEME_DEFAULT_PLUGIN_CAMERA_ICON_ACTIVE="🔴"                   # Camera icon when active  
+THEME_DEFAULT_PLUGIN_CAMERA_CACHE_TTL="5"                      # Cache time in seconds
+THEME_DEFAULT_PLUGIN_CAMERA_SHOW_WHEN_INACTIVE="false"         # Show when camera is off
+
+PLUGIN_CAMERA_ACCENT_COLOR="blue7"
+PLUGIN_CAMERA_ACCENT_COLOR_ICON="blue0"
 
 # =============================================================================
 # PLUGIN: datetime
@@ -180,7 +193,7 @@ PLUGIN_WEATHER_CACHE_TTL="900"
 PLUGIN_BATTERY_ICON="󰁹"
 PLUGIN_BATTERY_ACCENT_COLOR="blue7"
 PLUGIN_BATTERY_ACCENT_COLOR_ICON="blue0"
-PLUGIN_BATTERY_CACHE_TTL="30"
+PLUGIN_BATTERY_CACHE_TTL="45"
 
 # Display mode: percentage (e.g., "85%") or time (e.g., "2:30" remaining)
 PLUGIN_BATTERY_DISPLAY_MODE="percentage"
@@ -201,7 +214,7 @@ PLUGIN_BATTERY_ICON_CHARGING="󰂄"
 PLUGIN_CPU_ICON=""
 PLUGIN_CPU_ACCENT_COLOR="blue7"
 PLUGIN_CPU_ACCENT_COLOR_ICON="blue0"
-PLUGIN_CPU_CACHE_TTL="2"
+PLUGIN_CPU_CACHE_TTL="3"
 
 # Threshold settings for dynamic colors
 PLUGIN_CPU_WARNING_THRESHOLD="70"
@@ -238,7 +251,7 @@ PLUGIN_DISK_ACCENT_COLOR="blue7"
 PLUGIN_DISK_ACCENT_COLOR_ICON="blue0"
 PLUGIN_DISK_MOUNT="/"
 PLUGIN_DISK_FORMAT="percent"
-PLUGIN_DISK_CACHE_TTL="60"
+PLUGIN_DISK_CACHE_TTL="120"
 
 # Threshold settings for dynamic colors
 PLUGIN_DISK_WARNING_THRESHOLD="70"
@@ -256,7 +269,7 @@ PLUGIN_NETWORK_ICON="󰛳"
 PLUGIN_NETWORK_ACCENT_COLOR="blue7"
 PLUGIN_NETWORK_ACCENT_COLOR_ICON="blue0"
 PLUGIN_NETWORK_INTERFACE=""
-PLUGIN_NETWORK_CACHE_TTL="2"
+PLUGIN_NETWORK_CACHE_TTL="4"
 PLUGIN_NETWORK_THRESHOLD="51200"
 
 # =============================================================================
@@ -267,7 +280,7 @@ PLUGIN_LOADAVG_ICON="󰊚"
 PLUGIN_LOADAVG_ACCENT_COLOR="blue7"
 PLUGIN_LOADAVG_ACCENT_COLOR_ICON="blue0"
 PLUGIN_LOADAVG_FORMAT="1"
-PLUGIN_LOADAVG_CACHE_TTL="5"
+PLUGIN_LOADAVG_CACHE_TTL="8"
 
 # Threshold settings for dynamic colors (multipliers of CPU cores)
 # Default: warning at 2x cores, critical at 4x cores
@@ -285,7 +298,7 @@ PLUGIN_LOADAVG_CRITICAL_ACCENT_COLOR_ICON="red1"
 PLUGIN_UPTIME_ICON="󰔟"
 PLUGIN_UPTIME_ACCENT_COLOR="blue7"
 PLUGIN_UPTIME_ACCENT_COLOR_ICON="blue0"
-PLUGIN_UPTIME_CACHE_TTL="60"
+PLUGIN_UPTIME_CACHE_TTL="300"
 
 # =============================================================================
 # PLUGIN: git
@@ -307,7 +320,7 @@ PLUGIN_KUBERNETES_DISPLAY_MODE="connected"
 PLUGIN_KUBERNETES_SHOW_NAMESPACE="false"
 PLUGIN_KUBERNETES_CONNECTIVITY_TIMEOUT="2"
 PLUGIN_KUBERNETES_CONNECTIVITY_CACHE_TTL="120"
-PLUGIN_KUBERNETES_CACHE_TTL="30"
+PLUGIN_KUBERNETES_CACHE_TTL="45"
 
 # Keybinding for context selector popup (requires kubectl-ctx from krew)
 # Set to empty string to disable the keybinding
@@ -339,7 +352,7 @@ PLUGIN_PACKAGES_ACCENT_COLOR="blue7"
 PLUGIN_PACKAGES_ACCENT_COLOR_ICON="blue0"
 PLUGIN_PACKAGES_BACKEND="auto"
 PLUGIN_PACKAGES_BREW_OPTIONS="--greedy"
-PLUGIN_PACKAGES_CACHE_TTL="1800"
+PLUGIN_PACKAGES_CACHE_TTL="3600"
 
 # =============================================================================
 # PLUGIN: nowplaying (unified: spotify, spt, playerctl, osascript)
@@ -367,7 +380,7 @@ PLUGIN_VOLUME_ACCENT_COLOR="blue7"
 PLUGIN_VOLUME_ACCENT_COLOR_ICON="blue0"
 PLUGIN_VOLUME_LOW_THRESHOLD="30"
 PLUGIN_VOLUME_MEDIUM_THRESHOLD="70"
-PLUGIN_VOLUME_CACHE_TTL="2"
+PLUGIN_VOLUME_CACHE_TTL="3"
 
 # =============================================================================
 # PLUGIN: wifi
@@ -380,7 +393,7 @@ PLUGIN_WIFI_ACCENT_COLOR_ICON="blue0"
 PLUGIN_WIFI_SHOW_SSID="true"
 PLUGIN_WIFI_SHOW_IP="false"
 PLUGIN_WIFI_SHOW_SIGNAL="false"
-PLUGIN_WIFI_CACHE_TTL="10"
+PLUGIN_WIFI_CACHE_TTL="15"
 
 # =============================================================================
 # PLUGIN: bluetooth
@@ -395,7 +408,7 @@ PLUGIN_BLUETOOTH_SHOW_DEVICE="true"
 PLUGIN_BLUETOOTH_SHOW_BATTERY="true"
 PLUGIN_BLUETOOTH_FORMAT="all"
 PLUGIN_BLUETOOTH_MAX_LENGTH="25"
-PLUGIN_BLUETOOTH_CACHE_TTL="10"
+PLUGIN_BLUETOOTH_CACHE_TTL="20"
 
 # =============================================================================
 # PLUGIN: vpn
@@ -409,7 +422,7 @@ PLUGIN_VPN_SHOW_NAME="true"
 PLUGIN_VPN_SHOW_IP="false"
 PLUGIN_VPN_SHOW_WHEN_DISCONNECTED="false"
 PLUGIN_VPN_MAX_LENGTH="20"
-PLUGIN_VPN_CACHE_TTL="10"
+PLUGIN_VPN_CACHE_TTL="15"
 
 # =============================================================================
 # PLUGIN: temperature
@@ -422,7 +435,7 @@ PLUGIN_TEMPERATURE_ACCENT_COLOR_ICON="blue0"
 PLUGIN_TEMPERATURE_UNIT="C"
 # Source options: cpu, cpu-pkg, cpu-acpi, nvme, wifi, acpi, dell, auto
 PLUGIN_TEMPERATURE_SOURCE="cpu"
-PLUGIN_TEMPERATURE_CACHE_TTL="5"
+PLUGIN_TEMPERATURE_CACHE_TTL="10"
 
 # Threshold settings for dynamic colors
 PLUGIN_TEMPERATURE_WARNING_THRESHOLD="60"
@@ -451,7 +464,7 @@ PLUGIN_BRIGHTNESS_ICON_MEDIUM="󰃝"
 PLUGIN_BRIGHTNESS_ICON_HIGH="󰃞"
 PLUGIN_BRIGHTNESS_ACCENT_COLOR="blue7"
 PLUGIN_BRIGHTNESS_ACCENT_COLOR_ICON="blue0"
-PLUGIN_BRIGHTNESS_CACHE_TTL="2"
+PLUGIN_BRIGHTNESS_CACHE_TTL="4"
 
 # =============================================================================
 # PLUGIN: cloud
@@ -473,7 +486,7 @@ PLUGIN_CLOUD_SEPARATOR=" | "
 PLUGIN_CLOUD_WARN_ON_PROD="true"
 PLUGIN_CLOUD_PROD_KEYWORDS="prod,production,prd"
 PLUGIN_CLOUD_PROD_ACCENT_COLOR="red"
-PLUGIN_CLOUD_CACHE_TTL="30"
+PLUGIN_CLOUD_CACHE_TTL="60"
 
 # =============================================================================
 # THRESHOLD SYSTEM DEFAULTS (applies to all plugins using thresholds)

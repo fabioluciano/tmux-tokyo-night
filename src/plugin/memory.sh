@@ -62,17 +62,24 @@ bytes_to_human() {
 get_memory_linux() {
     local mem_total mem_available mem_used percent
     
-    mem_total=$(command grep '^MemTotal:' /proc/meminfo | command awk '{print $2}')
-    mem_available=$(command grep '^MemAvailable:' /proc/meminfo | command awk '{print $2}')
+    # Single awk call to read all memory values at once (much faster)
+    local mem_info
+    mem_info=$(awk '
+        /^MemTotal:/ {total=$2}
+        /^MemAvailable:/ {available=$2}
+        /^MemFree:/ {free=$2}
+        /^Buffers:/ {buffers=$2}
+        /^Cached:/ {cached=$2}
+        END {
+            if (available > 0) {
+                print total, available
+            } else {
+                print total, (free + buffers + cached)
+            }
+        }
+    ' /proc/meminfo)
     
-    # MemAvailable might not exist on older kernels
-    if [[ -z "$mem_available" ]]; then
-        local mem_free mem_buffers mem_cached
-        mem_free=$(command grep '^MemFree:' /proc/meminfo | command awk '{print $2}')
-        mem_buffers=$(command grep '^Buffers:' /proc/meminfo | command awk '{print $2}')
-        mem_cached=$(command grep '^Cached:' /proc/meminfo | command awk '{print $2}')
-        mem_available=$((mem_free + mem_buffers + mem_cached))
-    fi
+    read -r mem_total mem_available <<< "$mem_info"
     
     mem_used=$((mem_total - mem_available))
     percent=$(( (mem_used * 100) / mem_total ))
@@ -90,19 +97,18 @@ get_memory_linux() {
 get_memory_macos() {
     local page_size mem_total mem_used percent
     
-    page_size=$(pagesize 2>/dev/null || sysctl -n hw.pagesize)
-    mem_total=$(sysctl -n hw.memsize)
+    page_size=$(sysctl -n hw.pagesize 2>/dev/null || echo 4096)
+    mem_total=$(sysctl -n hw.memsize 2>/dev/null || echo 0)
     
-    # Get memory pages from vm_stat
-    local vm_stat_output
-    vm_stat_output=$(vm_stat)
-    
-    local pages_active pages_wired
-    pages_active=$(echo "$vm_stat_output" | grep "Pages active:" | awk '{print $3}' | tr -d '.')
-    pages_wired=$(echo "$vm_stat_output" | grep "Pages wired down:" | awk '{print $4}' | tr -d '.')
+    # Single awk call to parse vm_stat output (faster than multiple greps)
+    local pages_used
+    pages_used=$(vm_stat | awk '
+        /Pages active:/ {active = $3; gsub(/\./, "", active)}
+        /Pages wired down:/ {wired = $4; gsub(/\./, "", wired)}
+        END {print active + wired}
+    ')
     
     # Calculate used memory (active + wired)
-    local pages_used=$((pages_active + pages_wired))
     mem_used=$((pages_used * page_size))
     
     percent=$(( (mem_used * 100) / mem_total ))

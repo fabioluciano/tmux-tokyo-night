@@ -40,37 +40,41 @@ get_git_info() {
     
     [[ -z "$pane_path" || ! -d "$pane_path" ]] && return
     
-    cd "$pane_path" 2>/dev/null || return
-    
-    # Check if we're in a git repo
-    git rev-parse --git-dir &>/dev/null || return
-    
-    local branch
-    branch=$(git symbolic-ref --short HEAD 2>/dev/null || \
-             git rev-parse --short HEAD 2>/dev/null)
-    
-    [[ -z "$branch" ]] && return
-    
-    # Get status counts
-    local status_output
-    status_output=$(git status --porcelain 2>/dev/null)
-    
-    local changed=0 untracked=0
-    while IFS= read -r line; do
-        [[ -z "$line" ]] && continue
-        if [[ "${line:0:2}" == "??" ]]; then
-            ((untracked++))
-        else
-            ((changed++))
-        fi
-    done <<< "$status_output"
-    
-    # Build output
-    local output="$branch"
-    [[ $changed -gt 0 ]] && output+=" ~$changed"
-    [[ $untracked -gt 0 ]] && output+=" +$untracked"
-    
-    printf '%s' "$output"
+    # Use subshell to avoid changing main shell's directory
+    (
+        cd "$pane_path" 2>/dev/null || return
+        
+        # Check if we're in a git repo (fastest way)
+        git rev-parse --is-inside-work-tree &>/dev/null || return
+        
+        # Get branch and status in single efficient call
+        local git_info
+        git_info=$(git status --porcelain=v1 --branch 2>/dev/null | awk '
+            NR==1 {
+                # Parse branch line: ## branch_name [origin/branch_name [ahead N, behind M]]
+                gsub(/^## /, "")
+                gsub(/\.\.\..*/, "")
+                branch = $0
+            }
+            NR>1 {
+                # Count file status
+                status = substr($0, 1, 2)
+                if (status == "??") untracked++
+                else if (status != "  ") changed++
+            }
+            END {
+                if (branch) {
+                    result = branch
+                    if (changed > 0) result = result " ~" changed
+                    if (untracked > 0) result = result " +" untracked
+                    print result
+                }
+            }
+        ')
+        
+        printf '%s' "$git_info"
+    )
+
 }
 
 # =============================================================================

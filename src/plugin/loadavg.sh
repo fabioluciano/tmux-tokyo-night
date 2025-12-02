@@ -60,30 +60,28 @@ get_loadavg_linux() {
 
 # Get load average on macOS
 get_loadavg_macos() {
-    local load1 load5 load15
-    local loadavg_output
-    
-    # Use sysctl for faster access (use full path to avoid aliases)
-    loadavg_output=$(/usr/sbin/sysctl -n vm.loadavg 2>/dev/null)
-    
-    if [[ -n "$loadavg_output" ]]; then
-        # Output format: { 1.23 1.45 1.67 }
-        # Remove braces and parse
-        loadavg_output="${loadavg_output//[\{\}]/}"
-        read -r load1 load5 load15 _ <<< "$loadavg_output"
-    fi
-    
-    # Fallback to uptime if sysctl failed
-    if [[ -z "$load1" ]]; then
-        local uptime_output
-        uptime_output=$(command uptime 2>/dev/null)
-        # macOS uses "load averages:" (plural)
-        load1=$(echo "$uptime_output" | sed 's/.*load averages*: *//' | awk '{print $1}')
-        load5=$(echo "$uptime_output" | sed 's/.*load averages*: *//' | awk '{print $2}')
-        load15=$(echo "$uptime_output" | sed 's/.*load averages*: *//' | awk '{print $3}')
-    fi
-    
-    format_loadavg "$load1" "$load5" "$load15"
+    # Single sysctl call with awk parsing (much faster)
+    /usr/sbin/sysctl -n vm.loadavg 2>/dev/null | awk '
+        {gsub(/[{}]/, ""); format="'$plugin_loadavg_format'"}
+        {
+            if (format == "5") print $2
+            else if (format == "15") print $3
+            else if (format == "all") print $1 " " $2 " " $3
+            else print $1
+        }
+    ' || {
+        # Fallback to uptime if sysctl failed
+        command uptime 2>/dev/null | awk '
+            {gsub(/.*load averages*: */, ""); gsub(/,/, "")}
+            {
+                format="'$plugin_loadavg_format'"
+                if (format == "5") print $2
+                else if (format == "15") print $3
+                else if (format == "all") print $1 " " $2 " " $3
+                else print $1
+            }
+        '
+    }
 }
 
 # Format output based on user preference
@@ -209,18 +207,13 @@ load_plugin() {
     fi
 
     local result
-    # Use OS detection - check _CACHED_OS directly as fallback
-    case "${_CACHED_OS:-$(uname -s)}" in
-        Linux*)
-            result=$(get_loadavg_linux)
-            ;;
-        Darwin*)
-            result=$(get_loadavg_macos)
-            ;;
-        *)
-            result="N/A"
-            ;;
-    esac
+    if is_linux; then
+        result=$(get_loadavg_linux)
+    elif is_macos; then
+        result=$(get_loadavg_macos)
+    else
+        result="N/A"
+    fi
 
     # Update cache
     cache_set "$CACHE_KEY" "$result"

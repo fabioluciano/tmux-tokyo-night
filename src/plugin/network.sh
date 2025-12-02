@@ -64,14 +64,27 @@ bytes_to_speed() {
     fi
 }
 
-# Get default interface on Linux
-get_default_interface_linux() {
-    ip route 2>/dev/null | awk '/default/ {print $5; exit}'
-}
-
-# Get default interface on macOS
-get_default_interface_macos() {
-    route -n get default 2>/dev/null | awk '/interface:/ {print $2; exit}'
+# Get default interface with caching
+get_default_interface() {
+    local cache_key="network_interface"
+    local cached_interface
+    
+    # Check cache first (interfaces don't change frequently)
+    if cached_interface=$(cache_get "$cache_key" "300"); then  # 5 min cache
+        printf '%s' "$cached_interface"
+        return
+    fi
+    
+    local interface
+    if is_linux; then
+        interface=$(ip route 2>/dev/null | awk '/default/ {print $5; exit}')
+    elif is_macos; then
+        interface=$(route -n get default 2>/dev/null | awk '/interface:/ {print $2; exit}')
+    fi
+    
+    # Cache the result
+    [[ -n "$interface" ]] && cache_set "$cache_key" "$interface"
+    printf '%s' "$interface"
 }
 
 # Get current bytes (rx tx) on Linux
@@ -128,12 +141,9 @@ load_plugin() {
     local os_type
     os_type="$(uname -s)"
     
-    # Auto-detect interface
+    # Auto-detect interface with caching
     if [[ -z "$interface" ]]; then
-        case "$os_type" in
-            Linux*)  interface=$(get_default_interface_linux) ;;
-            Darwin*) interface=$(get_default_interface_macos) ;;
-        esac
+        interface=$(get_default_interface)
     fi
     
     [[ -z "$interface" ]] && { printf 'N/A'; return; }

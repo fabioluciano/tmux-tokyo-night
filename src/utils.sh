@@ -39,33 +39,33 @@ get_os_icon() {
         return 0
     fi
     
-    local icon=""
+    local icon
     
     if is_macos; then
         icon=$'\uf302'
     elif is_linux; then
-        # Try to detect Linux distribution
-        if [[ -f /etc/os-release ]]; then
-            # shellcheck disable=SC1091
-            . /etc/os-release
-            case "${ID:-}" in
-                ubuntu)             icon=$'\uf31b' ;;
-                debian)             icon=$'\uf306' ;;
-                fedora)             icon=$'\uf30a' ;;
-                arch)               icon=$'\uf303' ;;
-                manjaro)            icon=$'\uf312' ;;
-                centos|rhel)        icon=$'\uf304' ;;
-                opensuse*)          icon=$'\uf314' ;;
-                alpine)             icon=$'\uf300' ;;
-                gentoo)             icon=$'\uf30d' ;;
-                linuxmint)          icon=$'\uf30e' ;;
-                *)                  icon=$'\uf31a' ;; # Generic Linux
-            esac
-        else
-            icon=$'\uf31a' # Generic Linux
-        fi
+        # Faster OS detection using single awk call
+        icon=$(awk -F'=' '
+            /^ID=/ {id=gsub(/"/, "", $2); id=$2}
+            END {
+                if (id == "ubuntu") print "\uf31b"
+                else if (id == "debian") print "\uf306"
+                else if (id == "fedora") print "\uf30a"
+                else if (id == "arch") print "\uf303"
+                else if (id == "manjaro") print "\uf312"
+                else if (id == "centos" || id == "rhel") print "\uf304"
+                else if (id ~ /^opensuse/) print "\uf314"
+                else if (id == "alpine") print "\uf300"
+                else if (id == "gentoo") print "\uf30d"
+                else if (id == "linuxmint") print "\uf30e"
+                else print "\uf31a"
+            }
+        ' /etc/os-release 2>/dev/null)
+        
+        # Fallback if no os-release or awk failed
+        [[ -z "$icon" ]] && icon=$'\uf31a'
     else
-        icon=$'\uf11c' # Generic/Unknown
+        icon=$'\uf11c'
     fi
     
     # Cache the result

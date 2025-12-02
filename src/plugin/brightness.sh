@@ -66,25 +66,24 @@ BRIGHTNESS_CACHE_KEY="brightness"
 
 # Get brightness on Linux
 get_brightness_linux() {
-    # Method 1: Read directly from sysfs (fastest - no external commands)
+    # Method 1: Read directly from sysfs with optimized search
     local backlight_dir="/sys/class/backlight"
     if [[ -d "$backlight_dir" ]]; then
-        # Try to find any backlight device
-        shopt -s nullglob
+        # Find first working backlight device more efficiently
+        local device
         for device in "$backlight_dir"/*; do
-            [[ -d "$device" ]] || continue
-            if [[ -f "$device/brightness" ]] && [[ -f "$device/max_brightness" ]]; then
-                local current max
-                current=$(command cat "$device/brightness" 2>/dev/null)
-                max=$(command cat "$device/max_brightness" 2>/dev/null)
-                [[ -n "$current" ]] || continue
-                [[ -n "$max" ]] || continue
-                [[ "$max" -gt 0 ]] || continue
-                awk -v curr="$current" -v m="$max" 'BEGIN {printf "%d", (curr/m)*100}'
+            [[ -d "$device" && -f "$device/brightness" && -f "$device/max_brightness" ]] || continue
+            
+            # Single read operation for both values
+            local values
+            values=$(awk 'FNR==1{current=$0} END{if(FNR==2 && $0>0) printf "%d", (current/$0)*100}' \
+                     "$device/brightness" "$device/max_brightness" 2>/dev/null)
+            
+            if [[ -n "$values" && "$values" =~ ^[0-9]+$ ]]; then
+                printf '%s' "$values"
                 return 0
             fi
         done
-        shopt -u nullglob
     fi
     
     # Method 2: Try using brightnessctl (if sysfs not available)

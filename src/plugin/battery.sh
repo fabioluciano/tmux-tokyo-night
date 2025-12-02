@@ -80,13 +80,13 @@ battery_get_percentage() {
     
     if is_wsl; then
         local battery_file
-        battery_file=$(command find /sys/class/power_supply/*/capacity 2>/dev/null | head -n1)
-        [[ -n "$battery_file" ]] && percentage=$(\cat "$battery_file" 2>/dev/null)
-    elif command_exists "pmset"; then
-        percentage=$(pmset -g batt 2>/dev/null | grep -o "[0-9]\{1,3\}%" | tr -d '%')
-    elif command_exists "acpi"; then
-        percentage=$(acpi -b 2>/dev/null | grep -m 1 -Eo "[0-9]+%" | tr -d '%')
-    elif command_exists "upower"; then
+        battery_file=$(find /sys/class/power_supply/*/capacity 2>/dev/null | head -n1)
+        [[ -n "$battery_file" ]] && percentage=$(<"$battery_file" 2>/dev/null)
+    elif is_macos && command_exists "pmset"; then
+        percentage=$(pmset -g batt 2>/dev/null | awk '/[0-9]+%/ {gsub(/%/, "", $3); print $3; exit}')
+    elif is_linux && command_exists "acpi"; then
+        percentage=$(acpi -b 2>/dev/null | awk -F'[,%]' '/Battery/ {gsub(/ /, "", $2); print $2; exit}')
+    elif is_linux && command_exists "upower"; then
         local battery
         battery=$(upower -e 2>/dev/null | grep -E 'battery|DisplayDevice' | tail -n1)
         if [[ -n "$battery" ]]; then

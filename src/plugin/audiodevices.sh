@@ -96,16 +96,23 @@ PLUGIN_OUTPUT_KEY=$(get_plugin_option "output_key" "${THEME_DEFAULT_PLUGIN_AUDIO
 
 
 detect_audio_system() {
+    # Setup proper environment for audio tools
     if [[ "$OSTYPE" == "darwin"* ]]; then
         if command -v SwitchAudioSource &> /dev/null; then
             echo "macos"
         else
-            echo "unsupported"
+            echo "none"
         fi
-    elif command -v pactl &> /dev/null; then
-        echo "linux"
     else
-        echo "unsupported"
+        # Linux - ensure proper PulseAudio environment
+        export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+        export PULSE_RUNTIME_PATH="${PULSE_RUNTIME_PATH:-/run/user/$(id -u)/pulse}"
+        
+        if command -v pactl &> /dev/null; then
+            echo "linux"
+        else
+            echo "none"
+        fi
     fi
 }
 
@@ -119,23 +126,20 @@ get_current_input_device() {
     
     case "$audio_system" in
         "linux")
-            local current_source
-            current_source=$(pactl get-default-source 2>/dev/null || echo "")
-            
-            if [[ -n "$current_source" ]]; then
-                # Try to get human-readable description
-                local description
-                description=$(pactl list sources 2>/dev/null | grep -A 20 "Name: $current_source" | grep -E "Description:" | head -1 | sed 's/.*Description: //')
-                
-                if [[ -n "$description" ]]; then
-                    echo "$description"
-                else
-                    # Fallback to simplified name
-                    echo "$current_source" | sed 's/alsa_input\.//; s/\.analog-stereo//; s/_/ /g'
-                fi
-            else
-                echo "No Input"
-            fi
+            # Single pactl call to get current source with description
+            pactl list sources 2>/dev/null | awk -v default="$(pactl get-default-source 2>/dev/null)" '
+                /^Source #/ {in_source=1; description=""; name=""}
+                in_source && /Name:/ {name=$2}
+                in_source && /Description:/ {$1=""; description=substr($0,2)}
+                in_source && /^$/ {
+                    if (name == default && description != "") {
+                        print description
+                        exit
+                    }
+                    in_source=0
+                }
+                END {if (description == "") print "No Input"}
+            '
             ;;
         "macos")
             SwitchAudioSource -c -t input 2>/dev/null || echo "No Input"
@@ -152,23 +156,20 @@ get_current_output_device() {
     
     case "$audio_system" in
         "linux")
-            local current_sink
-            current_sink=$(pactl get-default-sink 2>/dev/null || echo "")
-            
-            if [[ -n "$current_sink" ]]; then
-                # Try to get human-readable description
-                local description
-                description=$(pactl list sinks 2>/dev/null | grep -A 20 "Name: $current_sink" | grep -E "Description:" | head -1 | sed 's/.*Description: //')
-                
-                if [[ -n "$description" ]]; then
-                    echo "$description"
-                else
-                    # Fallback to simplified name
-                    echo "$current_sink" | sed 's/alsa_output\.//; s/\.analog-stereo//; s/\.hdmi-stereo//; s/_/ /g; s/pci-0000://; s/usb-//; s/\.0-00//g'
-                fi
-            else
-                echo "No Output"
-            fi
+            # Single pactl call to get current sink with description
+            pactl list sinks 2>/dev/null | awk -v default="$(pactl get-default-sink 2>/dev/null)" '
+                /^Sink #/ {in_sink=1; description=""; name=""}
+                in_sink && /Name:/ {name=$2}
+                in_sink && /Description:/ {$1=""; description=substr($0,2)}
+                in_sink && /^$/ {
+                    if (name == default && description != "") {
+                        print description
+                        exit
+                    }
+                    in_sink=0
+                }
+                END {if (description == "") print "No Output"}
+            '
             ;;
         "macos")
             SwitchAudioSource -c -t output 2>/dev/null || echo "No Output"
@@ -243,55 +244,7 @@ get_cached_or_fetch() {
 # Plugin Display
 # =============================================================================
 
-show_audio_plugin() {
-    # Return empty if plugin is disabled
-    [[ "$PLUGIN_SHOW" == "off" ]] && return
-    
-    local input_device output_device display_parts=()
-    
-    # Get device information based on what should be shown
-    case "$PLUGIN_SHOW" in
-        "input"|"both")
-            input_device=$(get_cached_or_fetch "input")
-            input_device=$(truncate_device_name "$input_device" "$PLUGIN_MAX_LENGTH")
-            ;;
-    esac
-    
-    case "$PLUGIN_SHOW" in
-        "output"|"both")
-            output_device=$(get_cached_or_fetch "output")
-            output_device=$(truncate_device_name "$output_device" "$PLUGIN_MAX_LENGTH")
-            ;;
-    esac
-    
-    # Build display string
-    case "$PLUGIN_SHOW" in
-        "input")
-            if [[ -n "$input_device" ]]; then
-                display_parts+=("#[fg=$PLUGIN_ACCENT_COLOR_ICON]$PLUGIN_INPUT_ICON#[fg=$PLUGIN_ACCENT_COLOR] $input_device")
-            fi
-            ;;
-        "output")
-            if [[ -n "$output_device" ]]; then
-                display_parts+=("#[fg=$PLUGIN_ACCENT_COLOR_ICON]$PLUGIN_OUTPUT_ICON#[fg=$PLUGIN_ACCENT_COLOR] $output_device")
-            fi
-            ;;
-        "both")
-            if [[ -n "$input_device" ]]; then
-                display_parts+=("#[fg=$PLUGIN_ACCENT_COLOR_ICON]$PLUGIN_INPUT_ICON#[fg=$PLUGIN_ACCENT_COLOR] $input_device")
-            fi
-            if [[ -n "$output_device" ]]; then
-                display_parts+=("#[fg=$PLUGIN_ACCENT_COLOR_ICON]$PLUGIN_OUTPUT_ICON#[fg=$PLUGIN_ACCENT_COLOR] $output_device")
-            fi
-            ;;
-    esac
-    
-    # Join parts with separator and output
-    if [[ ${#display_parts[@]} -gt 0 ]]; then
-        local IFS="$PLUGIN_SEPARATOR"
-        echo "${display_parts[*]}"
-    fi
-}
+
 
 # =============================================================================
 # Keybinding Setup
@@ -342,6 +295,11 @@ load_plugin() {
     # Return empty if plugin is disabled
     [[ "$PLUGIN_SHOW" == "off" ]] && return
     
+    # Return empty if audio system is not supported
+    local audio_system
+    audio_system=$(detect_audio_system)
+    [[ "$audio_system" == "none" ]] && return
+    
     local input_device output_device display_parts=()
     
     # Get device information based on what should be shown
@@ -363,20 +321,20 @@ load_plugin() {
     case "$PLUGIN_SHOW" in
         "input")
             if [[ -n "$input_device" ]]; then
-                display_parts+=("#[fg=$PLUGIN_ACCENT_COLOR_ICON]$PLUGIN_INPUT_ICON#[fg=$PLUGIN_ACCENT_COLOR] $input_device")
+                display_parts+=("#[fg=$PLUGIN_ACCENT_COLOR_ICON]${PLUGIN_INPUT_ICON} #[fg=$PLUGIN_ACCENT_COLOR]$input_device")
             fi
             ;;
         "output")
             if [[ -n "$output_device" ]]; then
-                display_parts+=("#[fg=$PLUGIN_ACCENT_COLOR_ICON]$PLUGIN_OUTPUT_ICON#[fg=$PLUGIN_ACCENT_COLOR] $output_device")
+                display_parts+=("#[fg=$PLUGIN_ACCENT_COLOR_ICON]${PLUGIN_OUTPUT_ICON} #[fg=$PLUGIN_ACCENT_COLOR]$output_device")
             fi
             ;;
         "both")
             if [[ -n "$input_device" ]]; then
-                display_parts+=("#[fg=$PLUGIN_ACCENT_COLOR_ICON]$PLUGIN_INPUT_ICON#[fg=$PLUGIN_ACCENT_COLOR] $input_device")
+                display_parts+=("#[fg=$PLUGIN_ACCENT_COLOR_ICON]${PLUGIN_INPUT_ICON} #[fg=$PLUGIN_ACCENT_COLOR]$input_device")
             fi
             if [[ -n "$output_device" ]]; then
-                display_parts+=("#[fg=$PLUGIN_ACCENT_COLOR_ICON]$PLUGIN_OUTPUT_ICON#[fg=$PLUGIN_ACCENT_COLOR] $output_device")
+                display_parts+=("#[fg=$PLUGIN_ACCENT_COLOR_ICON]${PLUGIN_OUTPUT_ICON} #[fg=$PLUGIN_ACCENT_COLOR]$output_device")
             fi
             ;;
     esac
