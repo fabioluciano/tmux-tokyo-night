@@ -22,7 +22,7 @@ CYAN='\033[36m'
 GREEN='\033[32m'
 MAGENTA='\033[35m'
 YELLOW='\033[33m'
-RED='\033[31m'
+# RED='\033[31m'  # Unused
 BLUE='\033[34m'
 
 RESET='\033[0m'
@@ -87,8 +87,9 @@ discover_tokyo_night_plugin_options() {
                 local value="${BASH_REMATCH[3]}"
                 
                 # Convert to lowercase and create option name
-                local plugin_name=$(echo "$plugin_part" | tr '[:upper:]' '[:lower:]')
-                local option_name=$(echo "$option_part" | tr '[:upper:]' '[:lower:]')
+                local plugin_name option_name
+                plugin_name=$(echo "$plugin_part" | tr '[:upper:]' '[:lower:]')
+                option_name=$(echo "$option_part" | tr '[:upper:]' '[:lower:]')
                 local option="@theme_plugin_${plugin_name}_${option_name}"
                 
                 plugin_options["$option"]=1
@@ -257,13 +258,13 @@ display_options() {
     # Also add discovered options that might not be set yet
     for opt in "${DISCOVERED_PLUGIN_OPTIONS[@]}"; do
         IFS='|' read -r option default possible description <<< "$opt"
-        if [[ ! " ${all_theme_plugin_options[*]} " =~ " $option " ]]; then
+        if [[ ! " ${all_theme_plugin_options[*]} " =~ \ $option\  ]]; then
             all_theme_plugin_options+=("$option")
         fi
     done
     
     # Group and display plugin options
-    local current_plugin=""
+    local _current_plugin=""
     local -A grouped_options=()
     
     # Group options by plugin
@@ -294,7 +295,7 @@ display_options() {
                 # Get default from discovered options or defaults.sh
                 local default_val=""
                 for opt in "${DISCOVERED_PLUGIN_OPTIONS[@]}"; do
-                    IFS='|' read -r opt_name opt_default opt_possible opt_description <<< "$opt"
+                    IFS='|' read -r opt_name opt_default _opt_possible _opt_description <<< "$opt"
                     if [[ "$opt_name" == "$option" ]]; then
                         default_val="$opt_default"
                         break

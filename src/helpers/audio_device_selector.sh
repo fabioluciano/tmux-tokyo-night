@@ -37,7 +37,7 @@ select_input_device() {
         audio_system="linux"
         current_input=$(pactl get-default-source 2>/dev/null || echo "")
         
-        while IFS=$'\t' read -r index name driver sample_spec state; do
+        while IFS=$'\t' read -r index name _driver _sample_spec _state; do
             [[ "$name" == *.monitor ]] && continue
             
             # Get description
@@ -110,7 +110,7 @@ select_output_device() {
         audio_system="linux"
         current_output=$(pactl get-default-sink 2>/dev/null || echo "")
         
-        while IFS=$'\t' read -r index name driver sample_spec state; do
+        while IFS=$'\t' read -r index name _driver _sample_spec _state; do
             # Get description
             local description=""
             description=$(pactl list sinks | grep -A 30 "Sink #$index" | grep -E "(Description|device\.description)" | head -1 | sed -n 's/.*Description: \(.*\)/\1/p; s/.*device\.description = "\([^"]*\)".*/\1/p')

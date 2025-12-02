@@ -208,7 +208,7 @@ is_cache_valid() {
     local ttl="$2"
     
     if [[ -f "$cache_file" ]]; then
-        local cache_time file_time current_time
+        local cache_time current_time
         cache_time=$(stat -c %Y "$cache_file" 2>/dev/null || stat -f %m "$cache_file" 2>/dev/null || echo 0)
         current_time=$(date +%s)
         
@@ -318,7 +318,7 @@ setup_keybindings() {
 # This function is called by render_plugins.sh to get display decisions
 # Output format: "show:accent:accent_icon:icon"
 plugin_get_display_info() {
-    local content="$1"
+    local _content="$1"
     
     # Check if plugin should be shown based on configuration
     if [[ "$PLUGIN_SHOW" == "off" ]]; then
