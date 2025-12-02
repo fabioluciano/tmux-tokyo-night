@@ -429,6 +429,11 @@ get_cloud_contexts() {
 # Plugin Interface Implementation
 # =============================================================================
 
+# Function to inform the plugin type to the renderer
+plugin_get_type() {
+    printf 'conditional'
+}
+
 plugin_get_display_info() {
     local content="$1"
     local show="1"

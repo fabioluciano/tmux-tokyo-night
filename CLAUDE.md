@@ -91,7 +91,7 @@ Located in `src/palletes/*.sh` (night.sh, storm.sh, moon.sh, day.sh)
 1. Each plugin in `src/plugin/*.sh` exports variables: `plugin_<name>_icon`, `plugin_<name>_accent_color`, `plugin_<name>_accent_color_icon`
 2. `theme.sh` iterates through enabled plugins (from `@theme_plugins` option)
 3. Plugins are rendered using wrapper scripts based on their features:
-   - **conditional_plugin.sh**: For plugins that may or may not produce output (git, docker, kubernetes, spotify, homebrew, yay)
+   - **conditional_plugin.sh**: For plugins that may or may not produce output (git, kubernetes, spotify, homebrew, yay)
    - **threshold_plugin.sh**: For plugins with display_threshold or threshold_mode (battery, cpu, memory, disk, loadavg)
    - **static_plugin.sh**: For static plugins followed by conditional plugins (network, weather, etc.)
    - Direct rendering: For simple plugins or when no special handling is needed
@@ -111,7 +111,7 @@ System Monitoring:
 Development:
 
 - `git.sh` - Shows git branch and status (conditional - only in git repos)
-- `docker.sh` - Shows container counts (conditional - only when Docker running)
+
 - `kubernetes.sh` - Shows current k8s context/namespace
 
 Information:
@@ -142,7 +142,7 @@ All cacheable plugins support a TTL (Time To Live) option:
 - `@theme_plugin_network_cache_ttl` - Network cache TTL in seconds (default: 5)
 - `@theme_plugin_uptime_cache_ttl` - Uptime cache TTL in seconds (default: 60)
 - `@theme_plugin_git_cache_ttl` - Git cache TTL in seconds (default: 5)
-- `@theme_plugin_docker_cache_ttl` - Docker cache TTL in seconds (default: 10)
+
 - `@theme_plugin_kubernetes_cache_ttl` - Kubernetes cache TTL in seconds (default: 30)
 - `@theme_plugin_weather_cache_ttl` - Weather cache TTL in seconds (default: 900 = 15 min)
 - `@theme_plugin_battery_cache_ttl` - Battery cache TTL in seconds (default: 30)
@@ -170,14 +170,14 @@ All cacheable plugins support a TTL (Time To Live) option:
 
 - **Static plugins** (datetime): Executed once at theme load, output embedded in status string
 - **Dynamic plugins** (weather, network, etc.): Executed by tmux on each status refresh via wrapper scripts
-- **Conditional plugins** (git, docker, kubernetes, homebrew, yay, spotify): Only render when they have output
+- **Conditional plugins** (git, kubernetes, homebrew, yay, spotify): Only render when they have output
 - **Threshold plugins** (battery, cpu, memory, disk, loadavg): Support conditional display and dynamic colors based on values
 
 ### Plugin Rendering Wrappers
 
 **`src/conditional_plugin.sh`**
 
-- Wraps plugins that may produce empty output (git, docker, kubernetes, etc.)
+- Wraps plugins that may produce empty output (git, kubernetes, etc.)
 - Only renders the segment if the plugin outputs content
 - Dynamically determines if it's the last visible plugin by checking subsequent plugins
 - Arguments: plugin_name, accent_color, accent_color_icon, plugin_icon, white_color, bg_highlight, transparent, prev_accent, plugins_after

@@ -130,9 +130,68 @@ battery_is_charging() {
 }
 
 battery_is_available() {
-    local percentage
-    percentage=$(battery_get_percentage)
-    [[ -n "$percentage" ]]
+    # Check if we're in WSL
+    if is_wsl; then
+        local battery_file
+        battery_file=$(command find /sys/class/power_supply/*/capacity 2>/dev/null | head -n1)
+        [[ -n "$battery_file" ]] && return 0
+        return 1
+    fi
+    
+    # Check macOS with pmset
+    if command_exists "pmset"; then
+        pmset -g batt 2>/dev/null | grep -q "InternalBattery" && return 0
+        return 1
+    fi
+    
+    # Check Linux with acpi
+    if command_exists "acpi"; then
+        acpi -b 2>/dev/null | grep -q "Battery" && return 0
+        return 1
+    fi
+    
+    # Check Linux with upower - improved detection
+    if command_exists "upower"; then
+        local batteries
+        batteries=$(upower -e 2>/dev/null | grep -v DisplayDevice | grep -E 'BAT|battery')
+        if [[ -n "$batteries" ]]; then
+            # Check if any battery has valid information
+            while IFS= read -r battery; do
+                if upower -i "$battery" 2>/dev/null | grep -q "power supply.*yes"; then
+                    return 0
+                fi
+            done <<< "$batteries"
+        fi
+        
+        # Also check DisplayDevice but ensure it's a real battery
+        local display_device
+        display_device=$(upower -e 2>/dev/null | grep DisplayDevice)
+        if [[ -n "$display_device" ]]; then
+            local upower_info
+            upower_info=$(upower -i "$display_device" 2>/dev/null)
+            # Check if it has power supply and is not missing
+            if echo "$upower_info" | grep -q "power supply.*yes" && \
+               ! echo "$upower_info" | grep -q "battery-missing"; then
+                return 0
+            fi
+        fi
+        return 1
+    fi
+    
+    # Check Termux
+    if command_exists "termux-battery-status"; then
+        termux-battery-status 2>/dev/null >/dev/null && return 0
+        return 1
+    fi
+    
+    # Check BSD systems
+    if command_exists "apm"; then
+        apm -l 2>/dev/null >/dev/null && return 0
+        return 1
+    fi
+    
+    # No battery detection method available or no battery found
+    return 1
 }
 
 battery_get_time_remaining() {
@@ -190,6 +249,11 @@ battery_format_output() {
 # =============================================================================
 # Plugin Interface Implementation
 # =============================================================================
+
+# Function to inform the plugin type to the renderer
+plugin_get_type() {
+    printf 'conditional'
+}
 
 # This function is called by render_plugins.sh to get display decisions
 # Output format: "show:accent:accent_icon:icon"

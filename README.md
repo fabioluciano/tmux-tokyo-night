@@ -104,19 +104,19 @@ The theme includes 23 built-in plugins organized by category:
 - **[network](../../wiki/Network)** - Bandwidth monitoring
 - **[wifi](../../wiki/WiFi)** - WiFi status with signal strength
 - **[vpn](../../wiki/VPN)** - VPN connection with multiple providers (FortiClient, WireGuard, Tailscale, OpenVPN, NetworkManager)
-- **[external_ip](../../wiki/External-IP)** - Public IP address display
+- **[external_ip](../../wiki/External_IP)** - Public IP address display
 - **[bluetooth](../../wiki/Bluetooth)** - Bluetooth devices with battery (supports multiple connected devices)
 - **[weather](../../wiki/Weather)** - Weather with custom formats
 
 ### 💻 Development
 
 - **[git](../../wiki/Git)** - Git branch with change indicators
-- **[docker](../../wiki/Docker)** - Container count (running/stopped)
 - **[kubernetes](../../wiki/Kubernetes)** - K8s context with interactive selectors
 - **[cloud](../../wiki/Cloud)** - Cloud provider context (AWS/GCP/Azure)
 
-### 🎵 Media
+### 🎵 Media & Audio
 
+- **[audiodevices](../../wiki/AudioDevices)** - Audio device selector with keybindings (input/output device management)
 - **[nowplaying](../../wiki/NowPlaying)** - Unified media player (Spotify, Music.app, playerctl, spt, osascript)
 - **[volume](../../wiki/Volume)** - Volume level
 
@@ -132,7 +132,7 @@ The theme includes 23 built-in plugins organized by category:
 **Enable plugins:**
 
 ```bash
-set -g @theme_plugins 'datetime,battery,cpu,memory,git,docker'
+set -g @theme_plugins 'datetime,battery,cpu,memory,git'
 ```
 
 See **[Plugin System Overview](../../wiki/Plugin-System-Overview)** for complete documentation.
@@ -141,6 +141,7 @@ See **[Plugin System Overview](../../wiki/Plugin-System-Overview)** for complete
 
 | Plugin | Linux | macOS | WSL | Notes |
 |--------|-------|-------|-----|-------|
+| **audio** | ✅ | ✅ | ✅ | Requires `pactl` (Linux), `SwitchAudioSource` (macOS) |
 | **battery** | ✅ | ✅ | ✅ | Requires `acpi`/`upower` (Linux), `pmset` (macOS) |
 | **bluetooth** | ✅ | ✅ | ⚠️ | Limited battery support on macOS |
 | **brightness** | ✅ | ❌ | ✅ | Requires `brightnessctl`/`light`/`xbacklight` |
@@ -148,7 +149,6 @@ See **[Plugin System Overview](../../wiki/Plugin-System-Overview)** for complete
 | **cpu** | ✅ | ✅ | ✅ | Native support via `/proc/stat` or `vm_stat` |
 | **datetime** | ✅ | ✅ | ✅ | Universal |
 | **disk** | ✅ | ✅ | ✅ | Uses `df` command |
-| **docker** | ✅ | ✅ | ✅ | Requires Docker daemon |
 | **external_ip** | ✅ | ✅ | ✅ | Requires internet connection |
 | **git** | ✅ | ✅ | ✅ | Requires git repository |
 | **hostname** | ✅ | ✅ | ✅ | Universal |
@@ -234,7 +234,7 @@ set -g @theme_variation 'night'
 set -g @theme_session_icon 'auto'
 
 # Enable plugins
-set -g @theme_plugins 'datetime,weather,battery,cpu,memory,git,docker,kubernetes'
+set -g @theme_plugins 'datetime,weather,battery,cpu,memory,git,kubernetes'
 
 # Customize datetime
 set -g @theme_plugin_datetime_format 'datetime'
