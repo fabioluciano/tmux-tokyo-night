@@ -20,6 +20,10 @@ BOLD='\033[1m'
 DIM='\033[2m'
 CYAN='\033[36m'
 GREEN='\033[32m'
+MAGENTA='\033[35m'
+YELLOW='\033[33m'
+# RED='\033[31m'  # Unused
+BLUE='\033[34m'
 
 RESET='\033[0m'
 
@@ -65,174 +69,57 @@ declare -a THEME_OPTIONS=(
     "@theme_inactive_pane_border_style|bg_highlight|palette color|Inactive pane border color"
 )
 
-declare -a PLUGIN_OPTIONS=(
-    # Datetime
-    "@theme_plugin_datetime_icon|󰥔|Icon|Datetime icon"
-    "@theme_plugin_datetime_accent_color|blue7|palette color|Datetime background"
-    "@theme_plugin_datetime_accent_color_icon|blue0|palette color|Datetime icon background"
-    "@theme_plugin_datetime_format|datetime|time,time-seconds,time-12h,date,date-full,date-iso,datetime,weekday,full,iso,(strftime)|Date/time format"
-    "@theme_plugin_datetime_timezone||(timezone name)|Secondary timezone"
-    "@theme_plugin_datetime_show_week|false|true,false|Show week number"
-    "@theme_plugin_datetime_separator| |(string)|Element separator"
+# =============================================================================
+# Dynamic Plugin Option Discovery
+# =============================================================================
+
+discover_tokyo_night_plugin_options() {
+    local plugin_dir="$ROOT_DIR"
+    local -A plugin_options=()
+    local -A default_values=()
     
-    # Weather
-    "@theme_plugin_weather_icon|󰖐|Icon|Weather icon"
-    "@theme_plugin_weather_accent_color|blue7|palette color|Weather background"
-    "@theme_plugin_weather_accent_color_icon|blue0|palette color|Weather icon background"
-    "@theme_plugin_weather_location||(city name)|Weather location"
-    "@theme_plugin_weather_unit||u,m,M|Temperature unit"
-    "@theme_plugin_weather_format|compact|compact,full,minimal,detailed,(wttr.in format)|Weather format"
-    "@theme_plugin_weather_cache_ttl|900|(seconds)|Cache duration"
+    # Scan defaults.sh for PLUGIN_ constants
+    if [[ -f "$plugin_dir/defaults.sh" ]]; then
+        while IFS= read -r line; do
+            if [[ "$line" =~ ^[[:space:]]*PLUGIN_([A-Z_]+)_([A-Z_]+)[[:space:]]*=[[:space:]]*[\"\']?([^\"\']*)[\"\']? ]]; then
+                local plugin_part="${BASH_REMATCH[1]}"
+                local option_part="${BASH_REMATCH[2]}"
+                local value="${BASH_REMATCH[3]}"
+                
+                # Convert to lowercase and create option name
+                local plugin_name option_name
+                plugin_name=$(echo "$plugin_part" | tr '[:upper:]' '[:lower:]')
+                option_name=$(echo "$option_part" | tr '[:upper:]' '[:lower:]')
+                local option="@theme_plugin_${plugin_name}_${option_name}"
+                
+                plugin_options["$option"]=1
+                default_values["$option"]="$value"
+            fi
+        done < "$plugin_dir/defaults.sh"
+    fi
     
-    # Battery
-    "@theme_plugin_battery_icon|󰁹|Icon|Battery icon"
-    "@theme_plugin_battery_accent_color|blue7|palette color|Battery background"
-    "@theme_plugin_battery_accent_color_icon|blue0|palette color|Battery icon background"
-    "@theme_plugin_battery_display_mode|percentage|percentage,time|Display mode"
-    "@theme_plugin_battery_icon_charging|󰂄|Icon|Charging icon"
-    "@theme_plugin_battery_low_threshold|30|0-100|Low battery threshold"
-    "@theme_plugin_battery_icon_low|󰂃|Icon|Low battery icon"
-    "@theme_plugin_battery_low_accent_color|red|palette color|Low battery background"
-    "@theme_plugin_battery_low_accent_color_icon|red1|palette color|Low battery icon background"
-    "@theme_plugin_battery_cache_ttl|30|(seconds)|Cache duration"
+    # Scan plugin files for get_tmux_option calls
+    while IFS= read -r file; do
+        while IFS= read -r line; do
+            # Look for get_tmux_option calls
+            if [[ "$line" =~ get_tmux_option[[:space:]]+[\"\'](@theme_plugin_[a-zA-Z0-9_]+)[\"\'][[:space:]]+[\"\']([^\"]*)[\"\'] ]] || \
+               [[ "$line" =~ get_tmux_option[[:space:]]+[\"](@theme_plugin_[a-zA-Z0-9_]+)[\"][[:space:]]+[\"]([^\"]*)[\"] ]] || \
+               [[ "$line" =~ get_tmux_option[[:space:]]+[\'](@theme_plugin_[a-zA-Z0-9_]+)[\'][[:space:]]+[\']([^\']*)[\'] ]]; then
+                local option="${BASH_REMATCH[1]}"
+                local default="${BASH_REMATCH[2]}"
+                plugin_options["$option"]=1
+                [[ -z "${default_values[$option]:-}" ]] && default_values["$option"]="$default"
+            fi
+        done < "$file"
+    done < <(find "$plugin_dir/plugin" -name "*.sh" -type f 2>/dev/null | head -30)
     
-    # CPU
-    "@theme_plugin_cpu_icon||Icon|CPU icon"
-    "@theme_plugin_cpu_accent_color|blue7|palette color|CPU background"
-    "@theme_plugin_cpu_accent_color_icon|blue0|palette color|CPU icon background"
-    "@theme_plugin_cpu_cache_ttl|2|(seconds)|Cache duration"
-    "@theme_plugin_cpu_warning_threshold|70|0-100|Warning threshold"
-    "@theme_plugin_cpu_critical_threshold|90|0-100|Critical threshold"
-    "@theme_plugin_cpu_warning_accent_color|yellow|palette color|Warning background"
-    "@theme_plugin_cpu_warning_accent_color_icon|orange|palette color|Warning icon background"
-    "@theme_plugin_cpu_critical_accent_color|red|palette color|Critical background"
-    "@theme_plugin_cpu_critical_accent_color_icon|red1|palette color|Critical icon background"
-    
-    # Memory
-    "@theme_plugin_memory_icon||Icon|Memory icon"
-    "@theme_plugin_memory_accent_color|blue7|palette color|Memory background"
-    "@theme_plugin_memory_accent_color_icon|blue0|palette color|Memory icon background"
-    "@theme_plugin_memory_format|percent|percent,usage|Memory format"
-    "@theme_plugin_memory_cache_ttl|5|(seconds)|Cache duration"
-    "@theme_plugin_memory_warning_threshold|70|0-100|Warning threshold"
-    "@theme_plugin_memory_critical_threshold|90|0-100|Critical threshold"
-    "@theme_plugin_memory_warning_accent_color|yellow|palette color|Warning background"
-    "@theme_plugin_memory_warning_accent_color_icon|orange|palette color|Warning icon background"
-    "@theme_plugin_memory_critical_accent_color|red|palette color|Critical background"
-    "@theme_plugin_memory_critical_accent_color_icon|red1|palette color|Critical icon background"
-    
-    # Disk
-    "@theme_plugin_disk_icon|󰋊|Icon|Disk icon"
-    "@theme_plugin_disk_accent_color|blue7|palette color|Disk background"
-    "@theme_plugin_disk_accent_color_icon|blue0|palette color|Disk icon background"
-    "@theme_plugin_disk_mount|/|(mount path)|Mount point to monitor"
-    "@theme_plugin_disk_format|percent|percent,usage,free|Disk format"
-    "@theme_plugin_disk_cache_ttl|60|(seconds)|Cache duration"
-    "@theme_plugin_disk_warning_threshold|70|0-100|Warning threshold"
-    "@theme_plugin_disk_critical_threshold|90|0-100|Critical threshold"
-    "@theme_plugin_disk_warning_accent_color|yellow|palette color|Warning background"
-    "@theme_plugin_disk_warning_accent_color_icon|orange|palette color|Warning icon background"
-    "@theme_plugin_disk_critical_accent_color|red|palette color|Critical background"
-    "@theme_plugin_disk_critical_accent_color_icon|red1|palette color|Critical icon background"
-    
-    # Network
-    "@theme_plugin_network_icon|󰛳|Icon|Network icon"
-    "@theme_plugin_network_accent_color|blue7|palette color|Network background"
-    "@theme_plugin_network_accent_color_icon|blue0|palette color|Network icon background"
-    "@theme_plugin_network_interface||(interface name)|Network interface"
-    "@theme_plugin_network_cache_ttl|2|(seconds)|Cache duration"
-    
-    # Load Average
-    "@theme_plugin_loadavg_icon|󰊚|Icon|Load average icon"
-    "@theme_plugin_loadavg_accent_color|blue7|palette color|Load average background"
-    "@theme_plugin_loadavg_accent_color_icon|blue0|palette color|Load average icon background"
-    "@theme_plugin_loadavg_format|1|1,5,15,all|Load average format"
-    "@theme_plugin_loadavg_cache_ttl|5|(seconds)|Cache duration"
-    "@theme_plugin_loadavg_warning_threshold_multiplier|2|(multiplier)|Warning threshold (x CPU cores)"
-    "@theme_plugin_loadavg_critical_threshold_multiplier|4|(multiplier)|Critical threshold (x CPU cores)"
-    "@theme_plugin_loadavg_warning_accent_color|yellow|palette color|Warning background"
-    "@theme_plugin_loadavg_warning_accent_color_icon|orange|palette color|Warning icon background"
-    "@theme_plugin_loadavg_critical_accent_color|red|palette color|Critical background"
-    "@theme_plugin_loadavg_critical_accent_color_icon|red1|palette color|Critical icon background"
-    
-    # Uptime
-    "@theme_plugin_uptime_icon|󰔟|Icon|Uptime icon"
-    "@theme_plugin_uptime_accent_color|blue7|palette color|Uptime background"
-    "@theme_plugin_uptime_accent_color_icon|blue0|palette color|Uptime icon background"
-    "@theme_plugin_uptime_cache_ttl|60|(seconds)|Cache duration"
-    
-    # Git
-    "@theme_plugin_git_icon||Icon|Git icon"
-    "@theme_plugin_git_accent_color|blue7|palette color|Git background"
-    "@theme_plugin_git_accent_color_icon|blue0|palette color|Git icon background"
-    "@theme_plugin_git_cache_ttl|5|(seconds)|Cache duration"
-    
-    # Docker
-    "@theme_plugin_docker_icon||Icon|Docker icon"
-    "@theme_plugin_docker_accent_color|blue7|palette color|Docker background"
-    "@theme_plugin_docker_accent_color_icon|blue0|palette color|Docker icon background"
-    "@theme_plugin_docker_cache_ttl|10|(seconds)|Cache duration"
-    
-    # Kubernetes
-    "@theme_plugin_kubernetes_icon|󱃾|Icon|Kubernetes icon"
-    "@theme_plugin_kubernetes_accent_color|blue7|palette color|Kubernetes background"
-    "@theme_plugin_kubernetes_accent_color_icon|blue0|palette color|Kubernetes icon background"
-    "@theme_plugin_kubernetes_display_mode|connected|always,connected,context|Display mode"
-    "@theme_plugin_kubernetes_show_namespace|false|true,false|Show namespace"
-    "@theme_plugin_kubernetes_connectivity_timeout|2|(seconds)|Connection timeout"
-    "@theme_plugin_kubernetes_connectivity_cache_ttl|300|(seconds)|Connectivity cache duration"
-    "@theme_plugin_kubernetes_cache_ttl|30|(seconds)|Cache duration"
-    "@theme_plugin_kubernetes_context_selector_key|K|(key)|Context selector keybinding"
-    "@theme_plugin_kubernetes_context_selector_width|50%|(percentage)|Context selector width"
-    "@theme_plugin_kubernetes_context_selector_height|50%|(percentage)|Context selector height"
-    "@theme_plugin_kubernetes_namespace_selector_key|N|(key)|Namespace selector keybinding"
-    "@theme_plugin_kubernetes_namespace_selector_width|50%|(percentage)|Namespace selector width"
-    "@theme_plugin_kubernetes_namespace_selector_height|50%|(percentage)|Namespace selector height"
-    
-    # Hostname
-    "@theme_plugin_hostname_icon||Icon|Hostname icon"
-    "@theme_plugin_hostname_accent_color|blue7|palette color|Hostname background"
-    "@theme_plugin_hostname_accent_color_icon|blue0|palette color|Hostname icon background"
-    "@theme_plugin_hostname_format|short|short,full|Hostname format"
-    
-    # Homebrew
-    "@theme_plugin_homebrew_icon|󰚰|Icon|Homebrew icon"
-    "@theme_plugin_homebrew_accent_color|blue7|palette color|Homebrew background"
-    "@theme_plugin_homebrew_accent_color_icon|blue0|palette color|Homebrew icon background"
-    "@theme_plugin_homebrew_additional_options|--greedy|(brew options)|Additional brew options"
-    "@theme_plugin_homebrew_cache_ttl|1800|(seconds)|Cache duration"
-    
-    # Yay
-    "@theme_plugin_yay_icon|󰚰|Icon|Yay icon"
-    "@theme_plugin_yay_accent_color|blue7|palette color|Yay background"
-    "@theme_plugin_yay_accent_color_icon|blue0|palette color|Yay icon background"
-    "@theme_plugin_yay_cache_ttl|1800|(seconds)|Cache duration"
-    
-    # Spotify
-    "@theme_plugin_spotify_icon|󰝚|Icon|Spotify icon"
-    "@theme_plugin_spotify_accent_color|blue7|palette color|Spotify background"
-    "@theme_plugin_spotify_accent_color_icon|blue0|palette color|Spotify icon background"
-    "@theme_plugin_spotify_format|%artist% - %track%|%artist%,%track%,%album%|Display format"
-    "@theme_plugin_spotify_max_length|40|(integer)|Maximum text length"
-    "@theme_plugin_spotify_not_playing||(string)|Text when not playing"
-    "@theme_plugin_spotify_backend|auto|auto,osascript,playerctl,spt,shpotify|Backend"
-    "@theme_plugin_spotify_cache_ttl|5|(seconds)|Cache duration"
-    
-    # Spt
-    "@theme_plugin_spt_icon|󰝚|Icon|Spt icon"
-    "@theme_plugin_spt_accent_color|blue7|palette color|Spt background"
-    "@theme_plugin_spt_accent_color_icon|blue0|palette color|Spt icon background"
-    "@theme_plugin_spt_format|%a - %t|%a,%t,%b|Display format"
-    "@theme_plugin_spt_cache_ttl|5|(seconds)|Cache duration"
-    
-    # Playerctl
-    "@theme_plugin_playerctl_icon|󰝚|Icon|Playerctl icon"
-    "@theme_plugin_playerctl_accent_color|blue7|palette color|Playerctl background"
-    "@theme_plugin_playerctl_accent_color_icon|blue0|palette color|Playerctl icon background"
-    "@theme_plugin_playerctl_format|{{artist}} - {{title}}|{{artist}},{{title}},{{album}}|Display format"
-    "@theme_plugin_playerctl_ignore_players|IGNORE|(player names)|Players to ignore"
-    "@theme_plugin_playerctl_cache_ttl|5|(seconds)|Cache duration"
-)
+    # Convert to global array for compatibility
+    declare -g -a DISCOVERED_PLUGIN_OPTIONS=()
+    for option in $(printf '%s\n' "${!plugin_options[@]}" | sort); do
+        local default="${default_values[$option]:-}"
+        DISCOVERED_PLUGIN_OPTIONS+=("$option|$default||Plugin option")
+    done
+}
 
 # =============================================================================
 # Helper Functions
@@ -356,24 +243,68 @@ display_options() {
         fi
     done
     
-    # Plugin options - group by plugin
-    local current_plugin=""
-    for opt in "${PLUGIN_OPTIONS[@]}"; do
+    # Discover plugin options dynamically
+    discover_tokyo_night_plugin_options
+    
+    # Get all tmux options that start with @theme_plugin_
+    local all_theme_plugin_options=()
+    while IFS= read -r option_line; do
+        if [[ "$option_line" =~ ^@theme_plugin_([a-zA-Z0-9_]+) ]]; then
+            local option="${option_line%% *}"
+            all_theme_plugin_options+=("$option")
+        fi
+    done < <(tmux show-options -g 2>/dev/null | grep "^@theme_plugin_" || true)
+    
+    # Also add discovered options that might not be set yet
+    for opt in "${DISCOVERED_PLUGIN_OPTIONS[@]}"; do
         IFS='|' read -r option default possible description <<< "$opt"
-        
-        # Extract plugin name using parameter expansion
-        local plugin_name
+        if [[ ! " ${all_theme_plugin_options[*]} " =~ \ $option\  ]]; then
+            all_theme_plugin_options+=("$option")
+        fi
+    done
+    
+    # Group and display plugin options
+    local _current_plugin=""
+    local -A grouped_options=()
+    
+    # Group options by plugin
+    for option in "${all_theme_plugin_options[@]}"; do
         local temp="${option#@theme_plugin_}"
-        plugin_name="${temp%%_*}"
+        local plugin_name="${temp%%_*}"
         
-        if [[ "$plugin_name" != "$current_plugin" ]]; then
-            current_plugin="$plugin_name"
-            print_section "Theme Plugin: ${current_plugin^}" "$MAGENTA"
+        if [[ -z "${grouped_options[$plugin_name]:-}" ]]; then
+            grouped_options["$plugin_name"]="$option"
+        else
+            grouped_options["$plugin_name"]+=" $option"
         fi
+    done
+    
+    # Display grouped options
+    for plugin_name in $(printf '%s\n' "${!grouped_options[@]}" | sort); do
+        local options_for_plugin="${grouped_options[$plugin_name]}"
+        local has_visible_options=false
         
-        if [[ -z "$filter" ]] || [[ "$option" == *"$filter"* ]] || [[ "$description" == *"$filter"* ]]; then
-            print_option "$option" "$default" "$possible" "$description"
-        fi
+        # Check if any options match filter
+        for option in $options_for_plugin; do
+            if [[ -z "$filter" ]] || [[ "$option" == *"$filter"* ]]; then
+                if [[ "$has_visible_options" == "false" ]]; then
+                    print_section "Theme Plugin: ${plugin_name^}" "$MAGENTA"
+                    has_visible_options=true
+                fi
+                
+                # Get default from discovered options or defaults.sh
+                local default_val=""
+                for opt in "${DISCOVERED_PLUGIN_OPTIONS[@]}"; do
+                    IFS='|' read -r opt_name opt_default _opt_possible _opt_description <<< "$opt"
+                    if [[ "$opt_name" == "$option" ]]; then
+                        default_val="$opt_default"
+                        break
+                    fi
+                done
+                
+                print_option "$option" "$default_val" "" "Plugin option"
+            fi
+        done
     done
     
     # =========================================================================

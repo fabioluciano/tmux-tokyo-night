@@ -26,6 +26,15 @@ plugin_hostname_accent_color_icon=$(get_tmux_option "@theme_plugin_hostname_acce
 export plugin_hostname_icon plugin_hostname_accent_color plugin_hostname_accent_color_icon
 
 # =============================================================================
+# Plugin Interface Implementation
+# =============================================================================
+
+# Function to inform the plugin type to the renderer
+plugin_get_type() {
+    printf 'static'
+}
+
+# =============================================================================
 # Main Plugin Logic
 # =============================================================================
 

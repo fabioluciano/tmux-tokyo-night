@@ -56,7 +56,7 @@ THEME_DEFAULT_PLUGINS="datetime,hostname,git,battery,cpu,memory"
 
 # Status bar lengths
 THEME_DEFAULT_STATUS_LEFT_LENGTH="100"
-THEME_DEFAULT_STATUS_RIGHT_LENGTH="220"
+THEME_DEFAULT_STATUS_RIGHT_LENGTH="1000"
 
 # =============================================================================
 # SEPARATORS
@@ -119,6 +119,24 @@ THEME_DEFAULT_HELPER_HEIGHT="80%"
 THEME_DEFAULT_KEYBINDINGS_KEY="B"
 THEME_DEFAULT_KEYBINDINGS_WIDTH="80%"
 THEME_DEFAULT_KEYBINDINGS_HEIGHT="80%"
+
+# =============================================================================
+# PLUGIN: audio  
+# =============================================================================
+# Audio device plugin - shows current input/output devices and provides keybindings
+THEME_DEFAULT_PLUGIN_AUDIODEVICES_SHOW="both"                   # off|input|output|both
+
+THEME_DEFAULT_PLUGIN_AUDIODEVICES_ICON=$'\uf0ec'  
+THEME_DEFAULT_PLUGIN_AUDIODEVICES_INPUT_ICON=$'\uec1c'               # Input device icon
+THEME_DEFAULT_PLUGIN_AUDIODEVICES_OUTPUT_ICON="🔊"              # Output device icon  
+THEME_DEFAULT_PLUGIN_AUDIODEVICES_SEPARATOR=" | "               # Separator between devices
+THEME_DEFAULT_PLUGIN_AUDIODEVICES_CACHE_TTL="5"                 # Cache time in seconds
+THEME_DEFAULT_PLUGIN_AUDIODEVICES_MAX_LENGTH="15"               # Max device name length
+THEME_DEFAULT_PLUGIN_AUDIODEVICES_INPUT_KEY="I"                 # Input selection key (prefix + key)
+THEME_DEFAULT_PLUGIN_AUDIODEVICES_OUTPUT_KEY="O"                # Output selection key (prefix + key)
+
+PLUGIN_AUDIODEVICES_ACCENT_COLOR="blue7"
+PLUGIN_AUDIODEVICES_ACCENT_COLOR_ICON="blue0"
 
 # =============================================================================
 # PLUGIN: datetime
@@ -239,6 +257,7 @@ PLUGIN_NETWORK_ACCENT_COLOR="blue7"
 PLUGIN_NETWORK_ACCENT_COLOR_ICON="blue0"
 PLUGIN_NETWORK_INTERFACE=""
 PLUGIN_NETWORK_CACHE_TTL="2"
+PLUGIN_NETWORK_THRESHOLD="51200"
 
 # =============================================================================
 # PLUGIN: loadavg
@@ -278,15 +297,6 @@ PLUGIN_GIT_ACCENT_COLOR_ICON="blue0"
 PLUGIN_GIT_CACHE_TTL="5"
 
 # =============================================================================
-# PLUGIN: docker
-# =============================================================================
-
-PLUGIN_DOCKER_ICON=""
-PLUGIN_DOCKER_ACCENT_COLOR="blue7"
-PLUGIN_DOCKER_ACCENT_COLOR_ICON="blue0"
-PLUGIN_DOCKER_CACHE_TTL="10"
-
-# =============================================================================
 # PLUGIN: kubernetes
 # =============================================================================
 
@@ -315,7 +325,7 @@ PLUGIN_KUBERNETES_NAMESPACE_SELECTOR_HEIGHT="50%"
 # PLUGIN: hostname
 # =============================================================================
 
-PLUGIN_HOSTNAME_ICON=""
+PLUGIN_HOSTNAME_ICON="💻"
 PLUGIN_HOSTNAME_ACCENT_COLOR="blue7"
 PLUGIN_HOSTNAME_ACCENT_COLOR_ICON="blue0"
 PLUGIN_HOSTNAME_FORMAT="short"

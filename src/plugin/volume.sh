@@ -182,6 +182,11 @@ volume_is_available() {
 # Plugin Interface Implementation
 # =============================================================================
 
+# Function to inform the plugin type to the renderer
+plugin_get_type() {
+    printf 'static'
+}
+
 # This function is called by render_plugins.sh to get display decisions
 # Output format: "show:accent:accent_icon:icon"
 plugin_get_display_info() {

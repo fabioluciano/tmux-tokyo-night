@@ -138,8 +138,12 @@ for config in "${PLUGIN_CONFIGS[@]}"; do
     
     # shellcheck source=/dev/null
 
-    # Execute plugin to get content
-    content=$(bash "$plugin_script" 2>/dev/null) || content=""
+    # Execute plugin to get content - set audio environment if needed
+    if [[ "$name" == "audio" ]]; then
+        content=$(XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" PULSE_RUNTIME_PATH="${PULSE_RUNTIME_PATH:-/run/user/$(id -u)/pulse}" bash "$plugin_script" 2>/dev/null) || content=""
+    else
+        content=$(bash "$plugin_script" 2>/dev/null) || content=""
+    fi
     
     # Handle special types first
     case "$plugin_type" in

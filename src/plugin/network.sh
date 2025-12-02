@@ -104,6 +104,15 @@ get_timestamp() {
 }
 
 # =============================================================================
+# Plugin Interface Implementation
+# =============================================================================
+
+# Function to inform the plugin type to the renderer
+plugin_get_type() {
+    printf 'conditional'
+}
+
+# =============================================================================
 # Main Plugin Logic - Delta-based (NO SLEEP!)
 # =============================================================================
 
@@ -152,11 +161,9 @@ load_plugin() {
     # Save current values for next iteration
     cache_set "$CACHE_KEY_PREV" "$current_rx $current_tx $current_time"
     
-    # If no previous data, show "..." and wait for next call
+    # If no previous data, don't show anything initially
     if [[ -z "$prev_data" ]]; then
-        local result="↓... ↑..."
-        cache_set "$CACHE_KEY" "$result"
-        printf '%s' "$result"
+        cache_set "$CACHE_KEY" ""
         return
     fi
     
@@ -180,6 +187,20 @@ load_plugin() {
     # Handle counter reset (reboot, interface restart)
     [[ $rx_speed -lt 0 ]] && rx_speed=0
     [[ $tx_speed -lt 0 ]] && tx_speed=0
+    
+    # Get configurable threshold (default: 50KB/s total)
+    local threshold
+    threshold=$(get_tmux_option "@theme_plugin_network_threshold" "$PLUGIN_NETWORK_THRESHOLD")
+    
+    # Only show if there's significant network activity above threshold
+    # This excludes normal background traffic but shows actual usage
+    local total_speed
+    total_speed=$(awk "BEGIN {printf \"%.0f\", $rx_speed + $tx_speed}")
+    if [[ $total_speed -le $threshold ]]; then
+        # No significant network activity, don't display anything
+        cache_set "$CACHE_KEY" ""
+        return
+    fi
     
     local result
     result="↓$(bytes_to_speed "$rx_speed") ↑$(bytes_to_speed "$tx_speed")"

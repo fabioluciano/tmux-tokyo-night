@@ -98,21 +98,27 @@ serialize_palette() {
     printf '%s' "$result"
 }
 
-# List of conditional plugins (only show when they have content)
-readonly CONDITIONAL_PLUGINS=" git docker homebrew yay spotify kubernetes playerctl spt vpn temperature external_ip bluetooth cloud "
-
-# Get plugin type
-# Types: conditional (only show if has content), static (always show)
+# Get plugin type from the plugin itself
+# Types: conditional (only show if has content), static (always show), datetime (special handling)
 # Note: Display conditions and color changes are handled by each plugin via plugin_get_display_info()
 get_plugin_type() {
     local plugin="$1"
+    local plugin_script_path="${CURRENT_DIR}/plugin/${plugin}.sh"
     
-    # Check if it's a conditional plugin (only show when they have content)
-    # Fast string match with pre-padded string
-    [[ "$CONDITIONAL_PLUGINS" == *" $plugin "* ]] && printf 'conditional' && return
+    # Check if plugin exists
+    if [[ ! -f "$plugin_script_path" ]]; then
+        printf 'static'
+        return
+    fi
     
-    # Default: always show (static)
-    printf 'static'
+    # Source plugin and check if it has plugin_get_type function
+    # shellcheck source=/dev/null
+    if . "$plugin_script_path" 2>/dev/null && declare -f plugin_get_type &>/dev/null; then
+        plugin_get_type
+    else
+        # Default: static (always show)
+        printf 'static'
+    fi
 }
 
 # =============================================================================
@@ -216,3 +222,4 @@ if [[ -n "$theme_keybindings_key" ]]; then
     tmux bind-key "$theme_keybindings_key" display-popup -E -w "$theme_keybindings_width" -h "$theme_keybindings_height" \
         "${CURRENT_DIR}/helpers/keybindings_viewer.sh"
 fi
+
