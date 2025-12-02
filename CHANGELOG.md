@@ -1,3 +1,10 @@
+# [2.12.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.11.0...v2.12.0) (2025-12-02)
+
+
+### Features
+
+* add audiodevices ([#93](https://github.com/fabioluciano/tmux-tokyo-night/issues/93)) ([9329369](https://github.com/fabioluciano/tmux-tokyo-night/commit/9329369f590a4386d974dcb7d085c673477c52f8))
+
 # [2.11.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.10.0...v2.11.0) (2025-12-01)
 
 
