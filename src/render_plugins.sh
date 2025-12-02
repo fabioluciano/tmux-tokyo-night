@@ -199,8 +199,6 @@ for ((i=0; i<total; i++)); do
     
     is_last=$([[ $i -eq $((total - 1)) ]] && echo "1" || echo "0")
     
-    # Plugins handle their own formatting and padding needs
-    
     # Build separators inline (avoiding function call overhead)
     if [[ "$TRANSPARENT" == "true" ]]; then
         sep_icon_start="#[fg=${accent_icon},bg=default]${RIGHT_SEPARATOR}#[none]"
@@ -215,9 +213,9 @@ for ((i=0; i<total; i++)); do
     
     # Build content section - for last plugin, just end cleanly with no separator
     if [[ "$is_last" == "1" ]]; then
-        output+="${icon_output}#[fg=${WHITE_COLOR},bg=${accent}] ${content} "
+        output+="${icon_output}#[fg=${WHITE_COLOR},bg=${accent}] ${content}${extra_padding} "
     else
-        content_output="#[fg=${WHITE_COLOR},bg=${accent}] ${content} #[none]"
+        content_output="#[fg=${WHITE_COLOR},bg=${accent}]${content}${extra_padding} #[none]"
         if [[ "$TRANSPARENT" == "true" ]]; then
             sep_end="#[fg=${accent},bg=default]${RIGHT_SEPARATOR_INVERSE}#[bg=default]"
         else

@@ -60,11 +60,10 @@ get_uptime_linux() {
 
 get_uptime_macos() {
     # More efficient: get boot time and current time in awk
-    sysctl -n kern.boottime 2>/dev/null | awk -v current="$(date +%s)" '
-        {gsub(/[{},:]/," "); print current - $4}' | {
-        read -r uptime_seconds
-        format_uptime "$uptime_seconds"
-    }
+    local uptime_seconds
+    uptime_seconds=$(sysctl -n kern.boottime 2>/dev/null | awk -v current="$(date +%s)" '
+        /sec =/ {gsub(/[{},:=]/," "); for(i=1;i<=NF;i++) if($i=="sec") {print current - $(i+1); exit}}')
+    format_uptime "$uptime_seconds"
 }
 
 # =============================================================================
