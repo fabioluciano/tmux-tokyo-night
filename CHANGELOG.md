@@ -1,3 +1,10 @@
+# [2.15.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.14.0...v2.15.0) (2025-12-03)
+
+
+### Features
+
+* **plugin:** rename yubikey plugin to smartkey with expanded hardwar… ([#95](https://github.com/fabioluciano/tmux-tokyo-night/issues/95)) ([89bd3b6](https://github.com/fabioluciano/tmux-tokyo-night/commit/89bd3b675c382b481e6145b467475a4060219966))
+
 # [2.14.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.13.0...v2.14.0) (2025-12-03)
 
 
