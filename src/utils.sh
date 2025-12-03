@@ -1,33 +1,21 @@
 #!/usr/bin/env bash
-# =============================================================================
 # Utility Functions for tmux-tokyo-night
-# =============================================================================
 
-# Source guard - prevent multiple sourcing
+# Source guard
 # shellcheck disable=SC2317
 if [[ -n "${_TMUX_TOKYO_NIGHT_UTILS_LOADED:-}" ]]; then
-    # Already loaded, just return (don't exit as we might be in a subshell)
     return 0 2>/dev/null || true
 fi
 _TMUX_TOKYO_NIGHT_UTILS_LOADED=1
 
-# =============================================================================
 # Cached OS Detection
-# =============================================================================
-# Detect OS once and cache for all plugins to avoid repeated uname calls
 _CACHED_OS="$(uname -s)"
 
-# Convenience functions for OS checks
+# OS check functions
 is_macos() { [[ "$_CACHED_OS" == "Darwin" ]]; }
 is_linux() { [[ "$_CACHED_OS" == Linux ]]; }
 
-# -----------------------------------------------------------------------------
 # Get OS/Distribution icon
-# Automatically detects the operating system and distribution to return
-# an appropriate icon. Result is cached for 24 hours.
-# Output:
-#   Icon string for the detected OS/distro
-# -----------------------------------------------------------------------------
 get_os_icon() {
     local cache_key="os_icon"
     local cache_ttl=86400  # 24 hours

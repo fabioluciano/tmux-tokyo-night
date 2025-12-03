@@ -1,25 +1,6 @@
 #!/usr/bin/env bash
-# =============================================================================
 # Cache System for tmux-tokyo-night plugins
-# =============================================================================
-#
-# This module provides a simple file-based caching mechanism to improve
-# performance of plugins that fetch external data (weather, media players, etc.)
-#
-# Usage:
-#   source "$CURRENT_DIR/cache.sh"
-#   
-#   # Check if cache is valid and get cached value
-#   if cached_value=$(cache_get "plugin_name" "$ttl_seconds"); then
-#       echo "$cached_value"
-#   else
-#       # Fetch new data
-#       new_value=$(fetch_data)
-#       cache_set "plugin_name" "$new_value"
-#       echo "$new_value"
-#   fi
-#
-# =============================================================================
+# File-based caching for external data
 
 # Source guard - prevent multiple sourcing
 # shellcheck disable=SC2317

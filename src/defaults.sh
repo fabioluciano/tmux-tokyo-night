@@ -157,24 +157,21 @@ PLUGIN_CAMERA_ACTIVE_ACCENT_COLOR_ICON="red1"
 # =============================================================================
 # PLUGIN: microphone
 # =============================================================================
-# Microphone activity plugin - shows when microphone is active/inactive
-THEME_DEFAULT_PLUGIN_MICROPHONE_SHOW="on"                      # on|off
-THEME_DEFAULT_PLUGIN_MICROPHONE_ICON=$'\uec1c'                     # Microphone icon when inactive
-THEME_DEFAULT_PLUGIN_MICROPHONE_CACHE_TTL="1"                  # Cache time in seconds
-THEME_DEFAULT_PLUGIN_MICROPHONE_SHOW_WHEN_INACTIVE="false"     # Show when microphone is off
 
-PLUGIN_MICROPHONE_ICON=$'\uec1c'
+PLUGIN_MICROPHONE_ICON=$'\ued03'
+PLUGIN_MICROPHONE_MUTED_ICON=$'\uefc6'
 PLUGIN_MICROPHONE_ACCENT_COLOR="blue7"
 PLUGIN_MICROPHONE_ACCENT_COLOR_ICON="blue0"
+PLUGIN_MICROPHONE_CACHE_TTL="1"
+
+# Microphone state-specific colors
 PLUGIN_MICROPHONE_ACTIVE_ACCENT_COLOR="red"
 PLUGIN_MICROPHONE_ACTIVE_ACCENT_COLOR_ICON="red1"
-PLUGIN_MICROPHONE_CACHE_TTL="1"
-PLUGIN_MICROPHONE_SHOW_WHEN_INACTIVE="false"
+PLUGIN_MICROPHONE_MUTED_ACCENT_COLOR="orange"
+PLUGIN_MICROPHONE_MUTED_ACCENT_COLOR_ICON="yellow"
 
-# Theme system variables
-plugin_microphone_icon="$PLUGIN_MICROPHONE_ICON"
-plugin_microphone_accent_color="$PLUGIN_MICROPHONE_ACCENT_COLOR"
-plugin_microphone_accent_color_icon="$PLUGIN_MICROPHONE_ACCENT_COLOR_ICON"
+# Microphone mute toggle keybinding  
+PLUGIN_MICROPHONE_MUTE_KEY="m"
 
 # =============================================================================
 # PLUGIN: datetime

@@ -1,42 +1,6 @@
 #!/usr/bin/env bash
-# =============================================================================
-# Plugin: audio
-# Description: Display audio input/output devices with interactive selection
+# Audio devices plugin with interactive selection
 # Dependencies: pactl/pamixer (Linux), SwitchAudioSource (macOS)
-# =============================================================================
-#
-# Configuration options:
-#   @theme_plugin_audio_show               - What to show: input|output|both|off (default: off)
-#   @theme_plugin_audio_input_icon         - Input device icon (default: 🎤)
-#   @theme_plugin_audio_output_icon        - Output device icon (default: 🔊)
-#   @theme_plugin_audio_separator          - Separator between input/output (default:  | )
-#   @theme_plugin_audio_accent_color       - Default accent color
-#   @theme_plugin_audio_accent_color_icon  - Default icon accent color
-#   @theme_plugin_audio_cache_ttl          - Cache time in seconds (default: 5)
-#   @theme_plugin_audio_max_length         - Maximum device name length (default: 15)
-#   @theme_plugin_audio_input_key          - Keybinding for input selection (default: I)
-#   @theme_plugin_audio_output_key         - Keybinding for output selection (default: O)
-#
-# Example configurations:
-#   # Show both devices in status bar
-#   set -g @theme_plugin_audio_show "both"
-#   
-#   # Show only input device
-#   set -g @theme_plugin_audio_show "input"
-#   
-#   # Don't show in status bar but keep keybindings active
-#   set -g @theme_plugin_audio_show "off"
-#   
-#   # Custom icons and separator
-#   set -g @theme_plugin_audio_input_icon "🎙️"
-#   set -g @theme_plugin_audio_output_icon "🎧"
-#   set -g @theme_plugin_audio_separator " • "
-#   
-#   # Custom keybindings
-#   set -g @theme_plugin_audio_input_key "M"
-#   set -g @theme_plugin_audio_output_key "S"
-#
-# =============================================================================
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -45,9 +9,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=src/utils.sh
 . "$ROOT_DIR/../utils.sh"
 
-# =============================================================================
 # Plugin Configuration
-# =============================================================================
 
 # Get plugin options with defaults
 get_plugin_option() {
@@ -127,12 +89,12 @@ get_current_input_device() {
     case "$audio_system" in
         "linux")
             # Single pactl call to get current source with description
-            pactl list sources 2>/dev/null | awk -v default="$(pactl get-default-source 2>/dev/null)" '
+            pactl list sources 2>/dev/null | awk -v default_device="$(pactl get-default-source 2>/dev/null)" '
                 /^Source #/ {in_source=1; description=""; name=""}
                 in_source && /Name:/ {name=$2}
                 in_source && /Description:/ {$1=""; description=substr($0,2)}
                 in_source && /^$/ {
-                    if (name == default && description != "") {
+                    if (name == default_device && description != "") {
                         print description
                         exit
                     }
@@ -157,12 +119,12 @@ get_current_output_device() {
     case "$audio_system" in
         "linux")
             # Single pactl call to get current sink with description
-            pactl list sinks 2>/dev/null | awk -v default="$(pactl get-default-sink 2>/dev/null)" '
+            pactl list sinks 2>/dev/null | awk -v default_device="$(pactl get-default-sink 2>/dev/null)" '
                 /^Sink #/ {in_sink=1; description=""; name=""}
                 in_sink && /Name:/ {name=$2}
                 in_sink && /Description:/ {$1=""; description=substr($0,2)}
                 in_sink && /^$/ {
-                    if (name == default && description != "") {
+                    if (name == default_device && description != "") {
                         print description
                         exit
                     }

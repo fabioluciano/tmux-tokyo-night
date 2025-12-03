@@ -1,27 +1,6 @@
 #!/usr/bin/env bash
-# =============================================================================
-# Plugin: camera
-# Description: Display camera status (active/inactive)
+# Camera status plugin
 # Dependencies: Cross-platform (macOS system processes, Linux v4l2/lsof)
-# =============================================================================
-#
-# Configuration options:
-#   @theme_plugin_camera_icon               - Camera icon (default: 📷)
-#   @theme_plugin_camera_icon_active        - Active camera icon (default: 🔴)
-#   @theme_plugin_camera_accent_color       - Default accent color
-#   @theme_plugin_camera_accent_color_icon  - Default icon accent color
-#   @theme_plugin_camera_cache_ttl          - Cache time in seconds (default: 3)
-#   @theme_plugin_camera_show_when_inactive - Show when camera is off: true|false (default: false)
-#
-# Example configurations:
-#   # Show even when camera is inactive
-#   set -g @theme_plugin_camera_show_when_inactive "true"
-#   
-#   # Custom icons
-#   set -g @theme_plugin_camera_icon "📸"
-#   set -g @theme_plugin_camera_icon_active "🟢"
-#
-# =============================================================================
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -231,8 +210,8 @@ show_camera_plugin() {
     local icon color_icon color_text
     if [[ "$camera_status" == "active" ]]; then
         icon="$PLUGIN_ICON_ACTIVE"
-        color_icon="red1"  # Red for active camera
-        color_text="red"
+        color_icon="$PLUGIN_ACTIVE_ACCENT_COLOR_ICON"  # Green for active camera
+        color_text="$PLUGIN_ACTIVE_ACCENT_COLOR"
     else
         # Don't show if inactive and show_when_inactive is false
         [[ "$PLUGIN_SHOW_WHEN_INACTIVE" == "false" ]] && return
@@ -260,8 +239,8 @@ plugin_get_display_info() {
     
     # Only show when camera is active
     if [[ "$camera_status" == "active" ]]; then
-        # Customizable colors when camera is active - no icon, just text
-        echo "1:$PLUGIN_ACTIVE_ACCENT_COLOR:$PLUGIN_ACTIVE_ACCENT_COLOR_ICON:"
+        # Customizable colors when camera is active - with icon for consistency
+        echo "1:$PLUGIN_ACTIVE_ACCENT_COLOR:$PLUGIN_ACTIVE_ACCENT_COLOR_ICON:$PLUGIN_ICON"
     else
         # Don't show when camera is inactive
         echo "0:::"
