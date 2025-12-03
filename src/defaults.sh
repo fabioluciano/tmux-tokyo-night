@@ -516,6 +516,19 @@ PLUGIN_CLOUD_PROD_ACCENT_COLOR="red"
 PLUGIN_CLOUD_CACHE_TTL="60"
 
 # =============================================================================
+# SMARTKEY PLUGIN DEFAULTS
+# =============================================================================
+
+PLUGIN_SMARTKEY_ICON=$'\uf084'
+PLUGIN_SMARTKEY_WAITING_ICON=$'\ue23f'
+PLUGIN_SMARTKEY_ACCENT_COLOR="blue7"
+PLUGIN_SMARTKEY_ACCENT_COLOR_ICON="blue0"
+PLUGIN_SMARTKEY_WAITING_ACCENT_COLOR="red"
+PLUGIN_SMARTKEY_WAITING_ACCENT_COLOR_ICON="red1"
+PLUGIN_SMARTKEY_CACHE_TTL="1"
+PLUGIN_SMARTKEY_SHOW_WHEN_INACTIVE="false"
+
+# =============================================================================
 # CACHE SYSTEM DEFAULTS
 # =============================================================================
 
