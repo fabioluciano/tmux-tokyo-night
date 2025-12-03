@@ -516,7 +516,14 @@ PLUGIN_CLOUD_PROD_ACCENT_COLOR="red"
 PLUGIN_CLOUD_CACHE_TTL="60"
 
 # =============================================================================
-# THRESHOLD SYSTEM DEFAULTS (applies to all plugins using thresholds)
+# CACHE SYSTEM DEFAULTS
+# =============================================================================
+
+# Cache clear keybinding  
+PLUGIN_CACHE_CLEAR_KEY="Q"
+
+# =============================================================================
+# THRESHOLD SYSTEM DEFAULTS (applies to all plugins using thresholds)  
 # =============================================================================
 
 # 3-level threshold defaults

@@ -143,6 +143,27 @@ cache_clear_all() {
     [[ -d "$CACHE_DIR" ]] && rm -rf "${CACHE_DIR:?}"/*
 }
 
+# =============================================================================
+# Keybinding Setup
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Setup cache clear keybinding (called during theme initialization)
+# -----------------------------------------------------------------------------
+setup_keybindings() {
+    local clear_key
+    
+    # Get keybinding from defaults (can be overridden by user)
+    clear_key=$(get_tmux_option "@theme_plugin_cache_clear_key" "${PLUGIN_CACHE_CLEAR_KEY:-M}")
+    
+    # Setup cache clear keybinding: clear all caches and refresh status bar
+    if [[ -n "$clear_key" ]]; then
+        tmux bind-key "$clear_key" run-shell \
+            "rm -rf '${CACHE_DIR:?}'/* 2>/dev/null; tmux refresh-client -S" \
+            \\\; display "Tokyo Night plugin cache cleared!"
+    fi
+}
+
 # -----------------------------------------------------------------------------
 # Get remaining TTL for a cached value
 #

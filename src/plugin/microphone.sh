@@ -4,6 +4,11 @@
 # Description: Display microphone activity status (active/inactive)
 # Dependencies: Cross-platform (macOS system processes, Linux ALSA/PulseAudio)
 # =============================================================================
+
+# Disable microphone plugin on macOS due to privacy limitations and unreliable detection
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    exit 0
+fi
 #
 # Configuration options:
 #   @theme_plugin_microphone_icon                 - Microphone icon (default: 󰍬)

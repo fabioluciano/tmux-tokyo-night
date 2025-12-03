@@ -2,6 +2,11 @@
 # Camera status plugin
 # Dependencies: Cross-platform (macOS system processes, Linux v4l2/lsof)
 
+# Disable camera plugin on macOS due to privacy limitations and unreliable detection
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    exit 0
+fi
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # shellcheck source=src/defaults.sh

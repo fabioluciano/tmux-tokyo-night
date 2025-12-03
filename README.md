@@ -79,6 +79,7 @@ Learn more: **[Theme Variations](../../wiki/Theme-Variations)**
 | `prefix + m` | **Microphone mute toggle** - Toggle microphone mute state |
 | `prefix + K` | **Kubernetes context selector** - Switch contexts |
 | `prefix + N` | **Kubernetes namespace selector** - Switch namespaces |
+| `prefix + Q` | **Cache cleaner** - Clear all plugin caches for instant refresh |
 
 ![Options Viewer](./assets/keybinding-options-viewer.gif)
 
@@ -120,10 +121,10 @@ The theme includes 25 built-in plugins organized by category:
 ### 🎵 Media & Audio
 
 - **[audiodevices](../../wiki/AudioDevices)** - Audio device selector with keybindings (input/output device management)
-- **[microphone](../../wiki/Microphone)** - Microphone activity status with mute detection
+- **[microphone](../../wiki/Microphone)** - Microphone activity detection with cross-platform support
 - **[nowplaying](../../wiki/NowPlaying)** - Unified media player (Spotify, Music.app, playerctl, spt, osascript)
 - **[volume](../../wiki/Volume)** - Volume level
-- **[camera](../../wiki/Camera)** - Camera activity status monitoring
+- **[camera](../../wiki/Camera)** - Privacy-focused camera activity monitoring with visual indicators
 
 ### 📦 Package Managers
 
@@ -131,7 +132,7 @@ The theme includes 25 built-in plugins organized by category:
 
 ### 🖥️ System Info
 
-- **[battery](../../wiki/Battery)** - Battery with charge/time modes
+- **[battery](../../wiki/Battery)** - Battery with intelligent 3-tier thresholds and charge/time modes
 - **[hostname](../../wiki/Hostname)** - System hostname display
 
 **Enable plugins:**
@@ -150,7 +151,7 @@ See **[Plugin System Overview](../../wiki/Plugin-System-Overview)** for complete
 | **battery** | ✅ | ✅ | ✅ | Requires `acpi`/`upower` (Linux), `pmset` (macOS) |
 | **bluetooth** | ✅ | ✅ | ⚠️ | Limited battery support on macOS |
 | **brightness** | ✅ | ❌ | ✅ | Requires `brightnessctl`/`light`/`xbacklight` |
-| **camera** | ✅ | ✅ | ❌ | Requires `v4l2`/`lsof` (Linux), native monitoring (macOS) |
+| **camera** | ✅ | ❌ | ❌ | Requires `v4l2`/`lsof` (Linux), disabled on macOS due to privacy limitations |
 | **cloud** | ✅ | ✅ | ✅ | AWS/GCP/Azure context detection |
 | **cpu** | ✅ | ✅ | ✅ | Native support via `/proc/stat` or `vm_stat` |
 | **datetime** | ✅ | ✅ | ✅ | Universal |
@@ -161,7 +162,7 @@ See **[Plugin System Overview](../../wiki/Plugin-System-Overview)** for complete
 | **kubernetes** | ✅ | ✅ | ✅ | Requires `kubectl` |
 | **loadavg** | ✅ | ✅ | ✅ | Native support via `/proc/loadavg` or `sysctl` |
 | **memory** | ✅ | ✅ | ✅ | Native support via `/proc/meminfo` or `vm_stat` |
-| **microphone** | ✅ | ✅ | ⚠️ | Requires `pactl` (Linux), native monitoring (macOS) |
+| **microphone** | ✅ | ❌ | ⚠️ | Requires `pactl` (Linux), disabled on macOS due to privacy limitations |
 | **network** | ✅ | ✅ | ✅ | Bandwidth monitoring |
 | **nowplaying** | ✅ | ✅ | ✅ | Auto-detects: Spotify/Music.app/playerctl/spt/osascript |
 | **packages** | ✅ | ✅ | ✅ | Auto-detects: brew/yay/apt/dnf/pacman |
@@ -195,6 +196,9 @@ set -g @theme_right_separator ''
 
 # Session icon (auto-detects OS)
 set -g @theme_session_icon 'auto'
+
+# Cache management keybinding (default: Q)
+set -g @theme_plugin_cache_clear_key 'Q'
 ```
 
 ### Plugin Customization
@@ -212,9 +216,16 @@ set -g @theme_plugin_cpu_icon ''
 set -g @theme_plugin_cpu_accent_color 'red'
 set -g @theme_plugin_cpu_cache_ttl 2
 
+# Battery with intelligent thresholds
+set -g @theme_plugin_battery_warning_threshold '50'   # Yellow warning at 50%
+set -g @theme_plugin_battery_critical_threshold '30'  # Red critical at 30%
+
 # Hide battery when above 50%
 set -g @theme_plugin_battery_display_threshold '50'
 set -g @theme_plugin_battery_display_condition 'le'
+
+# Camera active color (when camera is on)
+set -g @theme_plugin_camera_active_color 'red'
 
 # Show CPU only when above 70%
 set -g @theme_plugin_cpu_display_threshold '70'

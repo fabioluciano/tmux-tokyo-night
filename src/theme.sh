@@ -18,6 +18,8 @@ CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$CURRENT_DIR/utils.sh"
 # shellcheck source=src/separators.sh
 . "$CURRENT_DIR/separators.sh"
+# shellcheck source=src/cache.sh
+. "$CURRENT_DIR/cache.sh"
 
 # =============================================================================
 # Theme Configuration Options
