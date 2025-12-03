@@ -166,11 +166,6 @@ if [ "$theme_disable_plugins" -ne 1 ]; then
 		# Get plugin type
 		plugin_type=$(get_plugin_type "$plugin")
 		
-		# Handle datetime specially (uses tmux strftime)
-		if [ "$plugin" == "datetime" ]; then
-			plugin_type="datetime"
-		fi
-		
 		# Add to config string
 		[[ -n "$plugin_configs" ]] && plugin_configs+=";"
 		plugin_configs+="${plugin}:${accent_color}:${accent_color_icon}:${plugin_icon}:${plugin_type}"

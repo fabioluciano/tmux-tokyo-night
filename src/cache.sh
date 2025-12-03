@@ -1,25 +1,6 @@
 #!/usr/bin/env bash
-# =============================================================================
 # Cache System for tmux-tokyo-night plugins
-# =============================================================================
-#
-# This module provides a simple file-based caching mechanism to improve
-# performance of plugins that fetch external data (weather, media players, etc.)
-#
-# Usage:
-#   source "$CURRENT_DIR/cache.sh"
-#   
-#   # Check if cache is valid and get cached value
-#   if cached_value=$(cache_get "plugin_name" "$ttl_seconds"); then
-#       echo "$cached_value"
-#   else
-#       # Fetch new data
-#       new_value=$(fetch_data)
-#       cache_set "plugin_name" "$new_value"
-#       echo "$new_value"
-#   fi
-#
-# =============================================================================
+# File-based caching for external data
 
 # Source guard - prevent multiple sourcing
 # shellcheck disable=SC2317
@@ -81,20 +62,20 @@ cache_is_valid() {
     local ttl_seconds="$2"
     local cache_file="${CACHE_DIR}/${plugin_name}.cache"
     
-    # Check if cache file exists
+    # Single existence check and stat call
     [[ -f "$cache_file" ]] || return 1
     
-    # Get file modification time (OS-specific)
-    local file_mtime
+    # Get file modification time - use simpler approach
+    local file_mtime current_time
+    current_time=$(date +%s)
+    
     if [[ -n "$_CACHE_IS_MACOS" ]]; then
         file_mtime=$(stat -f "%m" "$cache_file" 2>/dev/null) || return 1
     else
         file_mtime=$(stat -c "%Y" "$cache_file" 2>/dev/null) || return 1
     fi
     
-    # Check if cache has expired
-    local current_time
-    current_time=$(date +%s)
+    # Check expiration inline
     (( (current_time - file_mtime) < ttl_seconds ))
 }
 
@@ -119,12 +100,11 @@ cache_get() {
     cache_init
     
     if cache_is_valid "$plugin_name" "$ttl_seconds"; then
-        # Use read with -r -d '' to preserve all content including newlines
-        # This is faster than cat for small files
-        local content
-        content=$(<"$cache_file")
-        printf '%s' "$content"
-        return 0
+        # Faster file reading - avoid subshell for small files
+        if [[ -r "$cache_file" ]]; then
+            printf '%s' "$(<"$cache_file")"
+            return 0
+        fi
     fi
     
     return 1

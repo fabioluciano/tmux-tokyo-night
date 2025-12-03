@@ -74,20 +74,20 @@ get_wifi_macos_ipconfig() {
 # Get WiFi info on macOS using system_profiler
 # Returns: "SSID:signal_percent" or empty if disconnected
 get_wifi_macos_system_profiler() {
-    local info
-    info=$(system_profiler SPAirPortDataType 2>/dev/null)
+    # Use single awk call to parse system_profiler output more efficiently
+    local wifi_data
+    wifi_data=$(system_profiler SPAirPortDataType 2>/dev/null | awk '
+        /Status: Connected/ {connected = 1}
+        /Current Network Information:/ {if (connected) getline; gsub(/^[[:space:]]+|:$/, ""); ssid = $0}
+        /RSSI:/ {if (connected) {gsub(/[^-0-9]/, ""); rssi = $0}}
+        END {if (connected && ssid) print ssid ":" rssi; else exit 1}
+    ')
     
-    [[ -z "$info" ]] && return 1
+    [[ -z "$wifi_data" ]] && return 1
     
-    # Check if connected
-    if ! echo "$info" | grep -q "Status: Connected"; then
-        return 1
-    fi
-    
-    # Get SSID - it's the line after "Current Network Information:"
-    # Format is usually "            NetworkName:" where NetworkName is the SSID
-    local ssid
-    ssid=$(echo "$info" | awk '/Current Network Information:/{getline; gsub(/^[[:space:]]+|:$/,""); print; exit}')
+    local ssid signal rssi
+    ssid="${wifi_data%%:*}"
+    rssi="${wifi_data##*:}"
     
     # macOS Sequoia+ redacts SSID for privacy - show "WiFi" as fallback
     if [[ -z "$ssid" ]] || [[ "$ssid" == "<redacted>" ]] || [[ "$ssid" == *"redacted"* ]]; then
@@ -177,22 +177,19 @@ get_wifi_macos() {
     get_wifi_macos_ipconfig || get_wifi_macos_system_profiler || get_wifi_macos_airport || get_wifi_macos_networksetup
 }
 
-# Get WiFi info on Linux using nmcli
+# Get WiFi info on Linux using nmcli (optimized)
 get_wifi_linux_nmcli() {
     command -v nmcli &>/dev/null || return 1
     
-    local info
-    info=$(nmcli -t -f active,ssid,signal dev wifi 2>/dev/null | grep "^yes:")
-    
-    [[ -z "$info" ]] && return 1
-    
-    local ssid signal
-    ssid=$(echo "$info" | cut -d: -f2)
-    signal=$(echo "$info" | cut -d: -f3)
-    
-    [[ -z "$ssid" ]] && return 1
-    
-    printf '%s:%d' "$ssid" "${signal:-0}"
+    # Single nmcli call with awk parsing for better performance
+    nmcli -t -f active,ssid,signal dev wifi 2>/dev/null | awk -F: '
+        /^yes:/ && $2 != "" {
+            gsub(/"/, "", $2)  # Remove quotes from SSID
+            printf "%s:%d\n", $2, ($3 ? $3 : 0)
+            exit 0
+        }
+        END {exit 1}
+    '
 }
 
 # Get WiFi info on Linux using iwconfig

@@ -1,6 +1,6 @@
 # 🌃 Tokyo Night for tmux
 
-A clean, dark tmux theme inspired by the [Tokyo Night](https://github.com/enkia/tokyo-night-vscode-theme) color scheme. Features a modular plugin system with 23 built-in plugins for displaying system information, development tools, and media status.
+A clean, dark tmux theme inspired by the [Tokyo Night](https://github.com/enkia/tokyo-night-vscode-theme) color scheme. Features a modular plugin system with 25 built-in plugins for displaying system information, development tools, and media status.
 
 ![Tokyo Night Theme](./assets/tokyo-night-bar.png)
 ![Tokyo Night Theme](./assets/tokyo-night-theme.png)
@@ -8,7 +8,7 @@ A clean, dark tmux theme inspired by the [Tokyo Night](https://github.com/enkia/
 ## ✨ Features
 
 - 🎨 **Four color variations** - Night, Storm, Moon, and Day
-- 🔌 **23 built-in plugins** - System monitoring, development tools, media players
+- 🔌 **25 built-in plugins** - System monitoring, development tools, media players
 - ⚡ **Performance optimized** - Intelligent caching system
 - 🎯 **Fully customizable** - Colors, icons, formats, and separators
 - 🖥️ **Cross-platform** - macOS, Linux, and BSD support
@@ -20,7 +20,7 @@ A clean, dark tmux theme inspired by the [Tokyo Night](https://github.com/enkia/
 - **[Quick Start](../../wiki/Quick-Start)** - Get up and running in minutes
 - **[Theme Variations](../../wiki/Theme-Variations)** - Explore Night, Storm, Moon, and Day
 - **[Global Configuration](../../wiki/Global-Configuration)** - Configure status bar layout and separators
-- **[Plugin System](../../wiki/Plugin-System-Overview)** - Complete reference for all 23 plugins
+- **[Plugin System](../../wiki/Plugin-System-Overview)** - Complete reference for all 25 plugins
 - **[Interactive Keybindings](../../wiki/Interactive-Keybindings)** - Popup helpers and selectors
 - **[Custom Colors & Theming](../../wiki/Custom-Colors-Theming)** - Advanced customization
 - **[Performance & Caching](../../wiki/Performance-Caching)** - Optimize for your workflow
@@ -74,6 +74,9 @@ Learn more: **[Theme Variations](../../wiki/Theme-Variations)**
 |------------|---------|
 | `prefix + ?` | **Options viewer** - Browse all theme settings |
 | `prefix + B` | **Keybindings viewer** - View all keybindings |
+| `prefix + I` | **Audio input selector** - Switch microphone devices |
+| `prefix + O` | **Audio output selector** - Switch speaker/headphone devices |
+| `prefix + m` | **Microphone mute toggle** - Toggle microphone mute state |
 | `prefix + K` | **Kubernetes context selector** - Switch contexts |
 | `prefix + N` | **Kubernetes namespace selector** - Switch namespaces |
 
@@ -83,7 +86,7 @@ Learn more: **[Interactive Keybindings](../../wiki/Interactive-Keybindings)**
 
 ## 🔌 Available Plugins
 
-The theme includes 23 built-in plugins organized by category:
+The theme includes 25 built-in plugins organized by category:
 
 ### 📅 Time & Date
 
@@ -117,8 +120,10 @@ The theme includes 23 built-in plugins organized by category:
 ### 🎵 Media & Audio
 
 - **[audiodevices](../../wiki/AudioDevices)** - Audio device selector with keybindings (input/output device management)
+- **[microphone](../../wiki/Microphone)** - Microphone activity status with mute detection
 - **[nowplaying](../../wiki/NowPlaying)** - Unified media player (Spotify, Music.app, playerctl, spt, osascript)
 - **[volume](../../wiki/Volume)** - Volume level
+- **[camera](../../wiki/Camera)** - Camera activity status monitoring
 
 ### 📦 Package Managers
 
@@ -141,10 +146,11 @@ See **[Plugin System Overview](../../wiki/Plugin-System-Overview)** for complete
 
 | Plugin | Linux | macOS | WSL | Notes |
 |--------|-------|-------|-----|-------|
-| **audio** | ✅ | ✅ | ✅ | Requires `pactl` (Linux), `SwitchAudioSource` (macOS) |
+| **audiodevices** | ✅ | ✅ | ✅ | Requires `pactl` (Linux), `SwitchAudioSource` (macOS) |
 | **battery** | ✅ | ✅ | ✅ | Requires `acpi`/`upower` (Linux), `pmset` (macOS) |
 | **bluetooth** | ✅ | ✅ | ⚠️ | Limited battery support on macOS |
 | **brightness** | ✅ | ❌ | ✅ | Requires `brightnessctl`/`light`/`xbacklight` |
+| **camera** | ✅ | ✅ | ❌ | Requires `v4l2`/`lsof` (Linux), native monitoring (macOS) |
 | **cloud** | ✅ | ✅ | ✅ | AWS/GCP/Azure context detection |
 | **cpu** | ✅ | ✅ | ✅ | Native support via `/proc/stat` or `vm_stat` |
 | **datetime** | ✅ | ✅ | ✅ | Universal |
@@ -155,6 +161,7 @@ See **[Plugin System Overview](../../wiki/Plugin-System-Overview)** for complete
 | **kubernetes** | ✅ | ✅ | ✅ | Requires `kubectl` |
 | **loadavg** | ✅ | ✅ | ✅ | Native support via `/proc/loadavg` or `sysctl` |
 | **memory** | ✅ | ✅ | ✅ | Native support via `/proc/meminfo` or `vm_stat` |
+| **microphone** | ✅ | ✅ | ⚠️ | Requires `pactl` (Linux), native monitoring (macOS) |
 | **network** | ✅ | ✅ | ✅ | Bandwidth monitoring |
 | **nowplaying** | ✅ | ✅ | ✅ | Auto-detects: Spotify/Music.app/playerctl/spt/osascript |
 | **packages** | ✅ | ✅ | ✅ | Auto-detects: brew/yay/apt/dnf/pacman |

@@ -1,13 +1,6 @@
 #!/usr/bin/env bash
-# =============================================================================
-# Plugin: cloud
-# Description: Display current cloud provider context (AWS/GCP/Azure)
-# Platform: Universal - works on all platforms
-# Dependencies: 
-#   - AWS: aws CLI (optional, reads from env vars and config files)
-#   - GCP: gcloud CLI (optional, reads from config files)
-#   - Azure: az CLI (optional, reads from config files)
-# =============================================================================
+# Cloud provider context plugin (AWS/GCP/Azure)
+# Dependencies: aws/gcloud/az CLI (optional, reads from config files)
 #
 # Configuration options:
 #   @theme_plugin_cloud_icon              - Default icon (default: ☁️)

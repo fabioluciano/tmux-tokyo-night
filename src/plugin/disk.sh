@@ -65,49 +65,39 @@ bytes_to_human() {
 # Get disk usage info
 get_disk_info() {
     local mount_point="$1"
-    local df_output
     
-    # Get disk info using df with 1K blocks for consistency
-    # -P for POSIX output format (consistent across systems)
-    # Use 'command' builtin to bypass any aliases
-    df_output=$(command df -Pk "$mount_point" 2>/dev/null | tail -1)
-    
-    if [[ -z "$df_output" ]]; then
-        printf 'N/A'
-        return 1
-    fi
-    
-    local _ total_kb used_kb available_kb percent_used
-    read -r _ total_kb used_kb available_kb percent_used _ <<< "$df_output"
-    
-    # Remove % sign from percent
-    percent_used="${percent_used%%%}"
-    
-    # Validate we got numeric values
-    if [[ ! "$total_kb" =~ ^[0-9]+$ ]]; then
-        printf 'N/A'
-        return 1
-    fi
-    
-    # Convert KB to bytes for human readable conversion
-    local total_bytes=$((total_kb * 1024))
-    local used_bytes=$((used_kb * 1024))
-    local free_bytes=$((available_kb * 1024))
-    
-    case "$plugin_disk_format" in
-        percent)
-            printf '%s%%' "$percent_used"
-            ;;
-        usage)
-            printf '%s/%s' "$(bytes_to_human "$used_bytes")" "$(bytes_to_human "$total_bytes")"
-            ;;
-        free)
-            printf '%s' "$(bytes_to_human "$free_bytes")"
-            ;;
-        *)
-            printf '%s%%' "$percent_used"
-            ;;
-    esac
+    # Single awk call to parse df output efficiently
+    command df -Pk "$mount_point" 2>/dev/null | awk '
+        NR==2 {
+            total_kb = $2
+            used_kb = $3
+            available_kb = $4
+            percent_used = $5
+            
+            # Remove % sign and validate
+            gsub(/%/, "", percent_used)
+            
+            if (total_kb > 0 && percent_used >= 0) {
+                total_bytes = total_kb * 1024
+                used_bytes = used_kb * 1024
+                free_bytes = available_kb * 1024
+                
+                format = "'$plugin_disk_format'"
+                if (format == "usage") {
+                    printf "%.1f/%.1f", used_bytes/1073741824, total_bytes/1073741824
+                } else if (format == "free") {
+                    if (free_bytes >= 1099511627776) printf "%.1fT", free_bytes/1099511627776
+                    else if (free_bytes >= 1073741824) printf "%.1fG", free_bytes/1073741824
+                    else if (free_bytes >= 1048576) printf "%.0fM", free_bytes/1048576
+                    else printf "%.0fK", free_bytes/1024
+                } else {
+                    printf "%s%%", percent_used
+                }
+            } else {
+                print "N/A"
+                exit 1
+            }
+        }'
 }
 
 # =============================================================================

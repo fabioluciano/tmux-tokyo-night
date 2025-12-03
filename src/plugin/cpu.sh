@@ -81,23 +81,29 @@ get_cpu_linux() {
     printf '%d' "$cpu_usage"
 }
 
-# Get CPU usage on macOS using ps (much faster than top -l 1 which takes ~1s)
+# Get CPU usage on macOS using iostat (no sleep needed, instant reading)
 get_cpu_macos() {
-    local cpu_usage num_cores
+    local cpu_usage
     
-    # Get number of CPU cores
-    num_cores=$(sysctl -n hw.ncpu 2>/dev/null || echo 1)
+    # Use iostat which provides instant CPU utilization
+    # Last line contains current stats (no historical average)
+    cpu_usage=$(iostat -c 1 2>/dev/null | tail -1 | awk '{print 100-$6}' | awk '{printf "%.0f", $1}')
     
-    # Use ps to aggregate CPU usage across all processes
-    # Then divide by number of cores to get average utilization
-    cpu_usage=$(command ps -A -o %cpu | command awk -v cores="$num_cores" '
-        NR>1 {sum+=$1} 
-        END {
-            avg = sum / cores
-            if (avg > 100) avg = 100
-            printf "%.0f", avg
-        }
-    ')
+    # Fallback to ps if iostat not available
+    if [[ -z "$cpu_usage" || "$cpu_usage" == "100" ]]; then
+        local num_cores
+        num_cores=$(sysctl -n hw.ncpu 2>/dev/null || echo 1)
+        
+        # Use more efficient ps with reduced process scanning
+        cpu_usage=$(command ps -axo %cpu | command awk -v cores="$num_cores" '
+            NR>1 && NR<=50 {sum+=$1}  # Only scan first 50 processes for performance
+            END {
+                avg = sum / cores
+                if (avg > 100) avg = 100
+                printf "%.0f", avg
+            }
+        ')
+    fi
     
     printf '%s' "${cpu_usage:-0}"
 }

@@ -247,9 +247,9 @@ get_temp_linux_sensors() {
 }
 
 get_temperature() {
-    # Desabilitado completamente no macOS (Apple Silicon)
+    # Only works on Linux - macOS support requires external tools
     if is_macos; then
-        return 0
+        return 1
     fi
     
     local source
@@ -257,58 +257,65 @@ get_temperature() {
     
     local temp=""
     
-    case "$source" in
-        cpu|coretemp)
-            # CPU temperature from coretemp sensor (Intel physical cores)
-            temp=$(get_temp_hwmon_by_name "coretemp") || \
-            temp=$(get_temp_hwmon_by_name "k10temp") || \
-            temp=$(get_temp_hwmon_by_name "zenpower") || \
-            temp=$(get_temp_thermal_zone_by_type "x86_pkg_temp") || \
-            temp=$(get_temp_thermal_zone_by_type "TCPU") || \
-            temp=$(get_temp_hwmon_by_name "dell_smm") || \
-            temp=$(get_temp_linux_hwmon)
-            ;;
-        cpu-pkg|x86_pkg_temp)
-            # CPU package temperature (entire processor)
-            temp=$(get_temp_thermal_zone_by_type "x86_pkg_temp") || \
-            temp=$(get_temp_hwmon_by_name "coretemp")
-            ;;
-        cpu-acpi|tcpu)
-            # CPU temperature via ACPI
-            temp=$(get_temp_thermal_zone_by_type "TCPU")
-            ;;
-        nvme|ssd)
-            # NVMe SSD temperature
-            temp=$(get_temp_hwmon_by_name "nvme")
-            ;;
-        wifi|wireless|iwlwifi)
-            # WiFi chip temperature
-            temp=$(get_temp_hwmon_by_name "iwlwifi_1") || \
-            temp=$(get_temp_thermal_zone_by_type "iwlwifi_1")
-            ;;
-        acpi|ambient|chassis)
-            # System ambient/chassis temperature
-            temp=$(get_temp_thermal_zone_by_type "INT3400 Thermal") || \
-            temp=$(get_temp_linux_sys)
-            ;;
-        dell|dell_smm)
-            # Dell system sensors
-            temp=$(get_temp_hwmon_by_name "dell_smm") || \
-            temp=$(get_temp_hwmon_by_name "dell_ddv")
-            ;;
-        auto|*)
-            # Auto mode - prefer CPU temperature
-            temp=$(get_temp_linux_hwmon) || \
-            temp=$(get_temp_linux_sys) || \
-            temp=$(get_temp_linux_sensors)
-            ;;
-    esac
+    if is_linux; then
+        case "$source" in
+            cpu|coretemp)
+                # CPU temperature from coretemp sensor (Intel physical cores)
+                temp=$(get_temp_hwmon_by_name "coretemp") || \
+                temp=$(get_temp_hwmon_by_name "k10temp") || \
+                temp=$(get_temp_hwmon_by_name "zenpower") || \
+                temp=$(get_temp_thermal_zone_by_type "x86_pkg_temp") || \
+                temp=$(get_temp_thermal_zone_by_type "TCPU") || \
+                temp=$(get_temp_hwmon_by_name "dell_smm") || \
+                temp=$(get_temp_linux_hwmon)
+                ;;
+            cpu-pkg|x86_pkg_temp)
+                # CPU package temperature (entire processor)
+                temp=$(get_temp_thermal_zone_by_type "x86_pkg_temp") || \
+                temp=$(get_temp_hwmon_by_name "coretemp")
+                ;;
+            cpu-acpi|tcpu)
+                # CPU temperature via ACPI
+                temp=$(get_temp_thermal_zone_by_type "TCPU")
+                ;;
+            nvme|ssd)
+                # NVMe SSD temperature
+                temp=$(get_temp_hwmon_by_name "nvme")
+                ;;
+            wifi|wireless|iwlwifi)
+                # WiFi chip temperature
+                temp=$(get_temp_hwmon_by_name "iwlwifi_1") || \
+                temp=$(get_temp_thermal_zone_by_type "iwlwifi_1")
+                ;;
+            acpi|ambient|chassis)
+                # System ambient/chassis temperature
+                temp=$(get_temp_thermal_zone_by_type "INT3400 Thermal") || \
+                temp=$(get_temp_linux_sys)
+                ;;
+            dell|dell_smm)
+                # Dell system sensors
+                temp=$(get_temp_hwmon_by_name "dell_smm") || \
+                temp=$(get_temp_hwmon_by_name "dell_ddv")
+                ;;
+            auto|*)
+                # Auto mode - prefer CPU temperature with optimized search order
+                temp=$(get_temp_linux_hwmon) || \
+                temp=$(get_temp_linux_sys) || \
+                temp=$(get_temp_linux_sensors)
+                ;;
+        esac
+    fi
     
     [[ -n "$temp" ]] && printf '%s' "$temp"
 }
 
 # Check if temperature reading is available
 temperature_is_available() {
+    # Not available on macOS without external tools
+    if is_macos; then
+        return 1
+    fi
+    
     local temp
     temp=$(get_temperature)
     [[ -n "$temp" ]]
@@ -369,7 +376,7 @@ plugin_get_display_info() {
 # =============================================================================
 
 load_plugin() {
-    # Desabilitado completamente no macOS (Apple Silicon)
+    # Temperature plugin disabled on macOS - no reliable native tools available
     if is_macos; then
         return 0
     fi

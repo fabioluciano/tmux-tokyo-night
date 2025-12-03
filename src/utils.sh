@@ -1,33 +1,21 @@
 #!/usr/bin/env bash
-# =============================================================================
 # Utility Functions for tmux-tokyo-night
-# =============================================================================
 
-# Source guard - prevent multiple sourcing
+# Source guard
 # shellcheck disable=SC2317
 if [[ -n "${_TMUX_TOKYO_NIGHT_UTILS_LOADED:-}" ]]; then
-    # Already loaded, just return (don't exit as we might be in a subshell)
     return 0 2>/dev/null || true
 fi
 _TMUX_TOKYO_NIGHT_UTILS_LOADED=1
 
-# =============================================================================
 # Cached OS Detection
-# =============================================================================
-# Detect OS once and cache for all plugins to avoid repeated uname calls
 _CACHED_OS="$(uname -s)"
 
-# Convenience functions for OS checks
+# OS check functions
 is_macos() { [[ "$_CACHED_OS" == "Darwin" ]]; }
 is_linux() { [[ "$_CACHED_OS" == Linux ]]; }
 
-# -----------------------------------------------------------------------------
 # Get OS/Distribution icon
-# Automatically detects the operating system and distribution to return
-# an appropriate icon. Result is cached for 24 hours.
-# Output:
-#   Icon string for the detected OS/distro
-# -----------------------------------------------------------------------------
 get_os_icon() {
     local cache_key="os_icon"
     local cache_ttl=86400  # 24 hours
@@ -39,33 +27,33 @@ get_os_icon() {
         return 0
     fi
     
-    local icon=""
+    local icon
     
     if is_macos; then
         icon=$'\uf302'
     elif is_linux; then
-        # Try to detect Linux distribution
-        if [[ -f /etc/os-release ]]; then
-            # shellcheck disable=SC1091
-            . /etc/os-release
-            case "${ID:-}" in
-                ubuntu)             icon=$'\uf31b' ;;
-                debian)             icon=$'\uf306' ;;
-                fedora)             icon=$'\uf30a' ;;
-                arch)               icon=$'\uf303' ;;
-                manjaro)            icon=$'\uf312' ;;
-                centos|rhel)        icon=$'\uf304' ;;
-                opensuse*)          icon=$'\uf314' ;;
-                alpine)             icon=$'\uf300' ;;
-                gentoo)             icon=$'\uf30d' ;;
-                linuxmint)          icon=$'\uf30e' ;;
-                *)                  icon=$'\uf31a' ;; # Generic Linux
-            esac
-        else
-            icon=$'\uf31a' # Generic Linux
-        fi
+        # Faster OS detection using single awk call
+        icon=$(awk -F'=' '
+            /^ID=/ {id=gsub(/"/, "", $2); id=$2}
+            END {
+                if (id == "ubuntu") print "\uf31b"
+                else if (id == "debian") print "\uf306"
+                else if (id == "fedora") print "\uf30a"
+                else if (id == "arch") print "\uf303"
+                else if (id == "manjaro") print "\uf312"
+                else if (id == "centos" || id == "rhel") print "\uf304"
+                else if (id ~ /^opensuse/) print "\uf314"
+                else if (id == "alpine") print "\uf300"
+                else if (id == "gentoo") print "\uf30d"
+                else if (id == "linuxmint") print "\uf30e"
+                else print "\uf31a"
+            }
+        ' /etc/os-release 2>/dev/null)
+        
+        # Fallback if no os-release or awk failed
+        [[ -z "$icon" ]] && icon=$'\uf31a'
     else
-        icon=$'\uf11c' # Generic/Unknown
+        icon=$'\uf11c'
     fi
     
     # Cache the result
