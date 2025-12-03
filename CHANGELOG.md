@@ -1,3 +1,10 @@
+# [2.14.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.13.0...v2.14.0) (2025-12-03)
+
+
+### Features
+
+* Disable camera and microphone plugins on macOS ([7338e41](https://github.com/fabioluciano/tmux-tokyo-night/commit/7338e411cbe0e5ecea9ed7fa20ab52fa2ea07c06))
+
 # [2.13.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.12.0...v2.13.0) (2025-12-03)
 
 
