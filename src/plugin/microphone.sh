@@ -39,7 +39,9 @@ plugin_microphone_accent_color=$(get_tmux_option "@theme_plugin_microphone_accen
 plugin_microphone_accent_color_icon=$(get_tmux_option "@theme_plugin_microphone_accent_color_icon" "$PLUGIN_MICROPHONE_ACCENT_COLOR_ICON")
 
 # Cache TTL in seconds (default: 1 second)
+# shellcheck disable=SC2034
 CACHE_TTL=$(get_tmux_option "@theme_plugin_microphone_cache_ttl" "$PLUGIN_MICROPHONE_CACHE_TTL")
+# shellcheck disable=SC2034
 CACHE_KEY="microphone"
 
 export plugin_microphone_icon plugin_microphone_accent_color plugin_microphone_accent_color_icon
@@ -131,7 +133,9 @@ plugin_get_type() {
 # Plugin settings
 PLUGIN_ICON="$PLUGIN_MICROPHONE_ICON"
 PLUGIN_MUTED_ICON="$PLUGIN_MICROPHONE_MUTED_ICON"
+# shellcheck disable=SC2034
 PLUGIN_ACCENT_COLOR="$PLUGIN_MICROPHONE_ACCENT_COLOR"
+# shellcheck disable=SC2034
 PLUGIN_ACCENT_COLOR_ICON="$PLUGIN_MICROPHONE_ACCENT_COLOR_ICON"
 PLUGIN_CACHE_TTL="$PLUGIN_MICROPHONE_CACHE_TTL"
 
@@ -155,11 +159,11 @@ detect_microphone_usage_macos() {
     # Method 2: Check if any process is actively recording audio
     # Use ps to find processes with high CPU that might be recording
     local high_cpu_audio_procs
-    high_cpu_audio_procs=$(ps -eo pid,ppid,%cpu,comm | awk '$3 > 5 && $4 ~ /firefox|chrome|safari|zoom|teams|discord|obs/ {print $1}' | wc -l | tr -d ' ')
+    high_cpu_audio_procs=$(ps -eo pid,ppid,%cpu,comm | grep -cE 'firefox|chrome|safari|zoom|teams|discord|obs' | tr -d ' ')
     if [[ "${high_cpu_audio_procs:-0}" -gt 0 ]]; then
         # Double check these processes are actually using audio
         local audio_active_procs
-        audio_active_procs=$(ps -eo pid,ppid,%cpu,comm | awk '$3 > 10 && $4 ~ /firefox|chrome|safari/ {print $1}' | wc -l | tr -d ' ')
+        audio_active_procs=$(ps -eo pid,ppid,%cpu,comm | grep -cE 'firefox|chrome|safari' | tr -d ' ')
         if [[ "${audio_active_procs:-0}" -gt 0 ]]; then
             echo "active"
             return
@@ -217,7 +221,7 @@ detect_microphone_usage_linux() {
     if command -v lsof >/dev/null 2>&1; then
         # Look for processes actively writing to capture devices, excluding system daemons
         local active_capture
-        active_capture=$(lsof /dev/snd/* 2>/dev/null | grep -E "pcmC[0-9]+D[0-9]+c" | grep -v -E "(pipewire|wireplumb|pulseaudio)" | wc -l)
+        active_capture=$(lsof /dev/snd/* 2>/dev/null | grep -E "pcmC[0-9]+D[0-9]+c" | grep -cvE "(pipewire|wireplumb|pulseaudio)")
         if [[ "${active_capture:-0}" -gt 0 ]]; then
             echo "active"
             return

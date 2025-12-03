@@ -38,14 +38,14 @@ plugin_get_type() {
 }
 
 # Plugin settings
-PLUGIN_SHOW=$(get_plugin_option "show" "${THEME_DEFAULT_PLUGIN_AUDIODEVICES_SHOW:-off}")
-PLUGIN_INPUT_ICON=$(get_plugin_option "input_icon" "${THEME_DEFAULT_PLUGIN_AUDIODEVICES_INPUT_ICON:-🎤}")
-PLUGIN_OUTPUT_ICON=$(get_plugin_option "output_icon" "${THEME_DEFAULT_PLUGIN_AUDIODEVICES_OUTPUT_ICON:-🔊}")
-PLUGIN_SEPARATOR=$(get_plugin_option "separator" "${THEME_DEFAULT_PLUGIN_AUDIODEVICES_SEPARATOR:- | }")
-PLUGIN_ACCENT_COLOR=$(get_plugin_option "accent_color" "${PLUGIN_AUDIODEVICES_ACCENT_COLOR:-blue7}")
-PLUGIN_ACCENT_COLOR_ICON=$(get_plugin_option "accent_color_icon" "${PLUGIN_AUDIODEVICES_ACCENT_COLOR_ICON:-blue0}")
-PLUGIN_CACHE_TTL=$(get_plugin_option "cache_ttl" "${THEME_DEFAULT_PLUGIN_AUDIODEVICES_CACHE_TTL:-5}")
-PLUGIN_MAX_LENGTH=$(get_plugin_option "max_length" "${THEME_DEFAULT_PLUGIN_AUDIODEVICES_MAX_LENGTH:-15}")
+PLUGIN_SHOW=$(get_plugin_option "show" "$THEME_DEFAULT_PLUGIN_AUDIODEVICES_SHOW")
+PLUGIN_INPUT_ICON=$(get_plugin_option "input_icon" "$THEME_DEFAULT_PLUGIN_AUDIODEVICES_INPUT_ICON")
+PLUGIN_OUTPUT_ICON=$(get_plugin_option "output_icon" "$THEME_DEFAULT_PLUGIN_AUDIODEVICES_OUTPUT_ICON")
+PLUGIN_SEPARATOR=$(get_plugin_option "separator" "$THEME_DEFAULT_PLUGIN_AUDIODEVICES_SEPARATOR")
+PLUGIN_ACCENT_COLOR=$(get_plugin_option "accent_color" "$PLUGIN_AUDIODEVICES_ACCENT_COLOR")
+PLUGIN_ACCENT_COLOR_ICON=$(get_plugin_option "accent_color_icon" "$PLUGIN_AUDIODEVICES_ACCENT_COLOR_ICON")
+PLUGIN_CACHE_TTL=$(get_plugin_option "cache_ttl" "$THEME_DEFAULT_PLUGIN_AUDIODEVICES_CACHE_TTL")
+PLUGIN_MAX_LENGTH=$(get_plugin_option "max_length" "$THEME_DEFAULT_PLUGIN_AUDIODEVICES_MAX_LENGTH")
 
 # Keybinding settings
 PLUGIN_INPUT_KEY=$(get_plugin_option "input_key" "${THEME_DEFAULT_PLUGIN_AUDIODEVICES_INPUT_KEY:-I}")
@@ -88,20 +88,21 @@ get_current_input_device() {
     
     case "$audio_system" in
         "linux")
-            # Single pactl call to get current source with description
-            pactl list sources 2>/dev/null | awk -v default_device="$(pactl get-default-source 2>/dev/null)" '
-                /^Source #/ {in_source=1; description=""; name=""}
-                in_source && /Name:/ {name=$2}
-                in_source && /Description:/ {$1=""; description=substr($0,2)}
-                in_source && /^$/ {
-                    if (name == default_device && description != "") {
-                        print description
-                        exit
-                    }
-                    in_source=0
-                }
-                END {if (description == "") print "No Input"}
-            '
+            local default_source
+            default_source=$(pactl get-default-source 2>/dev/null)
+            if [[ -n "$default_source" ]]; then
+                # Get description from source info
+                local description
+                description=$(pactl list sources 2>/dev/null | grep -A 20 "Name: $default_source" | grep "Description:" | cut -d: -f2- | sed 's/^ *//')
+                if [[ -n "$description" ]]; then
+                    echo "$description"
+                else
+                    # Fallback to simplified name
+                    echo "${default_source##*.}" | tr '_' ' '
+                fi
+            else
+                echo "No Input"
+            fi
             ;;
         "macos")
             SwitchAudioSource -c -t input 2>/dev/null || echo "No Input"
@@ -118,20 +119,21 @@ get_current_output_device() {
     
     case "$audio_system" in
         "linux")
-            # Single pactl call to get current sink with description
-            pactl list sinks 2>/dev/null | awk -v default_device="$(pactl get-default-sink 2>/dev/null)" '
-                /^Sink #/ {in_sink=1; description=""; name=""}
-                in_sink && /Name:/ {name=$2}
-                in_sink && /Description:/ {$1=""; description=substr($0,2)}
-                in_sink && /^$/ {
-                    if (name == default_device && description != "") {
-                        print description
-                        exit
-                    }
-                    in_sink=0
-                }
-                END {if (description == "") print "No Output"}
-            '
+            local default_sink
+            default_sink=$(pactl get-default-sink 2>/dev/null)
+            if [[ -n "$default_sink" ]]; then
+                # Get description from sink info
+                local description
+                description=$(pactl list sinks 2>/dev/null | grep -A 20 "Name: $default_sink" | grep "Description:" | cut -d: -f2- | sed 's/^ *//')
+                if [[ -n "$description" ]]; then
+                    echo "$description"
+                else
+                    # Fallback to simplified name
+                    echo "${default_sink##*.}" | tr '_' ' '
+                fi
+            else
+                echo "No Output"
+            fi
             ;;
         "macos")
             SwitchAudioSource -c -t output 2>/dev/null || echo "No Output"

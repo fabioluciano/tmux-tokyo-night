@@ -213,7 +213,7 @@ for ((i=0; i<total; i++)); do
     
     # Build content section - for last plugin, just end cleanly with no separator
     if [[ "$is_last" == "1" ]]; then
-        output+="${icon_output}#[fg=${WHITE_COLOR},bg=${accent}] ${content}${extra_padding} "
+        output+="${icon_output}#[fg=${WHITE_COLOR},bg=${accent}] ${content} "
     else
         content_output="#[fg=${WHITE_COLOR},bg=${accent}]${content}${extra_padding} #[none]"
         if [[ "$TRANSPARENT" == "true" ]]; then
