@@ -149,7 +149,7 @@ detect_microphone_usage_macos() {
     if command -v lsof >/dev/null 2>&1; then
         # Check for processes using audio input devices
         local mic_users
-        mic_users=$(lsof 2>/dev/null | grep -E "Built-in Microph|coreaudiod.*Input" | grep -v coreaudiod | wc -l | tr -d ' ')
+        mic_users=$(lsof 2>/dev/null | grep -E "Built-in Microph|coreaudiod.*Input" | grep -cv coreaudiod)
         if [[ "${mic_users:-0}" -gt 0 ]]; then
             echo "active"
             return
@@ -157,13 +157,13 @@ detect_microphone_usage_macos() {
     fi
     
     # Method 2: Check if any process is actively recording audio
-    # Use ps to find processes with high CPU that might be recording
+    # Use pgrep to find audio-related processes
     local high_cpu_audio_procs
-    high_cpu_audio_procs=$(ps -eo pid,ppid,%cpu,comm | grep -cE 'firefox|chrome|safari|zoom|teams|discord|obs' | tr -d ' ')
+    high_cpu_audio_procs=$(pgrep -c 'firefox|chrome|safari|zoom|teams|discord|obs' 2>/dev/null || echo 0)
     if [[ "${high_cpu_audio_procs:-0}" -gt 0 ]]; then
         # Double check these processes are actually using audio
         local audio_active_procs
-        audio_active_procs=$(ps -eo pid,ppid,%cpu,comm | grep -cE 'firefox|chrome|safari' | tr -d ' ')
+        audio_active_procs=$(pgrep -c 'firefox|chrome|safari' 2>/dev/null || echo 0)
         if [[ "${audio_active_procs:-0}" -gt 0 ]]; then
             echo "active"
             return

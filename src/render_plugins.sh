@@ -215,7 +215,7 @@ for ((i=0; i<total; i++)); do
     if [[ "$is_last" == "1" ]]; then
         output+="${icon_output}#[fg=${WHITE_COLOR},bg=${accent}] ${content} "
     else
-        content_output="#[fg=${WHITE_COLOR},bg=${accent}]${content}${extra_padding} #[none]"
+        content_output="#[fg=${WHITE_COLOR},bg=${accent}]${content} #[none]"
         if [[ "$TRANSPARENT" == "true" ]]; then
             sep_end="#[fg=${accent},bg=default]${RIGHT_SEPARATOR_INVERSE}#[bg=default]"
         else
