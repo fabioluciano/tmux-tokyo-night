@@ -1,3 +1,10 @@
+# [2.13.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.12.0...v2.13.0) (2025-12-03)
+
+
+### Features
+
+* Enhance performance and add camera plugin ([#94](https://github.com/fabioluciano/tmux-tokyo-night/issues/94)) ([10c9740](https://github.com/fabioluciano/tmux-tokyo-night/commit/10c9740369dcd96a1d04f76638897e93c0f9731f))
+
 # [2.12.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.11.0...v2.12.0) (2025-12-02)
 
 
