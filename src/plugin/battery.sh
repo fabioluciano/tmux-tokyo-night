@@ -83,7 +83,7 @@ battery_get_percentage() {
         battery_file=$(find /sys/class/power_supply/*/capacity 2>/dev/null | head -n1)
         [[ -n "$battery_file" ]] && percentage=$(<"$battery_file" 2>/dev/null)
     elif is_macos && command_exists "pmset"; then
-        percentage=$(pmset -g batt 2>/dev/null | awk '/[0-9]+%/ {gsub(/%/, "", $3); print $3; exit}')
+        percentage=$(pmset -g batt 2>/dev/null | awk '/[0-9]+%/ {gsub(/[%;]/, "", $3); print $3; exit}')
     elif is_linux && command_exists "acpi"; then
         percentage=$(acpi -b 2>/dev/null | awk -F'[,%]' '/Battery/ {gsub(/ /, "", $2); print $2; exit}')
     elif is_linux && command_exists "upower"; then
@@ -233,6 +233,9 @@ battery_format_output() {
     local percentage="$1"
     local display_mode="$2"
     
+    # Remove any existing % symbol from percentage
+    percentage="${percentage%\%}"
+    
     if [[ "$display_mode" == "time" ]]; then
         local time_remaining
         time_remaining=$(battery_get_time_remaining)
@@ -284,14 +287,20 @@ plugin_get_display_info() {
     if battery_is_charging; then
         icon=$(get_cached_option "@theme_plugin_battery_icon_charging" "$PLUGIN_BATTERY_ICON_CHARGING")
     else
-        # Check low threshold for color and icon changes
-        local low_threshold
+        # Check thresholds for color and icon changes (check low first, then warning)
+        local low_threshold warning_threshold
         low_threshold=$(get_cached_option "@theme_plugin_battery_low_threshold" "$PLUGIN_BATTERY_LOW_THRESHOLD")
+        warning_threshold=$(get_cached_option "@theme_plugin_battery_warning_threshold" "$PLUGIN_BATTERY_WARNING_THRESHOLD")
         
         if [[ -n "$value" ]] && [[ "$value" -le "$low_threshold" ]]; then
+            # Critical low (30% or less) - red colors
             accent=$(get_cached_option "@theme_plugin_battery_low_accent_color" "$PLUGIN_BATTERY_LOW_ACCENT_COLOR")
             accent_icon=$(get_cached_option "@theme_plugin_battery_low_accent_color_icon" "$PLUGIN_BATTERY_LOW_ACCENT_COLOR_ICON")
             icon=$(get_cached_option "@theme_plugin_battery_icon_low" "$PLUGIN_BATTERY_ICON_LOW")
+        elif [[ -n "$value" ]] && [[ "$value" -le "$warning_threshold" ]]; then
+            # Warning level (50% or less) - yellow colors
+            accent=$(get_cached_option "@theme_plugin_battery_warning_accent_color" "$PLUGIN_BATTERY_WARNING_ACCENT_COLOR")
+            accent_icon=$(get_cached_option "@theme_plugin_battery_warning_accent_color_icon" "$PLUGIN_BATTERY_WARNING_ACCENT_COLOR_ICON")
         fi
     fi
     

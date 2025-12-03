@@ -132,7 +132,7 @@ THEME_DEFAULT_PLUGIN_AUDIODEVICES_OUTPUT_ICON=$'\uf027'              # Output de
 THEME_DEFAULT_PLUGIN_AUDIODEVICES_SEPARATOR=" | "               # Separator between devices
 THEME_DEFAULT_PLUGIN_AUDIODEVICES_CACHE_TTL="8"                 # Cache time in seconds
 THEME_DEFAULT_PLUGIN_AUDIODEVICES_MAX_LENGTH="15"               # Max device name length
-THEME_DEFAULT_PLUGIN_AUDIODEVICES_INPUT_KEY="I"                 # Input selection key (prefix + key)
+THEME_DEFAULT_PLUGIN_AUDIODEVICES_INPUT_KEY="J"                 # Input selection key (prefix + key)
 THEME_DEFAULT_PLUGIN_AUDIODEVICES_OUTPUT_KEY="O"                # Output selection key (prefix + key)
 
 PLUGIN_AUDIODEVICES_ACCENT_COLOR="blue7"
@@ -143,13 +143,38 @@ PLUGIN_AUDIODEVICES_ACCENT_COLOR_ICON="blue0"
 # =============================================================================
 # Camera status plugin - shows when camera is active/inactive
 THEME_DEFAULT_PLUGIN_CAMERA_SHOW="on"                          # on|off
-THEME_DEFAULT_PLUGIN_CAMERA_ICON="📷"                          # Camera icon when inactive
-THEME_DEFAULT_PLUGIN_CAMERA_ICON_ACTIVE="🔴"                   # Camera icon when active  
-THEME_DEFAULT_PLUGIN_CAMERA_CACHE_TTL="5"                      # Cache time in seconds
+THEME_DEFAULT_PLUGIN_CAMERA_ICON=$'\uf030'                         # Camera icon when inactive  
+THEME_DEFAULT_PLUGIN_CAMERA_CACHE_TTL="1"                      # Cache time in seconds
 THEME_DEFAULT_PLUGIN_CAMERA_SHOW_WHEN_INACTIVE="false"         # Show when camera is off
 
 PLUGIN_CAMERA_ACCENT_COLOR="blue7"
 PLUGIN_CAMERA_ACCENT_COLOR_ICON="blue0"
+
+# Camera active colors (when camera is on)
+PLUGIN_CAMERA_ACTIVE_ACCENT_COLOR="red"
+PLUGIN_CAMERA_ACTIVE_ACCENT_COLOR_ICON="red1"
+
+# =============================================================================
+# PLUGIN: microphone
+# =============================================================================
+# Microphone activity plugin - shows when microphone is active/inactive
+THEME_DEFAULT_PLUGIN_MICROPHONE_SHOW="on"                      # on|off
+THEME_DEFAULT_PLUGIN_MICROPHONE_ICON=$'\uec1c'                     # Microphone icon when inactive
+THEME_DEFAULT_PLUGIN_MICROPHONE_CACHE_TTL="1"                  # Cache time in seconds
+THEME_DEFAULT_PLUGIN_MICROPHONE_SHOW_WHEN_INACTIVE="false"     # Show when microphone is off
+
+PLUGIN_MICROPHONE_ICON=$'\uec1c'
+PLUGIN_MICROPHONE_ACCENT_COLOR="blue7"
+PLUGIN_MICROPHONE_ACCENT_COLOR_ICON="blue0"
+PLUGIN_MICROPHONE_ACTIVE_ACCENT_COLOR="red"
+PLUGIN_MICROPHONE_ACTIVE_ACCENT_COLOR_ICON="red1"
+PLUGIN_MICROPHONE_CACHE_TTL="1"
+PLUGIN_MICROPHONE_SHOW_WHEN_INACTIVE="false"
+
+# Theme system variables
+plugin_microphone_icon="$PLUGIN_MICROPHONE_ICON"
+plugin_microphone_accent_color="$PLUGIN_MICROPHONE_ACCENT_COLOR"
+plugin_microphone_accent_color_icon="$PLUGIN_MICROPHONE_ACCENT_COLOR_ICON"
 
 # =============================================================================
 # PLUGIN: datetime
@@ -203,6 +228,11 @@ PLUGIN_BATTERY_LOW_THRESHOLD="30"
 PLUGIN_BATTERY_ICON_LOW="󰂃"
 PLUGIN_BATTERY_LOW_ACCENT_COLOR="red"
 PLUGIN_BATTERY_LOW_ACCENT_COLOR_ICON="red1"
+
+# Battery warning threshold settings (50%)
+PLUGIN_BATTERY_WARNING_THRESHOLD="50"
+PLUGIN_BATTERY_WARNING_ACCENT_COLOR="yellow"
+PLUGIN_BATTERY_WARNING_ACCENT_COLOR_ICON="orange"
 
 # Battery charging settings
 PLUGIN_BATTERY_ICON_CHARGING="󰂄"

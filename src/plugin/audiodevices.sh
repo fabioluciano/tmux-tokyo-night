@@ -251,6 +251,11 @@ get_cached_or_fetch() {
 # =============================================================================
 
 setup_keybindings() {
+    # Only setup keybindings if the plugin is active (not "off")
+    if [[ "$PLUGIN_SHOW" == "off" ]]; then
+        return
+    fi
+    
     local selector_script="$ROOT_DIR/../helpers/audio_device_selector.sh"
     
     # Set up input device keybinding

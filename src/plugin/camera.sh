@@ -43,11 +43,11 @@ get_plugin_option() {
 
 # Plugin variables for theme system
 # shellcheck disable=SC2034
-plugin_camera_icon=$(get_plugin_option "icon" "${THEME_DEFAULT_PLUGIN_CAMERA_ICON}")
+plugin_camera_icon=$(get_plugin_option "icon" "$THEME_DEFAULT_PLUGIN_CAMERA_ICON")
 # shellcheck disable=SC2034
-plugin_camera_accent_color=$(get_plugin_option "accent_color" "${PLUGIN_CAMERA_ACCENT_COLOR}")
+plugin_camera_accent_color=$(get_plugin_option "accent_color" "$PLUGIN_CAMERA_ACCENT_COLOR")
 # shellcheck disable=SC2034
-plugin_camera_accent_color_icon=$(get_plugin_option "accent_color_icon" "${PLUGIN_CAMERA_ACCENT_COLOR_ICON}")
+plugin_camera_accent_color_icon=$(get_plugin_option "accent_color_icon" "$PLUGIN_CAMERA_ACCENT_COLOR_ICON")
 
 export plugin_camera_icon plugin_camera_accent_color plugin_camera_accent_color_icon
 
@@ -61,64 +61,47 @@ plugin_get_type() {
 }
 
 # Plugin settings
-PLUGIN_ICON=$(get_plugin_option "icon" "${THEME_DEFAULT_PLUGIN_CAMERA_ICON:-📷}")
-PLUGIN_ICON_ACTIVE=$(get_plugin_option "icon_active" "${THEME_DEFAULT_PLUGIN_CAMERA_ICON_ACTIVE:-🔴}")
+PLUGIN_ICON=$(get_plugin_option "icon" "$THEME_DEFAULT_PLUGIN_CAMERA_ICON")
 PLUGIN_ACCENT_COLOR=$(get_plugin_option "accent_color" "${PLUGIN_CAMERA_ACCENT_COLOR:-blue7}")
 PLUGIN_ACCENT_COLOR_ICON=$(get_plugin_option "accent_color_icon" "${PLUGIN_CAMERA_ACCENT_COLOR_ICON:-blue0}")
-PLUGIN_CACHE_TTL=$(get_plugin_option "cache_ttl" "${THEME_DEFAULT_PLUGIN_CAMERA_CACHE_TTL:-3}")
-PLUGIN_SHOW_WHEN_INACTIVE=$(get_plugin_option "show_when_inactive" "${THEME_DEFAULT_PLUGIN_CAMERA_SHOW_WHEN_INACTIVE:-false}")
+PLUGIN_ACTIVE_ACCENT_COLOR=$(get_plugin_option "active_accent_color" "${PLUGIN_CAMERA_ACTIVE_ACCENT_COLOR:-red}")
+PLUGIN_ACTIVE_ACCENT_COLOR_ICON=$(get_plugin_option "active_accent_color_icon" "${PLUGIN_CAMERA_ACTIVE_ACCENT_COLOR_ICON:-red1}")
+PLUGIN_CACHE_TTL=$(get_plugin_option "cache_ttl" "$THEME_DEFAULT_PLUGIN_CAMERA_CACHE_TTL")
+PLUGIN_SHOW_WHEN_INACTIVE=$(get_plugin_option "show_when_inactive" "$THEME_DEFAULT_PLUGIN_CAMERA_SHOW_WHEN_INACTIVE")
 
 # =============================================================================
 # Camera Detection - macOS
 # =============================================================================
 
 detect_camera_usage_macos() {
-    # Method 1: Check camera daemon for sustained CPU activity
-    local camera_pid
-    camera_pid=$(pgrep -f "appleh16camerad" 2>/dev/null)
-    if [[ -n "$camera_pid" ]]; then
-        # Take 3 CPU readings 0.5 seconds apart
-        local cpu1 cpu2 cpu3
-        cpu1=$(ps -p "$camera_pid" -o %cpu= 2>/dev/null | tr -d ' ' | cut -d. -f1)
-        sleep 0.5
-        cpu2=$(ps -p "$camera_pid" -o %cpu= 2>/dev/null | tr -d ' ' | cut -d. -f1)
-        sleep 0.5  
-        cpu3=$(ps -p "$camera_pid" -o %cpu= 2>/dev/null | tr -d ' ' | cut -d. -f1)
-        
-        # Camera is active if CPU usage is consistently above 2%
-        if [[ -n "$cpu1" && "$cpu1" -ge 2 ]] && \
-           [[ -n "$cpu2" && "$cpu2" -ge 2 ]] && \
-           [[ -n "$cpu3" && "$cpu3" -ge 2 ]]; then
-            echo "active"
-            return
-        fi
-    fi
-    
-    # Method 2: Check for VDCAssistant process (most reliable indicator)
+    # Method 1: Check for VDCAssistant process (most reliable and fastest)
     if pgrep -q "VDCAssistant" 2>/dev/null; then
         echo "active"
         return
     fi
     
-    # Method 3: Check cameracaptured for sustained high CPU
-    local capture_pid
-    capture_pid=$(pgrep -f "cameracaptured" 2>/dev/null)
-    if [[ -n "$capture_pid" ]]; then
+    # Method 2: Check camera daemon for CPU activity (single check, no delays)
+    local camera_pid
+    camera_pid=$(pgrep -f "appleh16camerad" 2>/dev/null)
+    if [[ -n "$camera_pid" ]]; then
         local cpu_usage
-        cpu_usage=$(ps -p "$capture_pid" -o %cpu= 2>/dev/null | tr -d ' ' | cut -d. -f1)
-        
-        # Only active if using significant CPU (3% or more)
+        cpu_usage=$(ps -p "$camera_pid" -o %cpu= 2>/dev/null | tr -d ' ' | cut -d. -f1)
         if [[ -n "$cpu_usage" && "$cpu_usage" -ge 3 ]]; then
             echo "active"
             return
         fi
     fi
     
-    # Method 4: Look for recent camera session logs
-    if log show --predicate 'eventMessage contains "session" AND eventMessage contains "start"' \
-       --last 5s 2>/dev/null | grep -i "camera\|capture" >/dev/null 2>&1; then
-        echo "active"
-        return
+    # Method 3: Check cameracaptured for high CPU
+    local capture_pid
+    capture_pid=$(pgrep -f "cameracaptured" 2>/dev/null)
+    if [[ -n "$capture_pid" ]]; then
+        local cpu_usage
+        cpu_usage=$(ps -p "$capture_pid" -o %cpu= 2>/dev/null | tr -d ' ' | cut -d. -f1)
+        if [[ -n "$cpu_usage" && "$cpu_usage" -ge 3 ]]; then
+            echo "active"
+            return
+        fi
     fi
     
     echo "inactive"
@@ -275,14 +258,14 @@ plugin_get_display_info() {
     local camera_status
     camera_status=$(get_cached_or_fetch)
     
-    # Only show if camera is active or if show_when_inactive is true
-    if [[ "$camera_status" == "inactive" && "$PLUGIN_SHOW_WHEN_INACTIVE" == "false" ]]; then
+    # Only show when camera is active
+    if [[ "$camera_status" == "active" ]]; then
+        # Customizable colors when camera is active - no icon, just text
+        echo "1:$PLUGIN_ACTIVE_ACCENT_COLOR:$PLUGIN_ACTIVE_ACCENT_COLOR_ICON:"
+    else
+        # Don't show when camera is inactive
         echo "0:::"
-        return
     fi
-    
-    # Show plugin with configured colors and icon
-    echo "1:::"
 }
 
 # =============================================================================
@@ -297,23 +280,16 @@ load_plugin() {
     local camera_status
     camera_status=$(get_cached_or_fetch)
     
-    # Choose icon and color based on status
-    local icon color_icon color_text
-    if [[ "$camera_status" == "active" ]]; then
-        icon="$PLUGIN_ICON_ACTIVE"
-        color_icon="red1"  # Red for active camera
-        color_text="red"
-    else
-        # Don't show if inactive and show_when_inactive is false
-        [[ "$PLUGIN_SHOW_WHEN_INACTIVE" == "false" ]] && return
-        
-        icon="$PLUGIN_ICON"
-        color_icon="$PLUGIN_ACCENT_COLOR_ICON"
-        color_text="$PLUGIN_ACCENT_COLOR"
+    # Don't show if inactive and show_when_inactive is false
+    if [[ "$camera_status" == "inactive" && "$PLUGIN_SHOW_WHEN_INACTIVE" == "false" ]]; then
+        return
     fi
     
-    # Build display string
-    echo "#[fg=$color_icon]${icon} #[fg=$color_text]Camera"
+    # Return text only when camera is active
+    if [[ "$camera_status" == "active" ]]; then
+        printf 'ON'
+    fi
+    # When inactive, return nothing (plugin not shown)
 }
 
 # Only run if executed directly (not sourced)
