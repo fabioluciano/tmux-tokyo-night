@@ -1,6 +1,6 @@
 # 🌃 Tokyo Night for tmux
 
-A clean, dark tmux theme inspired by the [Tokyo Night](https://github.com/enkia/tokyo-night-vscode-theme) color scheme. Features a modular plugin system with 25 built-in plugins for displaying system information, development tools, and media status.
+A clean, dark tmux theme inspired by the [Tokyo Night](https://github.com/enkia/tokyo-night-vscode-theme) color scheme. Features a modular plugin system with 25+ built-in plugins for displaying system information, development tools, security monitoring, and media status.
 
 ![Tokyo Night Theme](./assets/tokyo-night-bar.png)
 ![Tokyo Night Theme](./assets/tokyo-night-theme.png)
@@ -8,7 +8,7 @@ A clean, dark tmux theme inspired by the [Tokyo Night](https://github.com/enkia/
 ## ✨ Features
 
 - 🎨 **Four color variations** - Night, Storm, Moon, and Day
-- 🔌 **25 built-in plugins** - System monitoring, development tools, media players
+- 🔌 **25+ built-in plugins** - System monitoring, development tools, security keys, media players
 - ⚡ **Performance optimized** - Intelligent caching system
 - 🎯 **Fully customizable** - Colors, icons, formats, and separators
 - 🖥️ **Cross-platform** - macOS, Linux, and BSD support
@@ -20,7 +20,7 @@ A clean, dark tmux theme inspired by the [Tokyo Night](https://github.com/enkia/
 - **[Quick Start](../../wiki/Quick-Start)** - Get up and running in minutes
 - **[Theme Variations](../../wiki/Theme-Variations)** - Explore Night, Storm, Moon, and Day
 - **[Global Configuration](../../wiki/Global-Configuration)** - Configure status bar layout and separators
-- **[Plugin System](../../wiki/Plugin-System-Overview)** - Complete reference for all 25 plugins
+- **[Plugin System](../../wiki/Plugin-System-Overview)** - Complete reference for all 25+ plugins
 - **[Interactive Keybindings](../../wiki/Interactive-Keybindings)** - Popup helpers and selectors
 - **[Custom Colors & Theming](../../wiki/Custom-Colors-Theming)** - Advanced customization
 - **[Performance & Caching](../../wiki/Performance-Caching)** - Optimize for your workflow
@@ -87,7 +87,7 @@ Learn more: **[Interactive Keybindings](../../wiki/Interactive-Keybindings)**
 
 ## 🔌 Available Plugins
 
-The theme includes 25 built-in plugins organized by category:
+The theme includes 25+ built-in plugins organized by category:
 
 ### 📅 Time & Date
 
@@ -117,6 +117,10 @@ The theme includes 25 built-in plugins organized by category:
 - **[git](../../wiki/Git)** - Git branch with change indicators
 - **[kubernetes](../../wiki/Kubernetes)** - K8s context with interactive selectors
 - **[cloud](../../wiki/Cloud)** - Cloud provider context (AWS/GCP/Azure)
+
+### 🔐 Security
+
+- **[smartkey](../../wiki/SmartKey)** - Hardware security key interaction detection (YubiKey, SoloKeys, Nitrokey)
 
 ### 🎵 Media & Audio
 
@@ -166,6 +170,7 @@ See **[Plugin System Overview](../../wiki/Plugin-System-Overview)** for complete
 | **network** | ✅ | ✅ | ✅ | Bandwidth monitoring |
 | **nowplaying** | ✅ | ✅ | ✅ | Auto-detects: Spotify/Music.app/playerctl/spt/osascript |
 | **packages** | ✅ | ✅ | ✅ | Auto-detects: brew/yay/apt/dnf/pacman |
+| **smartkey** | ✅ | ✅ | ❌ | Hardware security keys: YubiKey/SoloKeys/Nitrokey (requires ykman/gpg/ssh-agent) |
 | **temperature** | ✅ | ⚠️ | ⚠️ | Multiple sources: cpu/nvme/wifi/acpi/dell (see docs) |
 | **uptime** | ✅ | ✅ | ✅ | Universal |
 | **volume** | ✅ | ✅ | ⚠️ | Linux: pactl/pamixer, macOS: osascript |
@@ -252,7 +257,7 @@ set -g @theme_variation 'night'
 set -g @theme_session_icon 'auto'
 
 # Enable plugins
-set -g @theme_plugins 'datetime,weather,battery,cpu,memory,git,kubernetes'
+set -g @theme_plugins 'datetime,weather,battery,cpu,memory,git,kubernetes,smartkey'
 
 # Customize datetime
 set -g @theme_plugin_datetime_format 'datetime'
