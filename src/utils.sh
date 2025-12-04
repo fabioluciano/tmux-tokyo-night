@@ -32,26 +32,25 @@ get_os_icon() {
     if is_macos; then
         icon=$'\uf302'
     elif is_linux; then
-        # Faster OS detection using single awk call
-        icon=$(awk -F'=' '
-            /^ID=/ {id=gsub(/"/, "", $2); id=$2}
-            END {
-                if (id == "ubuntu") print "\uf31b"
-                else if (id == "debian") print "\uf306"
-                else if (id == "fedora") print "\uf30a"
-                else if (id == "arch") print "\uf303"
-                else if (id == "manjaro") print "\uf312"
-                else if (id == "centos" || id == "rhel") print "\uf304"
-                else if (id ~ /^opensuse/) print "\uf314"
-                else if (id == "alpine") print "\uf300"
-                else if (id == "gentoo") print "\uf30d"
-                else if (id == "linuxmint") print "\uf30e"
-                else print "\uf31a"
-            }
-        ' /etc/os-release 2>/dev/null)
+        # Get distro ID from os-release, then map to icon in bash
+        # Note: awk doesn't support \u unicode escapes, so we parse the ID
+        # and use bash's $'...' syntax for proper unicode handling
+        local distro_id
+        distro_id=$(awk -F'=' '/^ID=/ {gsub(/"/, "", $2); print $2; exit}' /etc/os-release 2>/dev/null)
         
-        # Fallback if no os-release or awk failed
-        [[ -z "$icon" ]] && icon=$'\uf31a'
+        case "$distro_id" in
+            ubuntu)     icon=$'\uf31b' ;;
+            debian)     icon=$'\uf306' ;;
+            fedora)     icon=$'\uf30a' ;;
+            arch)       icon=$'\uf303' ;;
+            manjaro)    icon=$'\uf312' ;;
+            centos|rhel) icon=$'\uf304' ;;
+            opensuse*)  icon=$'\uf314' ;;
+            alpine)     icon=$'\uf300' ;;
+            gentoo)     icon=$'\uf30d' ;;
+            linuxmint)  icon=$'\uf30e' ;;
+            *)          icon=$'\uf31a' ;;  # Generic Linux icon
+        esac
     else
         icon=$'\uf11c'
     fi
