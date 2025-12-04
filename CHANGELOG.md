@@ -1,3 +1,10 @@
+## [2.16.1](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.16.0...v2.16.1) (2025-12-04)
+
+
+### Bug Fixes
+
+* Linux distribution icons not rendering correctly ([#98](https://github.com/fabioluciano/tmux-tokyo-night/issues/98)) ([7cee3a8](https://github.com/fabioluciano/tmux-tokyo-night/commit/7cee3a87c0613c0f553862ac1f02cae5d01e5439))
+
 # [2.16.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.15.0...v2.16.0) (2025-12-04)
 
 
