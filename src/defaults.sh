@@ -336,6 +336,10 @@ PLUGIN_GIT_ACCENT_COLOR="blue7"
 PLUGIN_GIT_ACCENT_COLOR_ICON="blue0"
 PLUGIN_GIT_CACHE_TTL="5"
 
+# Git colors when there are modifications in the active branch  
+PLUGIN_GIT_MODIFIED_ACCENT_COLOR="yellow"
+PLUGIN_GIT_MODIFIED_ACCENT_COLOR_ICON="orange"
+
 # =============================================================================
 # PLUGIN: kubernetes
 # =============================================================================
@@ -405,6 +409,8 @@ PLUGIN_VOLUME_ICON_LOW="󰕿"
 PLUGIN_VOLUME_ICON_MEDIUM="󰖀"
 PLUGIN_VOLUME_ACCENT_COLOR="blue7"
 PLUGIN_VOLUME_ACCENT_COLOR_ICON="blue0"
+PLUGIN_VOLUME_MUTED_ACCENT_COLOR="red"
+PLUGIN_VOLUME_MUTED_ACCENT_COLOR_ICON="red1"
 PLUGIN_VOLUME_LOW_THRESHOLD="30"
 PLUGIN_VOLUME_MEDIUM_THRESHOLD="70"
 PLUGIN_VOLUME_CACHE_TTL="3"

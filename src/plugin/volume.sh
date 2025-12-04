@@ -10,20 +10,24 @@
 #   @theme_plugin_volume_icon_muted        - Icon when muted (default: 󰖁)
 #   @theme_plugin_volume_icon_low          - Icon for low volume (default: 󰕿)
 #   @theme_plugin_volume_icon_medium       - Icon for medium volume (default: 󰖀)
-#   @theme_plugin_volume_accent_color      - Default accent color
-#   @theme_plugin_volume_accent_color_icon - Default icon accent color
-#   @theme_plugin_volume_cache_ttl         - Cache time in seconds (default: 2)
+#   @theme_plugin_volume_accent_color      - Default accent color (default: blue7)
+#   @theme_plugin_volume_accent_color_icon - Default icon accent color (default: blue0)
+#   @theme_plugin_volume_muted_accent_color      - Background color when muted (default: red)
+#   @theme_plugin_volume_muted_accent_color_icon - Icon color when muted (default: red1)
+#   @theme_plugin_volume_cache_ttl         - Cache time in seconds (default: 3)
 #
 # Threshold options:
 #   @theme_plugin_volume_low_threshold     - Below this = low icon (default: 30)
 #   @theme_plugin_volume_medium_threshold  - Below this = medium icon (default: 70)
-#   @theme_plugin_volume_muted_accent_color      - Color when muted
-#   @theme_plugin_volume_muted_accent_color_icon - Icon color when muted
 #
 # Example configurations:
 #   # Custom icons
 #   set -g @theme_plugin_volume_icon "🔊"
 #   set -g @theme_plugin_volume_icon_muted "🔇"
+#
+#   # Custom colors when muted (defaults to red)
+#   set -g @theme_plugin_volume_muted_accent_color "yellow"
+#   set -g @theme_plugin_volume_muted_accent_color_icon "yellow1"
 #
 #   # Change thresholds
 #   set -g @theme_plugin_volume_low_threshold "20"
@@ -204,8 +208,8 @@ plugin_get_display_info() {
     # Use get_cached_option for performance in render loop
     if [[ "$content" == "MUTED" ]] || volume_is_muted; then
         icon=$(get_cached_option "@theme_plugin_volume_icon_muted" "${PLUGIN_VOLUME_ICON_MUTED:-󰖁}")
-        accent=$(get_cached_option "@theme_plugin_volume_muted_accent_color" "")
-        accent_icon=$(get_cached_option "@theme_plugin_volume_muted_accent_color_icon" "")
+        accent=$(get_cached_option "@theme_plugin_volume_muted_accent_color" "${PLUGIN_VOLUME_MUTED_ACCENT_COLOR:-red}")
+        accent_icon=$(get_cached_option "@theme_plugin_volume_muted_accent_color_icon" "${PLUGIN_VOLUME_MUTED_ACCENT_COLOR_ICON:-red1}")
     elif [[ -n "$value" ]]; then
         # Select icon based on volume level
         local low_threshold medium_threshold
@@ -232,7 +236,7 @@ load_plugin() {
     # Check cache first
     local cached_value
     if cached_value=$(cache_get "$VOLUME_CACHE_KEY" "$VOLUME_CACHE_TTL"); then
-        printf '%s' "$cached_value"
+        printf '%s\n' "$cached_value"
         return 0
     fi
 
@@ -254,7 +258,7 @@ load_plugin() {
 
     # Cache and output
     cache_set "$VOLUME_CACHE_KEY" "$result"
-    printf '%s' "$result"
+    printf '%s\n' "$result"
 }
 
 # Only run if executed directly (not sourced)

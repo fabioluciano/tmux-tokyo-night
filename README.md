@@ -114,7 +114,7 @@ The theme includes 25+ built-in plugins organized by category:
 
 ### 💻 Development
 
-- **[git](../../wiki/Git)** - Git branch with change indicators
+- **[git](../../wiki/Git)** - Git branch with dynamic color changes for modified repositories
 - **[kubernetes](../../wiki/Kubernetes)** - K8s context with interactive selectors
 - **[cloud](../../wiki/Cloud)** - Cloud provider context (AWS/GCP/Azure)
 

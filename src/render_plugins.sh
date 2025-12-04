@@ -173,9 +173,12 @@ for config in "${PLUGIN_CONFIGS[@]}"; do
         icon="$override_icon"
     fi
     
+    # Clean MODIFIED: prefix from content for display (but keep for display_info detection)
+    display_content="${content#MODIFIED:}"
+    
     # Add to render list
     PLUGIN_NAMES+=("$name")
-    PLUGIN_CONTENTS+=("$content")
+    PLUGIN_CONTENTS+=("$display_content")
     PLUGIN_ACCENTS+=("$accent")
     PLUGIN_ACCENT_ICONS+=("$accent_icon")
     PLUGIN_ICONS+=("$icon")
