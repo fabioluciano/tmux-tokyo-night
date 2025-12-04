@@ -42,6 +42,10 @@ plugin_get_type() {
 
 # Plugin settings (from defaults.sh)
 PLUGIN_CACHE_TTL=$(get_plugin_option "cache_ttl" "$PLUGIN_SMARTKEY_CACHE_TTL")
+# Use shorter cache for more responsive detection during touch operations
+if [[ -z "$PLUGIN_CACHE_TTL" ]]; then
+    PLUGIN_CACHE_TTL=1
+fi
 
 # =============================================================================
 # Smart Card/Hardware Key Detection - Cross-Platform
@@ -51,20 +55,32 @@ detect_smartkey_waiting() {
     local waiting_status="false"
     local detection_method=""
     
-    # Method 1: Check for hardware key operations (ykman, etc.)
-    # Note: Specific tools only show if hardware key is connected, not waiting for touch
-    # We rely on more specific detection methods below
+    # Method 1: Check for GPG operations waiting for touch (most specific)
+    if [[ "$waiting_status" == "false" ]]; then
+        if check_gpg_touch_waiting; then
+            waiting_status="true"
+            detection_method="gpg_touch"
+        fi
+    fi
     
-    # Method 2: Check GPG agent status (for OpenPGP smart cards)
-    # Only check if there's an active pinentry process (user interaction)
-    if [[ "$waiting_status" == "false" ]] && pgrep -f "pinentry" >/dev/null 2>&1; then
-        if check_gpg_waiting; then
+    # Method 2: Check for active GPG operations that might be waiting for touch
+    if [[ "$waiting_status" == "false" ]]; then
+        if check_gpg_operations; then
             waiting_status="true"
             detection_method="gpg"
         fi
     fi
     
-    # Method 3: Check SSH agent for hardware key operations
+    # Method 3: Check GPG agent status (for OpenPGP smart cards)
+    # Check for pinentry process (user interaction)
+    if [[ "$waiting_status" == "false" ]] && check_pinentry_processes; then
+        if check_gpg_waiting; then
+            waiting_status="true"
+            detection_method="gpg_pin"
+        fi
+    fi
+    
+    # Method 4: Check SSH agent for hardware key operations
     if [[ "$waiting_status" == "false" ]]; then
         if check_ssh_smartkey_waiting; then
             waiting_status="true"
@@ -72,7 +88,7 @@ detect_smartkey_waiting() {
         fi
     fi
     
-    # Method 4: Check PIV/PKCS11 operations (smart card interface)
+    # Method 5: Check PIV/PKCS11 operations (smart card interface)
     if [[ "$waiting_status" == "false" ]]; then
         if check_piv_waiting; then
             waiting_status="true"
@@ -86,13 +102,73 @@ detect_smartkey_waiting() {
     echo "${waiting_status}:${detection_method}"
 }
 
+# Check for active GPG operations that might be waiting for touch
+check_gpg_operations() {
+    # Check for GPG processes that are not gpg-agent (active operations)
+    if ps aux | grep -E "gpg[[:space:]]|gpg2[[:space:]]" | grep -v "gpg-agent" | grep -q -v "grep"; then
+        return 0
+    fi
+    return 1
+}
+
+# Check for GPG operations in touch-waiting state
+check_gpg_touch_waiting() {
+    # Check if gpg-agent is actively waiting for card touch
+    if command -v gpg-connect-agent >/dev/null 2>&1; then
+        # Quick check for card operations
+        local agent_status
+        agent_status=$(timeout 1 gpg-connect-agent 'KEYINFO --list' /bye 2>/dev/null | grep -i "card\|yubikey" 2>/dev/null)
+        if [[ -n "$agent_status" ]]; then
+            # Card detected, check if there are active operations
+            if check_gpg_operations; then
+                return 0
+            fi
+        fi
+    fi
+    
+    # Alternative: Check for scdaemon activity (smart card daemon)
+    if pgrep -f "scdaemon" >/dev/null 2>&1; then
+        # scdaemon is running, check if it's actively processing
+        local scd_activity
+        scd_activity=$(ps -p "$(pgrep -f 'scdaemon' | head -1)" -o %cpu= 2>/dev/null | tr -d ' ' | cut -d. -f1)
+        if [[ -n "$scd_activity" && "$scd_activity" =~ ^[0-9]+$ && "$scd_activity" -gt 0 ]]; then
+            return 0
+        fi
+    fi
+    
+    return 1
+}
+
+# Check for pinentry processes (cross-platform)
+check_pinentry_processes() {
+    # Try different approaches for finding pinentry
+    if command -v pgrep >/dev/null 2>&1; then
+        # Use pgrep if available
+        if pgrep -f "pinentry" >/dev/null 2>&1; then
+            return 0
+        fi
+    fi
+    
+    # Fallback: use ps to find pinentry processes
+    if ps aux | grep "pinentry" | grep -v "grep" | grep -q .; then
+        return 0
+    fi
+    
+    return 1
+}
+
 # Check if services are waiting for smart card/hardware key interaction
 check_waiting_services() {
     # This method should only return true if there's an active operation waiting for touch
     # Simply having background services running (like gpg-agent) is not sufficient
     
     # Check for processes actively waiting for user interaction
-    if pgrep -f "pinentry" >/dev/null 2>&1; then
+    if check_pinentry_processes; then
+        return 0
+    fi
+    
+    # Check for active GPG operations
+    if check_gpg_operations; then
         return 0
     fi
     
@@ -245,12 +321,14 @@ load_plugin() {
     # Show different text based on smart card/hardware key state
     if [[ "$waiting_status" == "true" ]]; then
         case "$detection_method" in
-            "gpg")     printf 'TOUCH GPG' ;;
-            "ssh")     printf 'TOUCH SSH' ;;
-            "piv")     printf 'TOUCH PIV' ;;
-            "ykman")   printf 'TOUCH KEY' ;;
-            "logs")    printf 'TOUCH' ;;
-            *)         printf 'TOUCH' ;;
+            "gpg_touch") printf 'TOUCH' ;;
+            "gpg")       printf 'TOUCH GPG' ;;
+            "gpg_pin")   printf 'PIN GPG' ;;
+            "ssh")       printf 'TOUCH SSH' ;;
+            "piv")       printf 'TOUCH PIV' ;;
+            "ykman")     printf 'TOUCH KEY' ;;
+            "logs")      printf 'TOUCH' ;;
+            *)           printf 'TOUCH' ;;
         esac
     elif [[ "$(get_plugin_option "show_when_inactive" "$PLUGIN_SMARTKEY_SHOW_WHEN_INACTIVE")" == "true" ]]; then
         # Show key icon when inactive but plugin visible
@@ -261,5 +339,22 @@ load_plugin() {
 
 # Only run if executed directly (not sourced)
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    load_plugin
+    # If running standalone (for testing), use simple defaults
+    if ! command -v get_tmux_option >/dev/null 2>&1; then
+        # Simple standalone test
+        result=$(detect_smartkey_waiting)
+        waiting_status="${result%:*}"
+        detection_method="${result#*:}"
+        
+        if [[ "$waiting_status" == "true" ]]; then
+            case "$detection_method" in
+                "gpg")     printf 'TOUCH GPG' ;;
+                "ssh")     printf 'TOUCH SSH' ;;
+                "piv")     printf 'TOUCH PIV' ;;
+                *)         printf 'TOUCH' ;;
+            esac
+        fi
+    else
+        load_plugin
+    fi
 fi
