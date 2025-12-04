@@ -1,3 +1,10 @@
+# [2.16.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.15.0...v2.16.0) (2025-12-04)
+
+
+### Features
+
+* Enhance git plugin with dynamic color changes for modified branches and improve volume plugin responsiveness ([#97](https://github.com/fabioluciano/tmux-tokyo-night/issues/97)) ([715caed](https://github.com/fabioluciano/tmux-tokyo-night/commit/715caedde5c39896170810c8cb9e239df1d3cbd4))
+
 # [2.15.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.14.0...v2.15.0) (2025-12-03)
 
 
