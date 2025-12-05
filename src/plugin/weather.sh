@@ -41,11 +41,11 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # =============================================================================
 
 # shellcheck disable=SC2034
-plugin_weather_icon=$(get_tmux_option "@theme_plugin_weather_icon" "$PLUGIN_WEATHER_ICON")
+plugin_weather_icon=$(get_tmux_option "@powerkit_plugin_weather_icon" "$PLUGIN_WEATHER_ICON")
 # shellcheck disable=SC2034
-plugin_weather_accent_color=$(get_tmux_option "@theme_plugin_weather_accent_color" "$PLUGIN_WEATHER_ACCENT_COLOR")
+plugin_weather_accent_color=$(get_tmux_option "@powerkit_plugin_weather_accent_color" "$PLUGIN_WEATHER_ACCENT_COLOR")
 # shellcheck disable=SC2034
-plugin_weather_accent_color_icon=$(get_tmux_option "@theme_plugin_weather_accent_color_icon" "$PLUGIN_WEATHER_ACCENT_COLOR_ICON")
+plugin_weather_accent_color_icon=$(get_tmux_option "@powerkit_plugin_weather_accent_color_icon" "$PLUGIN_WEATHER_ACCENT_COLOR_ICON")
 
 # Plugin-specific options
 plugin_weather_location=$(get_tmux_option "@theme_plugin_weather_location" "$PLUGIN_WEATHER_LOCATION")

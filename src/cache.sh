@@ -154,7 +154,7 @@ setup_keybindings() {
     local clear_key
     
     # Get keybinding from defaults (can be overridden by user)
-    clear_key=$(get_tmux_option "@theme_plugin_cache_clear_key" "${PLUGIN_CACHE_CLEAR_KEY:-M}")
+    clear_key=$(get_tmux_option "@powerkit_cache_clear_key" "${PLUGIN_CACHE_CLEAR_KEY:-M}")
     
     # Setup cache clear keybinding: clear all caches and refresh status bar
     if [[ -n "$clear_key" ]]; then

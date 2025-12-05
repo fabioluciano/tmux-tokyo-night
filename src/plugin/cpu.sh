@@ -21,14 +21,14 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # =============================================================================
 
 # shellcheck disable=SC2034
-plugin_cpu_icon=$(get_tmux_option "@theme_plugin_cpu_icon" "$PLUGIN_CPU_ICON")
+plugin_cpu_icon=$(get_tmux_option "@powerkit_plugin_cpu_icon" "$POWERKIT_PLUGIN_CPU_ICON")
 # shellcheck disable=SC2034
-plugin_cpu_accent_color=$(get_tmux_option "@theme_plugin_cpu_accent_color" "$PLUGIN_CPU_ACCENT_COLOR")
+plugin_cpu_accent_color=$(get_tmux_option "@powerkit_plugin_cpu_accent_color" "$POWERKIT_PLUGIN_CPU_ACCENT_COLOR")
 # shellcheck disable=SC2034
-plugin_cpu_accent_color_icon=$(get_tmux_option "@theme_plugin_cpu_accent_color_icon" "$PLUGIN_CPU_ACCENT_COLOR_ICON")
+plugin_cpu_accent_color_icon=$(get_tmux_option "@powerkit_plugin_cpu_accent_color_icon" "$POWERKIT_PLUGIN_CPU_ACCENT_COLOR_ICON")
 
 # Cache TTL in seconds (default: 2 seconds)
-CACHE_TTL=$(get_tmux_option "@theme_plugin_cpu_cache_ttl" "$PLUGIN_CPU_CACHE_TTL")
+CACHE_TTL=$(get_tmux_option "@powerkit_plugin_cpu_cache_ttl" "$POWERKIT_PLUGIN_CPU_CACHE_TTL")
 CACHE_KEY="cpu"
 
 export plugin_cpu_icon plugin_cpu_accent_color plugin_cpu_accent_color_icon
@@ -121,12 +121,12 @@ plugin_get_type() {
 # Output format: "show:accent:accent_icon:icon"
 #
 # Configuration options:
-#   @theme_plugin_cpu_display_condition    - Condition: le, lt, ge, gt, eq, always
-#   @theme_plugin_cpu_display_threshold    - Show only when condition is met
-#   @theme_plugin_cpu_warning_threshold    - Warning level (default: 70)
-#   @theme_plugin_cpu_critical_threshold   - Critical level (default: 90)
-#   @theme_plugin_cpu_warning_accent_color - Color for warning level
-#   @theme_plugin_cpu_critical_accent_color - Color for critical level
+#   @powerkit_plugin_cpu_display_condition    - Condition: le, lt, ge, gt, eq, always
+#   @powerkit_plugin_cpu_display_threshold    - Show only when condition is met
+#   @powerkit_plugin_cpu_warning_threshold    - Warning level (default: 70)
+#   @powerkit_plugin_cpu_critical_threshold   - Critical level (default: 90)
+#   @powerkit_plugin_cpu_warning_accent_color - Color for warning level
+#   @powerkit_plugin_cpu_critical_accent_color - Color for critical level
 plugin_get_display_info() {
     local content="$1"
     local show="1"
@@ -141,8 +141,8 @@ plugin_get_display_info() {
     # Check display condition (hide based on threshold)
     # Use get_cached_option for performance in render loop
     local display_condition display_threshold
-    display_condition=$(get_cached_option "@theme_plugin_cpu_display_condition" "always")
-    display_threshold=$(get_cached_option "@theme_plugin_cpu_display_threshold" "")
+    display_condition=$(get_cached_option "@powerkit_plugin_cpu_display_condition" "always")
+    display_threshold=$(get_cached_option "@powerkit_plugin_cpu_display_threshold" "")
     
     if [[ "$display_condition" != "always" ]] && [[ -n "$display_threshold" ]]; then
         if ! evaluate_condition "$value" "$display_condition" "$display_threshold"; then
@@ -152,8 +152,8 @@ plugin_get_display_info() {
     
     # Check warning/critical thresholds for color changes
     local warning_threshold critical_threshold
-    warning_threshold=$(get_cached_option "@theme_plugin_cpu_warning_threshold" "$PLUGIN_CPU_WARNING_THRESHOLD")
-    critical_threshold=$(get_cached_option "@theme_plugin_cpu_critical_threshold" "$PLUGIN_CPU_CRITICAL_THRESHOLD")
+    warning_threshold=$(get_cached_option "@powerkit_plugin_cpu_warning_threshold" "$PLUGIN_CPU_WARNING_THRESHOLD")
+    critical_threshold=$(get_cached_option "@powerkit_plugin_cpu_critical_threshold" "$PLUGIN_CPU_CRITICAL_THRESHOLD")
     
     if [[ -n "$value" ]]; then
         if [[ "$value" -ge "$critical_threshold" ]]; then

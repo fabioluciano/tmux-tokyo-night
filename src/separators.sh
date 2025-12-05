@@ -19,10 +19,10 @@ _TMUX_TOKYO_NIGHT_SEPARATORS_LOADED=1
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# Build the icon start separator (transition from bg_highlight to icon color)
+# Build the icon start separator (transition from status background to icon color)
 # Arguments:
 #   $1 - accent_color_icon - Icon background color
-#   $2 - bg_highlight - Background highlight color
+#   $2 - status_bg - Status bar background color
 #   $3 - right_separator - Separator character (e.g., )
 #   $4 - transparent - "true" or "false"
 # Output:
@@ -30,14 +30,14 @@ _TMUX_TOKYO_NIGHT_SEPARATORS_LOADED=1
 # -----------------------------------------------------------------------------
 build_separator_icon_start() {
     local accent_color_icon="$1"
-    local bg_highlight="$2"
+    local status_bg="$2"
     local right_separator="$3"
     local transparent="${4:-false}"
     
     if [[ "$transparent" == "true" ]]; then
         printf '%s' "#[fg=${accent_color_icon},bg=default]${right_separator}#[none]"
     else
-        printf '%s' "#[fg=${accent_color_icon},bg=${bg_highlight}]${right_separator}#[none]"
+        printf '%s' "#[fg=${accent_color_icon},bg=${status_bg}]${right_separator}#[none]"
     fi
 }
 
@@ -59,10 +59,10 @@ build_separator_icon_end() {
 }
 
 # -----------------------------------------------------------------------------
-# Build the segment end separator (transition from content to bg_highlight)
+# Build the segment end separator (transition from content to status background)
 # Arguments:
 #   $1 - accent_color - Content background color
-#   $2 - bg_highlight - Background highlight color
+#   $2 - status_bg - Status bar background color
 #   $3 - right_separator - Separator character
 #   $4 - transparent - "true" or "false"
 #   $5 - right_separator_inverse - Inverse separator for transparent mode
@@ -71,7 +71,7 @@ build_separator_icon_end() {
 # -----------------------------------------------------------------------------
 build_separator_end() {
     local accent_color="$1"
-    local bg_highlight="$2"
+    local status_bg="$2"
     local right_separator="$3"
     local transparent="${4:-false}"
     local right_separator_inverse="${5:-}"
@@ -79,16 +79,16 @@ build_separator_end() {
     if [[ "$transparent" == "true" ]]; then
         printf '%s' "#[fg=${accent_color},bg=default]${right_separator_inverse}#[bg=default]"
     else
-        printf '%s' "#[fg=${bg_highlight},bg=${accent_color}]${right_separator}#[bg=${bg_highlight}]"
+        printf '%s' "#[fg=${status_bg},bg=${accent_color}]${right_separator}#[bg=${status_bg}]"
     fi
 }
 
 # -----------------------------------------------------------------------------
 # Build entry separator for conditional plugins
-# (transition from previous plugin's accent to bg_highlight)
+# (transition from previous plugin's accent to status background)
 # Arguments:
 #   $1 - prev_accent_color - Previous plugin's accent color
-#   $2 - bg_highlight - Background highlight color
+#   $2 - status_bg - Status bar background color
 #   $3 - right_separator - Separator character
 #   $4 - transparent - "true" or "false"
 #   $5 - right_separator_inverse - Inverse separator for transparent mode
@@ -97,7 +97,7 @@ build_separator_end() {
 # -----------------------------------------------------------------------------
 build_entry_separator() {
     local prev_accent_color="$1"
-    local bg_highlight="$2"
+    local status_bg="$2"
     local right_separator="$3"
     local transparent="${4:-false}"
     local right_separator_inverse="${5:-}"
@@ -105,7 +105,7 @@ build_entry_separator() {
     if [[ "$transparent" == "true" ]]; then
         printf '%s' "#[fg=${prev_accent_color},bg=default]${right_separator_inverse}#[bg=default]"
     else
-        printf '%s' "#[fg=${prev_accent_color},bg=${bg_highlight}]${right_separator}#[bg=${bg_highlight}]"
+        printf '%s' "#[fg=${prev_accent_color},bg=${status_bg}]${right_separator}#[bg=${status_bg}]"
     fi
 }
 
@@ -127,7 +127,7 @@ build_icon_section() {
     local accent_color_icon="$4"
     local plugin_icon="$5"
     
-    printf '%s' "${sep_icon_start}#[fg=${white_color},bg=${accent_color_icon}]${plugin_icon} ${sep_icon_end}"
+    printf '%s' "${sep_icon_start}#[fg=${text_color},bg=${accent_color_icon}]${plugin_icon} ${sep_icon_end}"
 }
 
 # -----------------------------------------------------------------------------

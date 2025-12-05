@@ -13,8 +13,8 @@
 # Types: static, conditional, datetime
 #
 # Environment variables:
-#   RENDER_WHITE - White/foreground color
-#   RENDER_BG_HIGHLIGHT - Background highlight color
+#   RENDER_TEXT_COLOR - Text/foreground color
+#   RENDER_STATUS_BG - Status bar background color
 #   RENDER_TRANSPARENT - "true" or "false"
 #   RENDER_PALETTE - Serialized palette for color lookups
 # =============================================================================
@@ -33,15 +33,15 @@ CURRENT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # =============================================================================
 # Configuration
 # =============================================================================
-WHITE_COLOR="${RENDER_WHITE:-#ffffff}"
-BG_HIGHLIGHT="${RENDER_BG_HIGHLIGHT:-#292e42}"
+TEXT_COLOR="${RENDER_TEXT_COLOR:-#ffffff}"
+STATUS_BG="${RENDER_STATUS_BG:-#292e42}"
 TRANSPARENT="${RENDER_TRANSPARENT:-false}"
 PALETTE_SERIALIZED="${RENDER_PALETTE:-}"
 PLUGINS_CONFIG="${1:-}"
 
 # Read separator directly from tmux with proper defaults
-RIGHT_SEPARATOR=$(get_tmux_option "@theme_right_separator" "$THEME_DEFAULT_RIGHT_SEPARATOR")
-RIGHT_SEPARATOR_INVERSE=$(get_tmux_option "@theme_right_separator_inverse" "$THEME_DEFAULT_RIGHT_SEPARATOR_INVERSE")
+RIGHT_SEPARATOR=$(get_tmux_option "@powerkit_right_separator" "$POWERKIT_DEFAULT_RIGHT_SEPARATOR")
+RIGHT_SEPARATOR_INVERSE=$(get_tmux_option "@powerkit_right_separator_inverse" "$POWERKIT_DEFAULT_RIGHT_SEPARATOR_INVERSE")
 
 # =============================================================================
 # Palette Helper
@@ -206,23 +206,23 @@ for ((i=0; i<total; i++)); do
     if [[ "$TRANSPARENT" == "true" ]]; then
         sep_icon_start="#[fg=${accent_icon},bg=default]${RIGHT_SEPARATOR}#[none]"
     else
-        sep_icon_start="#[fg=${accent_icon},bg=${BG_HIGHLIGHT}]${RIGHT_SEPARATOR}#[none]"
+        sep_icon_start="#[fg=${accent_icon},bg=${STATUS_BG}]${RIGHT_SEPARATOR}#[none]"
     fi
     
     sep_icon_end="#[fg=${accent},bg=${accent_icon}]${RIGHT_SEPARATOR}#[none]"
     
     # Build icon section inline
-    icon_output="${sep_icon_start}#[fg=${WHITE_COLOR},bg=${accent_icon}]${icon} ${sep_icon_end}"
+    icon_output="${sep_icon_start}#[fg=${TEXT_COLOR},bg=${accent_icon}]${icon} ${sep_icon_end}"
     
     # Build content section - for last plugin, just end cleanly with no separator
     if [[ "$is_last" == "1" ]]; then
-        output+="${icon_output}#[fg=${WHITE_COLOR},bg=${accent}] ${content} "
+        output+="${icon_output}#[fg=${TEXT_COLOR},bg=${accent}] ${content} "
     else
-        content_output="#[fg=${WHITE_COLOR},bg=${accent}]${content} #[none]"
+        content_output="#[fg=${TEXT_COLOR},bg=${accent}]${content} #[none]"
         if [[ "$TRANSPARENT" == "true" ]]; then
             sep_end="#[fg=${accent},bg=default]${RIGHT_SEPARATOR_INVERSE}#[bg=default]"
         else
-            sep_end="#[fg=${BG_HIGHLIGHT},bg=${accent}]${RIGHT_SEPARATOR}#[bg=${BG_HIGHLIGHT}]"
+            sep_end="#[fg=${STATUS_BG},bg=${accent}]${RIGHT_SEPARATOR}#[bg=${STATUS_BG}]"
         fi
         output+="${icon_output}${content_output}${sep_end}"
     fi

@@ -40,17 +40,17 @@ declare -A DATETIME_FORMATS=(
 # =============================================================================
 
 # shellcheck disable=SC2034
-plugin_datetime_icon=$(get_tmux_option "@theme_plugin_datetime_icon" "$PLUGIN_DATETIME_ICON")
+plugin_datetime_icon=$(get_tmux_option "@powerkit_plugin_datetime_icon" "$(get_tmux_option "@theme_plugin_datetime_icon" "$POWERKIT_PLUGIN_DATETIME_ICON")")
 # shellcheck disable=SC2034
-plugin_datetime_accent_color=$(get_tmux_option "@theme_plugin_datetime_accent_color" "$PLUGIN_DATETIME_ACCENT_COLOR")
+plugin_datetime_accent_color=$(get_tmux_option "@powerkit_plugin_datetime_accent_color" "$(get_tmux_option "@theme_plugin_datetime_accent_color" "$POWERKIT_PLUGIN_DATETIME_ACCENT_COLOR")")
 # shellcheck disable=SC2034
-plugin_datetime_accent_color_icon=$(get_tmux_option "@theme_plugin_datetime_accent_color_icon" "$PLUGIN_DATETIME_ACCENT_COLOR_ICON")
+plugin_datetime_accent_color_icon=$(get_tmux_option "@powerkit_plugin_datetime_accent_color_icon" "$(get_tmux_option "@theme_plugin_datetime_accent_color_icon" "$POWERKIT_PLUGIN_DATETIME_ACCENT_COLOR_ICON")")
 
 # Format configuration
-plugin_datetime_format=$(get_tmux_option "@theme_plugin_datetime_format" "$PLUGIN_DATETIME_FORMAT")
-plugin_datetime_timezone=$(get_tmux_option "@theme_plugin_datetime_timezone" "$PLUGIN_DATETIME_TIMEZONE")
-plugin_datetime_show_week=$(get_tmux_option "@theme_plugin_datetime_show_week" "$PLUGIN_DATETIME_SHOW_WEEK")
-plugin_datetime_separator=$(get_tmux_option "@theme_plugin_datetime_separator" "$PLUGIN_DATETIME_SEPARATOR")
+plugin_datetime_format=$(get_tmux_option "@powerkit_plugin_datetime_format" "$(get_tmux_option "@theme_plugin_datetime_format" "$POWERKIT_PLUGIN_DATETIME_FORMAT")")
+plugin_datetime_timezone=$(get_tmux_option "@powerkit_plugin_datetime_timezone" "$(get_tmux_option "@theme_plugin_datetime_timezone" "$POWERKIT_PLUGIN_DATETIME_TIMEZONE")")
+plugin_datetime_show_week=$(get_tmux_option "@powerkit_plugin_datetime_show_week" "$(get_tmux_option "@theme_plugin_datetime_show_week" "$POWERKIT_PLUGIN_DATETIME_SHOW_WEEK")")
+plugin_datetime_separator=$(get_tmux_option "@powerkit_plugin_datetime_separator" "$(get_tmux_option "@theme_plugin_datetime_separator" "$POWERKIT_PLUGIN_DATETIME_SEPARATOR")")
 
 export plugin_datetime_icon plugin_datetime_accent_color plugin_datetime_accent_color_icon
 

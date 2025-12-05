@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 # =============================================================================
-# tmux-tokyo-night Theme Configuration
-# Main entry point for theme initialization and plugin rendering
+# PowerKit Theme Architecture
+# Modular window and status bar management system
 # =============================================================================
 set -euo pipefail
-
 export LC_ALL=en_US.UTF-8
 
 CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -12,211 +11,482 @@ CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # =============================================================================
 # Source Dependencies
 # =============================================================================
-# shellcheck source=src/defaults.sh
 . "$CURRENT_DIR/defaults.sh"
-# shellcheck source=src/utils.sh
 . "$CURRENT_DIR/utils.sh"
-# shellcheck source=src/separators.sh
-. "$CURRENT_DIR/separators.sh"
-# shellcheck source=src/cache.sh
+. "$CURRENT_DIR/separators.sh" 
 . "$CURRENT_DIR/cache.sh"
 
 # =============================================================================
-# Theme Configuration Options
-# =============================================================================
-theme_variation=$(get_tmux_option "@theme_variation" "$THEME_DEFAULT_VARIATION")
-theme_disable_plugins=$(get_tmux_option "@theme_disable_plugins" "$THEME_DEFAULT_DISABLE_PLUGINS")
-theme_bar_layout=$(get_tmux_option "@theme_bar_layout" "$THEME_DEFAULT_BAR_LAYOUT")
-
-# shellcheck source=src/palletes/night.sh
-# shellcheck disable=SC1090
-. "$CURRENT_DIR/palletes/$theme_variation.sh"
-
-### Load Options
-border_style_active_pane=$(get_tmux_option "@theme_active_pane_border_style" "${PALLETE['dark5']}")
-border_style_inactive_pane=$(get_tmux_option "@theme_inactive_pane_border_style" "${PALLETE[bg_highlight]}")
-transparent=$(get_tmux_option "@theme_transparent_status_bar" "$THEME_DEFAULT_TRANSPARENT")
-
-window_with_activity_style=$(get_tmux_option "@theme_window_with_activity_style" "$THEME_DEFAULT_WINDOW_WITH_ACTIVITY_STYLE")
-window_status_bell_style=$(get_tmux_option "@theme_status_bell_style" "$THEME_DEFAULT_STATUS_BELL_STYLE")
-
-IFS=',' read -r -a plugins <<<"$(get_tmux_option "@theme_plugins" "$THEME_DEFAULT_PLUGINS")"
-
-# Status bar length limits (configurable)
-status_left_length=$(get_tmux_option "@theme_status_left_length" "$THEME_DEFAULT_STATUS_LEFT_LENGTH")
-status_right_length=$(get_tmux_option "@theme_status_right_length" "$THEME_DEFAULT_STATUS_RIGHT_LENGTH")
-
-tmux set-option -g status-left-length "$status_left_length"
-tmux set-option -g status-right-length "$status_right_length"
-
-tmux set-window-option -g window-status-activity-style "$window_with_activity_style"
-tmux set-window-option -g window-status-bell-style "${window_status_bell_style}"
-
-# message styling
-tmux set-option -g message-style "bg=${PALLETE[red]},fg=${PALLETE[bg_dark]}"
-
-# status bar
-status_bar_bg=${PALLETE[bg_highlight]}
-if [ "$transparent" = "true" ]; then
-	status_bar_bg="default"
-fi
-tmux set-option -g status-style "bg=${status_bar_bg},fg=${PALLETE[white]}"
-
-# border color
-tmux set-option -g pane-active-border-style "fg=$border_style_active_pane"
-if ! tmux set-option -g pane-border-style "#{?pane_synchronized,fg=$border_style_active_pane,fg=$border_style_inactive_pane}" &>/dev/null; then
-  tmux set-option -g pane-border-style "fg=$border_style_active_pane,fg=$border_style_inactive_pane"
-fi
-
-### Status bar lines setup
-if [ "$theme_bar_layout" = "double" ]; then
-	tmux set-option -g status 2
-else
-	tmux set-option -g status on
-	# Note: status-format[0] will be updated after plugins are processed to set correct trailing background
-	tmux set-option -gu status-format[1] 2>/dev/null || true
-fi
-
-### Left side
-tmux set-option -g status-left "$(generate_left_side_string)"
-
-### Windows list
-tmux set-window-option -g window-status-format "$(generate_inactive_window_string)"
-tmux set-window-option -g window-status-current-format "$(generate_active_window_string)"
-
-### Right side
-tmux set-option -g status-right ""
-
-# =============================================================================
-# Plugin Helper Functions
+# WINDOW INDEX SYSTEM
+# Manages window number display and styling
 # =============================================================================
 
-# Serialize palette for passing to render_plugins.sh
-serialize_palette() {
-    local result=""
-    for key in "${!PALLETE[@]}"; do
-        result+="${key}=${PALLETE[$key]};"
-    done
-    printf '%s' "$result"
-}
-
-# Get plugin type from the plugin itself
-# Types: conditional (only show if has content), static (always show), datetime (special handling)
-# Note: Display conditions and color changes are handled by each plugin via plugin_get_display_info()
-get_plugin_type() {
-    local plugin="$1"
-    local plugin_script_path="${CURRENT_DIR}/plugin/${plugin}.sh"
+# Get window index colors based on window state
+get_window_index_colors() {
+    local window_state="$1"  # "active" or "inactive"
     
-    # Check if plugin exists
-    if [[ ! -f "$plugin_script_path" ]]; then
-        printf 'static'
-        return
-    fi
-    
-    # Source plugin and check if it has plugin_get_type function
-    # shellcheck source=/dev/null
-    if . "$plugin_script_path" 2>/dev/null && declare -f plugin_get_type &>/dev/null; then
-        plugin_get_type
+    if [[ "$window_state" == "active" ]]; then
+        local bg_color_option=$(get_tmux_option "@powerkit_active_window_number_bg" "$POWERKIT_DEFAULT_ACTIVE_WINDOW_NUMBER_BG")
+        local bg_color=$(get_powerkit_color "$bg_color_option")
+        echo "bg=$bg_color"
     else
-        # Default: static (always show)
-        printf 'static'
+        local bg_color=$(get_powerkit_color 'border-strong')
+        echo "bg=$bg_color"
+    fi
+}
+
+# Create window index segment
+create_window_index_segment() {
+    local window_state="$1"  # "active" or "inactive"
+    local index_colors=$(get_window_index_colors "$window_state")
+    local text_color=$(get_powerkit_color 'text')
+    
+    if [[ "$window_state" == "active" ]]; then
+        echo "#[${index_colors},fg=${text_color},bold] #I"
+    else
+        echo "#[${index_colors},fg=${text_color}] #I"
     fi
 }
 
 # =============================================================================
-# Plugin Rendering - Unified Approach
+# WINDOW CONTENT SYSTEM  
+# Manages window content area (icons + title)
 # =============================================================================
 
-if [ "$theme_disable_plugins" -ne 1 ]; then
-	PALETTE_SERIALIZED=$(serialize_palette)
-	
-	# Build unified plugin config for render_plugins.sh
-	# Format: "name:accent:accent_icon:icon:type;..."
-	plugin_configs=""
-	
-	for plugin in "${plugins[@]}"; do
-		plugin_script_path="${CURRENT_DIR}/plugin/${plugin}.sh"
-		
-		# Skip non-existent plugins
-		if [ ! -f "$plugin_script_path" ]; then
-			continue
-		fi
-		
-		# Source plugin to get its config variables
-		# shellcheck source=/dev/null
-		. "$plugin_script_path"
-		
-		# Check for keybindings function while plugin is already sourced
-		if declare -f setup_keybindings &>/dev/null; then
-			setup_keybindings
-			unset -f setup_keybindings
-		fi
-		
-		# Get plugin settings via indirect variable expansion
-		icon_var="plugin_${plugin}_icon"
-		accent_color_var="plugin_${plugin}_accent_color"
-		accent_color_icon_var="plugin_${plugin}_accent_color_icon"
-		
-		plugin_icon="${!icon_var}"
-		accent_color="${!accent_color_var}"
-		accent_color_icon="${!accent_color_icon_var}"
-		
-		# Resolve palette colors
-		accent_color="${PALLETE[$accent_color]}"
-		accent_color_icon="${PALLETE[$accent_color_icon]}"
-		
-		# Get plugin type
-		plugin_type=$(get_plugin_type "$plugin")
-		
-		# Add to config string
-		[[ -n "$plugin_configs" ]] && plugin_configs+=";"
-		plugin_configs+="${plugin}:${accent_color}:${accent_color_icon}:${plugin_icon}:${plugin_type}"
-	done
-	
-	# Render all plugins via unified renderer
-	if [ -n "$plugin_configs" ]; then
-		plugin_output_string="#(RENDER_WHITE='${PALLETE[white]}' RENDER_BG_HIGHLIGHT='${PALLETE[bg_highlight]}' RENDER_TRANSPARENT='${transparent}' RENDER_PALETTE='${PALETTE_SERIALIZED}' ${CURRENT_DIR}/render_plugins.sh '${plugin_configs}')"
-		tmux set-option -ga status-right "$plugin_output_string"
-		
-		# Set status-right-style to match last plugin's accent color (fills gap to edge)
-		tmux set-option -g status-right-style "bg=${accent_color}"
-		
-		# Set status-format[0] for single layout with correct trailing background color
-		if [ "$theme_bar_layout" != "double" ]; then
-			tmux set-option -g status-format[0] "#[align=left range=left #{E:status-left-style}]#[push-default]#{T;=/#{status-left-length}:status-left}#[pop-default]#[norange default]#[list=on align=#{status-justify}]#[list=left-marker]<#[list=right-marker]>#[list=on]#{W:#[range=window|#{window_index} #{E:window-status-style}#{?#{&&:#{window_last_flag},#{!=:#{E:window-status-last-style},default}}, #{E:window-status-last-style},}#{?#{&&:#{window_bell_flag},#{!=:#{E:window-status-bell-style},default}}, #{E:window-status-bell-style},#{?#{&&:#{||:#{window_activity_flag},#{window_silence_flag}},#{!=:#{E:window-status-activity-style},default}}, #{E:window-status-activity-style},}}]#[push-default]#{T:window-status-format}#[pop-default]#[norange default]#{?window_end_flag,,#{window-status-separator}},#[range=window|#{window_index} list=focus #{?#{!=:#{E:window-status-current-style},default},#{E:window-status-current-style},#{E:window-status-style}}#{?#{&&:#{window_last_flag},#{!=:#{E:window-status-last-style},default}}, #{E:window-status-last-style},}#{?#{&&:#{window_bell_flag},#{!=:#{E:window-status-bell-style},default}}, #{E:window-status-bell-style},#{?#{&&:#{||:#{window_activity_flag},#{window_silence_flag}},#{!=:#{E:window-status-activity-style},default}}, #{E:window-status-activity-style},}}]#[push-default]#{T:window-status-current-format}#[pop-default]#[norange default]#{?window_end_flag,,#{window-status-separator}}}#[nolist align=right range=right #{E:status-right-style}]#[push-default]#{T;=/#{status-right-length}:status-right}#[pop-default]#[norange bg=${accent_color}]"
-		fi
-	fi
-fi
+# Get window content colors based on window state
+get_window_content_colors() {
+    local window_state="$1"  # "active" or "inactive"
+    
+    if [[ "$window_state" == "active" ]]; then
+        local bg_color_option=$(get_tmux_option "@powerkit_active_window_content_bg" "$POWERKIT_DEFAULT_ACTIVE_WINDOW_CONTENT_BG")
+        local bg_color=$(get_powerkit_color "$bg_color_option")
+        echo "bg=$bg_color"
+    else
+        local bg_color=$(get_powerkit_color 'border')
+        echo "bg=$bg_color"
+    fi
+}
 
-# For double layout, set up the two status lines
-if [ "$theme_bar_layout" = "double" ]; then
-	tmux set-option -g status-format[0] "#[align=left range=left #{E:status-left-style}]#[push-default]#{T;=/#{status-left-length}:status-left}#[pop-default]#[norange default]#[list=on align=#{status-justify}]#[list=left-marker]<#[list=right-marker]>#[list=on]#{W:#[range=window|#{window_index} #{E:window-status-style}#{?#{&&:#{window_last_flag},#{!=:#{E:window-status-last-style},default}}, #{E:window-status-last-style},}#{?#{&&:#{window_bell_flag},#{!=:#{E:window-status-bell-style},default}}, #{E:window-status-bell-style},#{?#{&&:#{||:#{window_activity_flag},#{window_silence_flag}},#{!=:#{E:window-status-activity-style},default}}, #{E:window-status-activity-style},}}]#[push-default]#{T:window-status-format}#[pop-default]#[norange default]#{?window_end_flag,,#{window-status-separator}},#[range=window|#{window_index} list=focus #{?#{!=:#{E:window-status-current-style},default},#{E:window-status-current-style},#{E:window-status-style}}#{?#{&&:#{window_last_flag},#{!=:#{E:window-status-last-style},default}}, #{E:window-status-last-style},}#{?#{&&:#{window_bell_flag},#{!=:#{E:window-status-bell-style},default}}, #{E:window-status-bell-style},#{?#{&&:#{||:#{window_activity_flag},#{window_silence_flag}},#{!=:#{E:window-status-activity-style},default}}, #{E:window-status-activity-style},}}]#[push-default]#{T:window-status-current-format}#[pop-default]#[norange default]#{?window_end_flag,,#{window-status-separator}}}#[nolist align=right range=right #{E:status-right-style}]#[push-default]#[pop-default]#[norange default]"
-	tmux set-option -g status-format[1] "#[align=right range=right #{E:status-right-style}]#[push-default]#{T;=/#{status-right-length}:status-right}#[pop-default]#[norange default]"
-fi
+# Get window icon based on state
+get_window_icon() {
+    local window_state="$1"  # "active" or "inactive"
+    
+    if [[ "$window_state" == "active" ]]; then
+        echo "$(get_tmux_option "@powerkit_active_window_icon" "$POWERKIT_DEFAULT_ACTIVE_WINDOW_ICON")"
+    else
+        echo "$(get_tmux_option "@powerkit_inactive_window_icon" "$POWERKIT_DEFAULT_INACTIVE_WINDOW_ICON")"
+    fi
+}
 
-tmux set-window-option -g window-status-separator ''
+# Get window title format
+get_window_title() {
+    local window_state="$1"  # "active" or "inactive"
+    
+    if [[ "$window_state" == "active" ]]; then
+        echo "$(get_tmux_option "@powerkit_active_window_title" "$POWERKIT_DEFAULT_ACTIVE_WINDOW_TITLE")"
+    else
+        echo "$(get_tmux_option "@powerkit_inactive_window_title" "$POWERKIT_DEFAULT_INACTIVE_WINDOW_TITLE")"
+    fi
+}
+
+# Create window content segment
+create_window_content_segment() {
+    local window_state="$1"  # "active" or "inactive"
+    local content_colors=$(get_window_content_colors "$window_state")
+    local text_color=$(get_powerkit_color 'text')
+    local window_icon=$(get_window_icon "$window_state")
+    local window_title=$(get_window_title "$window_state")
+    local zoomed_icon=$(get_tmux_option "@powerkit_zoomed_window_icon" "$POWERKIT_DEFAULT_ZOOMED_WINDOW_ICON")
+    
+    if [[ "$window_state" == "active" ]]; then
+        local pane_sync_icon=$(get_tmux_option "@powerkit_pane_synchronized_icon" "$POWERKIT_DEFAULT_PANE_SYNCHRONIZED_ICON")
+        echo "#[${content_colors},fg=${text_color},bold] #{?window_zoomed_flag,$zoomed_icon,$window_icon} ${window_title}#{?pane_synchronized,$pane_sync_icon,}"
+    else
+        echo "#[${content_colors},fg=${text_color}] #{?window_zoomed_flag,$zoomed_icon,$window_icon} ${window_title}"
+    fi
+}
 
 # =============================================================================
-# Theme Helper Keybindings
+# SEPARATOR SYSTEM
+# Manages transitions between window segments and status areas
 # =============================================================================
 
-# Helper popup keybindings
-theme_help_key=$(get_tmux_option "@theme_helper_key" "$THEME_DEFAULT_HELPER_KEY")
-theme_help_width=$(get_tmux_option "@theme_helper_width" "$THEME_DEFAULT_HELPER_WIDTH")
-theme_help_height=$(get_tmux_option "@theme_helper_height" "$THEME_DEFAULT_HELPER_HEIGHT")
-theme_keybindings_key=$(get_tmux_option "@theme_keybindings_key" "$THEME_DEFAULT_KEYBINDINGS_KEY")
-theme_keybindings_width=$(get_tmux_option "@theme_keybindings_width" "$THEME_DEFAULT_KEYBINDINGS_WIDTH")
-theme_keybindings_height=$(get_tmux_option "@theme_keybindings_height" "$THEME_DEFAULT_KEYBINDINGS_HEIGHT")
+# Get separator character
+get_separator_char() {
+    echo "$(get_tmux_option "@powerkit_left_separator" "$POWERKIT_DEFAULT_LEFT_SEPARATOR")"
+}
 
-# Options reference popup (prefix + ?)
-if [[ -n "$theme_help_key" ]]; then
-    tmux bind-key "$theme_help_key" display-popup -E -w "$theme_help_width" -h "$theme_help_height" \
-        "${CURRENT_DIR}/helpers/options_viewer.sh"
-fi
+# Calculate previous window background for separator transition
+get_previous_window_background() {
+    local current_window_state="$1"  # "active" or "inactive"
+    local separator_color
+    
+    # Session colors (for first window)
+    local session_success=$(get_powerkit_color 'success')
+    local session_warning=$(get_powerkit_color 'warning')
+    
+    # Window content colors
+    local active_content_bg_option=$(get_tmux_option "@powerkit_active_window_content_bg" "$POWERKIT_DEFAULT_ACTIVE_WINDOW_CONTENT_BG")
+    local active_content_bg=$(get_powerkit_color "$active_content_bg_option")
+    local inactive_content_bg=$(get_powerkit_color 'border')
+    
+    if [[ "$current_window_state" == "active" ]]; then
+        # For active window: previous window is always inactive (or session for first)
+        separator_color="#{?#{==:#{window_index},1},#{?client_prefix,$session_warning,$session_success},$inactive_content_bg}"
+    else
+        # For inactive window: check if previous window is active
+        separator_color="#{?#{==:#{e|-:#{window_index},1},0},#{?client_prefix,$session_warning,$session_success},#{?#{==:#{e|-:#{window_index},1},#{active_window_index}},$active_content_bg,$inactive_content_bg}}"
+    fi
+    
+    echo "$separator_color"
+}
 
-# Keybindings viewer popup (prefix + B)
-if [[ -n "$theme_keybindings_key" ]]; then
-    tmux bind-key "$theme_keybindings_key" display-popup -E -w "$theme_keybindings_width" -h "$theme_keybindings_height" \
-        "${CURRENT_DIR}/helpers/keybindings_viewer.sh"
-fi
+# Create index-to-content separator (between window number and content)
+create_index_content_separator() {
+    local window_state="$1"  # "active" or "inactive"
+    local separator_char=$(get_separator_char)
+    local index_colors=$(get_window_index_colors "$window_state")
+    local content_colors=$(get_window_content_colors "$window_state")
+    
+    # Extract background colors for transition
+    local index_bg=$(echo "$index_colors" | sed 's/bg=//')
+    local content_bg=$(echo "$content_colors" | sed 's/bg=//')
+    
+    echo "#[bg=${content_bg},fg=${index_bg}]${separator_char}"
+}
+
+# Create window-to-window separator (between different windows)
+create_window_separator() {
+    local current_window_state="$1"  # "active" or "inactive"
+    local separator_char=$(get_separator_char)
+    local previous_bg=$(get_previous_window_background "$current_window_state")
+    local current_index_colors=$(get_window_index_colors "$current_window_state")
+    local current_index_bg=$(echo "$current_index_colors" | sed 's/bg=//')
+    
+    echo "#[bg=${current_index_bg},fg=${previous_bg}]${separator_char}"
+}
+
+# Create final separator (end of window list to status bar)
+create_final_separator() {
+    local separator_char=$(get_separator_char)
+    local status_bg=$(get_powerkit_color 'surface')
+    
+    # Get window content background colors for last window detection
+    local active_content_bg_option=$(get_tmux_option "@powerkit_active_window_content_bg" "$POWERKIT_DEFAULT_ACTIVE_WINDOW_CONTENT_BG")
+    local active_content_bg=$(get_powerkit_color "$active_content_bg_option")
+    local inactive_content_bg=$(get_powerkit_color 'border')
+    
+    # Use color of the last window (active if last window is active, inactive otherwise)
+    echo "#{?#{==:#{session_windows},#{active_window_index}},#[fg=${active_content_bg}],#[fg=${inactive_content_bg}]}#[bg=${status_bg}]${separator_char}"
+}
+
+# =============================================================================
+# WINDOW ASSEMBLY SYSTEM
+# Combines all segments into complete window formats
+# =============================================================================
+
+# Create complete window format for active window
+create_active_window_format() {
+    local window_separator=$(create_window_separator "active")
+    local index_segment=$(create_window_index_segment "active")
+    local index_content_sep=$(create_index_content_separator "active")
+    local content_segment=$(create_window_content_segment "active")
+    
+    echo "${window_separator}${index_segment}${index_content_sep}${content_segment}"
+}
+
+# Create complete window format for inactive window  
+create_inactive_window_format() {
+    local window_separator=$(create_window_separator "inactive")
+    local index_segment=$(create_window_index_segment "inactive")
+    local index_content_sep=$(create_index_content_separator "inactive")
+    local content_segment=$(create_window_content_segment "inactive")
+    
+    echo "${window_separator}${index_segment}${index_content_sep}${content_segment}"
+}
+
+# =============================================================================
+# STATUS BAR SYSTEM
+# Manages left side, right side, and overall status bar formatting  
+# =============================================================================
+
+# Create session segment (left side of status bar)
+create_session_segment() {
+    local session_icon=$(get_tmux_option "@powerkit_session_icon" "$POWERKIT_DEFAULT_SESSION_ICON")
+    local separator_char=$(get_separator_char)
+    local text_color=$(get_powerkit_color 'surface')
+    local warning_bg=$(get_powerkit_color 'warning')
+    local success_bg=$(get_powerkit_color 'success')
+    local transparent=$(get_tmux_option "@powerkit_transparent_status_bar" "false")
+    
+    # Auto-detect OS icon if needed
+    if [[ "$session_icon" == "auto" ]]; then
+        session_icon=$(get_os_icon)
+    fi
+    
+    # Handle transparency
+    local separator_end
+    if [[ "$transparent" == "true" ]]; then
+        separator_end="#[bg=default]#{?client_prefix,#[fg=${warning_bg}],#[fg=${success_bg}]}${separator_char}#[none]"
+    else
+        separator_end="#{?client_prefix,#[fg=${warning_bg}],#[fg=${success_bg}]}${separator_char}#[none]"
+    fi
+    
+    echo "#[fg=${text_color},bold]#{?client_prefix,#[bg=${warning_bg}],#[bg=${success_bg}]}${session_icon} #S${separator_end}"
+}
+
+# Build status left format
+build_status_left_format() {
+    printf '#[align=left range=left #{E:status-left-style}]#[push-default]#{T;=/#{status-left-length}:status-left}#[pop-default]#[norange default]'
+}
+
+# Build status right format  
+build_status_right_format() {
+    local resolved_accent_color="$1"
+    printf '#[nolist align=right range=right #{E:status-right-style}]#[push-default]#{T;=/#{status-right-length}:status-right}#[pop-default]#[norange bg=%s]' "$resolved_accent_color"
+}
+
+# Build window list format
+build_window_list_format() {
+    printf '#[list=on align=#{status-justify}]#[list=left-marker]<#[list=right-marker]>#[list=on]'
+}
+
+# Build tmux native window format (using our custom formats)
+build_tmux_window_format() {
+    local window_conditions='#{?#{&&:#{window_last_flag},#{!=:#{E:window-status-last-style},default}}, #{E:window-status-last-style},}'
+    window_conditions+='#{?#{&&:#{window_bell_flag},#{!=:#{E:window-status-bell-style},default}}, #{E:window-status-bell-style},'
+    window_conditions+='#{?#{&&:#{||:#{window_activity_flag},#{window_silence_flag}},#{!=:#{E:window-status-activity-style},default}}, #{E:window-status-activity-style},}}'
+    
+    printf '#{W:#[range=window|#{window_index} #{E:window-status-style}%s]#[push-default]#{T:window-status-format}#[pop-default]#[norange default]#{?window_end_flag,,#{window-status-separator}},#[range=window|#{window_index} list=focus #{?#{!=:#{E:window-status-current-style},default},#{E:window-status-current-style},#{E:window-status-style}}%s]#[push-default]#{T:window-status-current-format}#[pop-default]#[norange default]#{?window_end_flag,,#{window-status-separator}}}' "$window_conditions" "$window_conditions"
+}
+
+# =============================================================================
+# PLUGIN SYSTEM INTEGRATION
+# Manages plugin loading and status bar integration
+# =============================================================================
+
+# Get plugins list for single layout
+get_plugins_list() {
+    local plugins=("$@")
+    local plugin_configs=""
+    
+    # Build plugin config string for render_plugins.sh
+    for plugin in "${plugins[@]}"; do
+        [[ -z "$plugin" ]] && continue
+        
+        # Parse plugin format: name or name:accent:accent_icon:icon:type
+        if [[ "$plugin" == *":"* ]]; then
+            plugin_configs+="$plugin;"
+        else
+            # Use defaults for simple plugin name - use actual color values
+            local accent_color=$(get_powerkit_color 'accent')
+            local primary_color=$(get_powerkit_color 'primary')
+            plugin_configs+="$plugin:$accent_color:$primary_color:⚡:static;"
+        fi
+    done
+    
+    # Remove trailing semicolon
+    plugin_configs="${plugin_configs%%;}"
+    
+    if [[ -n "$plugin_configs" ]]; then
+        # Set environment variables for render_plugins.sh
+        export RENDER_TEXT_COLOR=$(get_powerkit_color 'text')
+        export RENDER_STATUS_BG=$(get_powerkit_color 'surface')
+        export RENDER_TRANSPARENT=$(get_tmux_option "@powerkit_transparent_status_bar" "false")
+        export RENDER_PALETTE=$(serialize_powerkit_palette)
+        
+        # Export PowerKit defaults for render_plugins.sh
+        export POWERKIT_DEFAULT_RIGHT_SEPARATOR=$(get_tmux_option "@powerkit_right_separator" "")
+        export POWERKIT_DEFAULT_RIGHT_SEPARATOR_INVERSE=$(get_tmux_option "@powerkit_right_separator_inverse" "")
+        
+        # Source required dependencies for render_plugins.sh
+        export CURRENT_DIR
+        (
+            cd "$CURRENT_DIR"
+            . ./defaults.sh
+            . ./utils.sh
+            bash ./render_plugins.sh "$plugin_configs"
+        )
+    fi
+}
+
+# Get plugins list for double layout (second status line)
+get_plugins_list_double() {
+    # For double layout, plugins go on the second line
+    get_plugins_list "$@"
+}
+
+# Serialize PowerKit palette for render_plugins.sh
+serialize_powerkit_palette() {
+    local palette=""
+    for color in accent primary success warning error info text background surface border; do
+        palette+="$color=$(get_powerkit_color "$color");"
+    done
+    echo "${palette%%;}"
+}
+
+# Initialize plugin system
+initialize_plugins() {
+    local powerkit_disable_plugins=$(get_tmux_option "@powerkit_disable_plugins" "$POWERKIT_DEFAULT_DISABLE_PLUGINS")
+    local plugins_string=$(get_tmux_option "@powerkit_plugins" "$POWERKIT_DEFAULT_PLUGINS")
+    local plugins
+    IFS=',' read -r -a plugins <<<"$plugins_string"
+    
+    local status_output=""
+    if [[ -n "$plugins_string" && "$powerkit_disable_plugins" != "true" ]]; then
+        export CURRENT_DIR
+        local powerkit_bar_layout=$(get_tmux_option "@powerkit_bar_layout" "$POWERKIT_DEFAULT_BAR_LAYOUT")
+        
+        if [[ "$powerkit_bar_layout" == "double" ]]; then
+            # Double layout - plugins on second line
+            status_output=$(get_plugins_list_double "${plugins[@]}")
+        else
+            # Single layout - plugins on right side
+            status_output=$(get_plugins_list "${plugins[@]}")
+        fi
+    fi
+    
+    echo "$status_output"
+}
+
+# =============================================================================
+# TMUX CONFIGURATION SYSTEM
+# Applies all settings to tmux
+# =============================================================================
+
+# Configure tmux appearance settings
+configure_tmux_appearance() {
+    # Load PowerKit theme
+    load_powerkit_theme
+    
+    # Pane borders
+    local border_style_active_pane_default=$(get_powerkit_color 'border-strong')
+    local border_style_inactive_pane_default=$(get_powerkit_color 'surface')
+    local border_style_active_pane=$(get_tmux_option "@powerkit_active_pane_border_style" "$border_style_active_pane_default")
+    local border_style_inactive_pane=$(get_tmux_option "@powerkit_inactive_pane_border_style" "$border_style_inactive_pane_default")
+    
+    tmux set-option -g pane-active-border-style "fg=$border_style_active_pane"
+    if ! tmux set-option -g pane-border-style "#{?pane_synchronized,fg=$border_style_active_pane,fg=$border_style_inactive_pane}" &>/dev/null; then
+        tmux set-option -g pane-border-style "fg=$border_style_active_pane,fg=$border_style_inactive_pane"
+    fi
+    
+    # Message styling
+    local message_bg=$(get_powerkit_color "error")
+    local message_fg=$(get_powerkit_color "background-alt")
+    tmux set-option -g message-style "bg=${message_bg},fg=${message_fg}"
+    
+    # Status bar
+    local transparent=$(get_tmux_option "@powerkit_transparent_status_bar" "$POWERKIT_DEFAULT_TRANSPARENT")
+    local status_bar_bg=$(get_powerkit_color "surface")
+    local status_bar_fg=$(get_powerkit_color "text")
+    if [[ "$transparent" == "true" ]]; then
+        status_bar_bg="default"
+    fi
+    tmux set-option -g status-style "bg=${status_bar_bg},fg=${status_bar_fg}"
+    
+    # Status bar layout
+    local powerkit_bar_layout=$(get_tmux_option "@powerkit_bar_layout" "$POWERKIT_DEFAULT_BAR_LAYOUT")
+    if [[ "$powerkit_bar_layout" == "double" ]]; then
+        tmux set-option -g status 2
+    else
+        tmux set-option -g status on
+        tmux set-option -gu status-format[1] 2>/dev/null || true
+    fi
+    
+    # Status bar lengths
+    local status_left_length=$(get_tmux_option "@powerkit_status_left_length" "$POWERKIT_DEFAULT_STATUS_LEFT_LENGTH")
+    local status_right_length=$(get_tmux_option "@powerkit_status_right_length" "$POWERKIT_DEFAULT_STATUS_RIGHT_LENGTH")
+    tmux set-option -g status-left-length "$status_left_length"
+    tmux set-option -g status-right-length "$status_right_length"
+    
+    # Window activity/bell styles
+    local window_with_activity_style=$(get_tmux_option "@powerkit_window_with_activity_style" "$POWERKIT_DEFAULT_WINDOW_WITH_ACTIVITY_STYLE")
+    local window_status_bell_style=$(get_tmux_option "@powerkit_status_bell_style" "$POWERKIT_DEFAULT_STATUS_BELL_STYLE")
+    tmux set-window-option -g window-status-activity-style "$window_with_activity_style"
+    tmux set-window-option -g window-status-bell-style "$window_status_bell_style"
+}
+
+# =============================================================================
+# MAIN STATUS FORMAT BUILDER
+# Assembles complete status bar format
+# =============================================================================
+
+# Build complete status format for single layout
+build_single_layout_status_format() {
+    local resolved_accent_color="$1"
+    local left_format window_list_format inactive_window_format right_format final_separator
+    
+    left_format=$(build_status_left_format)
+    window_list_format=$(build_window_list_format)
+    inactive_window_format=$(build_tmux_window_format)
+    right_format=$(build_status_right_format "$resolved_accent_color")
+    
+    # Create the final separator using proper architecture
+    final_separator=$(create_final_separator)
+    
+    printf '%s%s%s%s%s' "$left_format" "$window_list_format" "$inactive_window_format" "$final_separator" "$right_format"
+}
+
+# Build complete status format for double layout (windows only)
+build_double_layout_windows_format() {
+    local left_format window_list_format inactive_window_format
+    
+    left_format=$(build_status_left_format)
+    window_list_format=$(build_window_list_format)
+    inactive_window_format=$(build_tmux_window_format)
+    
+    printf '%s%s%s#[nolist align=right range=right #{E:status-right-style}]#[push-default]#[pop-default]#[norange default]' "$left_format" "$window_list_format" "$inactive_window_format"
+}
+
+# =============================================================================
+# INITIALIZATION SYSTEM
+# Main entry point that configures everything
+# =============================================================================
+
+# Main initialization function
+initialize_powerkit() {
+    # Configure tmux appearance
+    configure_tmux_appearance
+    
+    # Set up window formats using new modular system
+    tmux set-window-option -g window-status-format "$(create_inactive_window_format)"
+    tmux set-window-option -g window-status-current-format "$(create_active_window_format)"
+    
+    # Set up session segment (left side)
+    tmux set-option -g status-left "$(create_session_segment)"
+    
+    # Initialize plugins and handle status bar layout
+    local status_2=$(initialize_plugins)
+    local powerkit_bar_layout=$(get_tmux_option "@powerkit_bar_layout" "$POWERKIT_DEFAULT_BAR_LAYOUT")
+    
+    if [[ "$powerkit_bar_layout" == "double" ]]; then
+        # Double layout: plugins on second line
+        if [[ -n "$status_2" ]]; then
+            tmux set-option -g status-format[1] "$status_2"
+        fi
+        tmux set-option -g status-right ""
+    else
+        # Single layout: plugins on right side, with final separator
+        if [[ -n "$status_2" ]]; then
+            tmux set-option -g status-right "$status_2"
+        else
+            tmux set-option -g status-right ""
+        fi
+        
+        # Apply complete status format with final separator
+        local resolved_accent_color=$(get_powerkit_color 'surface')
+        local complete_format=$(build_single_layout_status_format "$resolved_accent_color")
+        tmux set-option -g status-format[0] "$complete_format"
+    fi
+    
+    # Remove window separator for seamless powerline appearance
+    tmux set-window-option -g window-status-separator ""
+}
+
+# =============================================================================
+# EXECUTE INITIALIZATION 
+# =============================================================================
+
+# Initialize the complete PowerKit system
+initialize_powerkit
 

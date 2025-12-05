@@ -48,16 +48,24 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Plugin Configuration
 # =============================================================================
 
-# shellcheck disable=SC2034
-plugin_battery_icon=$(get_tmux_option "@theme_plugin_battery_icon" "$PLUGIN_BATTERY_ICON")
-# shellcheck disable=SC2034
-plugin_battery_accent_color=$(get_tmux_option "@theme_plugin_battery_accent_color" "$PLUGIN_BATTERY_ACCENT_COLOR")
-# shellcheck disable=SC2034
-plugin_battery_accent_color_icon=$(get_tmux_option "@theme_plugin_battery_accent_color_icon" "$PLUGIN_BATTERY_ACCENT_COLOR_ICON")
+# =============================================================================
+# PowerKit Plugin Configuration
+# =============================================================================
 
-# Cache TTL in seconds (default: 30 seconds)
-BATTERY_CACHE_TTL=$(get_tmux_option "@theme_plugin_battery_cache_ttl" "$PLUGIN_BATTERY_CACHE_TTL")
+# Get plugin options with PowerKit semantic color support
+plugin_battery_icon=$(get_powerkit_plugin_option "battery" "icon" "$POWERKIT_PLUGIN_BATTERY_ICON")
+plugin_battery_accent_color=$(get_powerkit_plugin_color "battery" "accent" "$(get_powerkit_color 'accent')")
+plugin_battery_accent_color_icon=$(get_powerkit_plugin_color "battery" "accent" "$(get_powerkit_color 'accent')")
+
+# Cache TTL in seconds
+BATTERY_CACHE_TTL=$(get_powerkit_plugin_option "battery" "cache_ttl" "$POWERKIT_PLUGIN_BATTERY_CACHE_TTL")
 BATTERY_CACHE_KEY="battery"
+
+# Legacy compatibility layer
+plugin_battery_icon=$(get_tmux_option "@theme_plugin_battery_icon" "$plugin_battery_icon")
+plugin_battery_accent_color=$(get_tmux_option "@theme_plugin_battery_accent_color" "$plugin_battery_accent_color")
+plugin_battery_accent_color_icon=$(get_tmux_option "@theme_plugin_battery_accent_color_icon" "$plugin_battery_accent_color_icon")
+BATTERY_CACHE_TTL=$(get_tmux_option "@theme_plugin_battery_cache_ttl" "$BATTERY_CACHE_TTL")
 
 # =============================================================================
 # Platform Detection
