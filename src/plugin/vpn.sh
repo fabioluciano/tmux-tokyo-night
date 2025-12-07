@@ -6,15 +6,15 @@
 # =============================================================================
 #
 # Configuration options:
-#   @theme_plugin_vpn_icon                 - Icon when connected (default: 󰌾)
-#   @theme_plugin_vpn_icon_disconnected    - Icon when disconnected (default: 󰦞)
-#   @theme_plugin_vpn_accent_color         - Default accent color
-#   @theme_plugin_vpn_accent_color_icon    - Default icon accent color
-#   @theme_plugin_vpn_show_name            - Show VPN/server name (default: true)
-#   @theme_plugin_vpn_show_ip              - Show VPN IP instead of name (default: false)
-#   @theme_plugin_vpn_show_when_disconnected - Show when not connected (default: false)
-#   @theme_plugin_vpn_max_length           - Max name length (default: 20)
-#   @theme_plugin_vpn_cache_ttl            - Cache time in seconds (default: 10)
+#   @powerkit_plugin_vpn_icon                 - Icon when connected (default: 󰌾)
+#   @powerkit_plugin_vpn_icon_disconnected    - Icon when disconnected (default: 󰦞)
+#   @powerkit_plugin_vpn_accent_color         - Default accent color
+#   @powerkit_plugin_vpn_accent_color_icon    - Default icon accent color
+#   @powerkit_plugin_vpn_show_name            - Show VPN/server name (default: true)
+#   @powerkit_plugin_vpn_show_ip              - Show VPN IP instead of name (default: false)
+#   @powerkit_plugin_vpn_show_when_disconnected - Show when not connected (default: false)
+#   @powerkit_plugin_vpn_max_length           - Max name length (default: 20)
+#   @powerkit_plugin_vpn_cache_ttl            - Cache time in seconds (default: 10)
 #
 # Supported VPN types:
 #   - Cloudflare WARP
@@ -28,29 +28,15 @@
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# shellcheck source=src/defaults.sh
-. "$ROOT_DIR/../defaults.sh"
-# shellcheck source=src/utils.sh
-. "$ROOT_DIR/../utils.sh"
-# shellcheck source=src/cache.sh
-. "$ROOT_DIR/../cache.sh"
-# shellcheck source=src/plugin_interface.sh
-. "$ROOT_DIR/../plugin_interface.sh"
+# shellcheck source=src/plugin_bootstrap.sh
+. "$ROOT_DIR/../plugin_bootstrap.sh"
 
 # =============================================================================
 # Plugin Configuration
 # =============================================================================
 
-# shellcheck disable=SC2034
-plugin_vpn_icon=$(get_tmux_option "@theme_plugin_vpn_icon" "$PLUGIN_VPN_ICON")
-# shellcheck disable=SC2034
-plugin_vpn_accent_color=$(get_tmux_option "@theme_plugin_vpn_accent_color" "$PLUGIN_VPN_ACCENT_COLOR")
-# shellcheck disable=SC2034
-plugin_vpn_accent_color_icon=$(get_tmux_option "@theme_plugin_vpn_accent_color_icon" "$PLUGIN_VPN_ACCENT_COLOR_ICON")
-
-# Cache settings
-VPN_CACHE_TTL=$(get_tmux_option "@theme_plugin_vpn_cache_ttl" "$PLUGIN_VPN_CACHE_TTL")
-VPN_CACHE_KEY="vpn"
+# Initialize cache (DRY - sets CACHE_KEY and CACHE_TTL automatically)
+plugin_init "vpn"
 
 # =============================================================================
 # VPN Detection Functions
@@ -370,13 +356,13 @@ plugin_get_display_info() {
     local status="${content%%:*}"
     
     if [[ "$status" == "disconnected" ]]; then
-        icon=$(get_cached_option "@theme_plugin_vpn_icon_disconnected" "$PLUGIN_VPN_ICON_DISCONNECTED")
-        accent=$(get_cached_option "@theme_plugin_vpn_disconnected_accent_color" "")
-        accent_icon=$(get_cached_option "@theme_plugin_vpn_disconnected_accent_color_icon" "")
+        icon=$(get_cached_option "@powerkit_plugin_vpn_icon_disconnected" "$POWERKIT_PLUGIN_VPN_ICON_DISCONNECTED")
+        accent=$(get_cached_option "@powerkit_plugin_vpn_disconnected_accent_color" "")
+        accent_icon=$(get_cached_option "@powerkit_plugin_vpn_disconnected_accent_color_icon" "")
     else
         # Connected - use default or custom connected colors
-        accent=$(get_cached_option "@theme_plugin_vpn_connected_accent_color" "")
-        accent_icon=$(get_cached_option "@theme_plugin_vpn_connected_accent_color_icon" "")
+        accent=$(get_cached_option "@powerkit_plugin_vpn_connected_accent_color" "")
+        accent_icon=$(get_cached_option "@powerkit_plugin_vpn_connected_accent_color_icon" "")
     fi
     
     build_display_info "$show" "$accent" "$accent_icon" "$icon"
@@ -398,7 +384,7 @@ plugin_get_type() {
 load_plugin() {
     # Check cache first
     local cached_value
-    if cached_value=$(cache_get "$VPN_CACHE_KEY" "$VPN_CACHE_TTL"); then
+    if cached_value=$(cache_get "$CACHE_KEY" "$CACHE_TTL"); then
         printf '%s' "$cached_value"
         return 0
     fi
@@ -415,17 +401,17 @@ load_plugin() {
     vpn_ip="${vpn_data#*|}"
     
     local show_when_disconnected show_name show_ip max_length
-    show_when_disconnected=$(get_tmux_option "@theme_plugin_vpn_show_when_disconnected" "$PLUGIN_VPN_SHOW_WHEN_DISCONNECTED")
-    show_name=$(get_tmux_option "@theme_plugin_vpn_show_name" "$PLUGIN_VPN_SHOW_NAME")
-    show_ip=$(get_tmux_option "@theme_plugin_vpn_show_ip" "false")
-    max_length=$(get_tmux_option "@theme_plugin_vpn_max_length" "$PLUGIN_VPN_MAX_LENGTH")
+    show_when_disconnected=$(get_tmux_option "@powerkit_plugin_vpn_show_when_disconnected" "$POWERKIT_PLUGIN_VPN_SHOW_WHEN_DISCONNECTED")
+    show_name=$(get_tmux_option "@powerkit_plugin_vpn_show_name" "$POWERKIT_PLUGIN_VPN_SHOW_NAME")
+    show_ip=$(get_tmux_option "@powerkit_plugin_vpn_show_ip" "false")
+    max_length=$(get_tmux_option "@powerkit_plugin_vpn_max_length" "$POWERKIT_PLUGIN_VPN_MAX_LENGTH")
     
     local result display_text
     
     if [[ "$status" == "disconnected" ]]; then
         if [[ "$show_when_disconnected" != "true" ]]; then
             # Return empty to hide the plugin
-            cache_set "$VPN_CACHE_KEY" ""
+            cache_set "$CACHE_KEY" ""
             return 0
         fi
         result="disconnected:OFF"
@@ -447,7 +433,7 @@ load_plugin() {
         result="connected:$display_text"
     fi
     
-    cache_set "$VPN_CACHE_KEY" "$result"
+    cache_set "$CACHE_KEY" "$result"
     printf '%s' "$result"
 }
 

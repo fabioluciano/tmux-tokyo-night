@@ -7,34 +7,18 @@
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# shellcheck source=src/defaults.sh
-. "$ROOT_DIR/../defaults.sh"
-# shellcheck source=src/utils.sh
-. "$ROOT_DIR/../utils.sh"
-# shellcheck source=src/cache.sh
-. "$ROOT_DIR/../cache.sh"
-# shellcheck source=src/plugin_interface.sh
-. "$ROOT_DIR/../plugin_interface.sh"
+# shellcheck source=src/plugin_bootstrap.sh
+. "$ROOT_DIR/../plugin_bootstrap.sh"
 
 # =============================================================================
 # Plugin Configuration
 # =============================================================================
 
-# shellcheck disable=SC2034
-plugin_memory_icon=$(get_tmux_option "@theme_plugin_memory_icon" "$PLUGIN_MEMORY_ICON")
-# shellcheck disable=SC2034
-plugin_memory_accent_color=$(get_tmux_option "@theme_plugin_memory_accent_color" "$PLUGIN_MEMORY_ACCENT_COLOR")
-# shellcheck disable=SC2034
-plugin_memory_accent_color_icon=$(get_tmux_option "@theme_plugin_memory_accent_color_icon" "$PLUGIN_MEMORY_ACCENT_COLOR_ICON")
-
-# Cache TTL in seconds (default: 5 seconds)
-CACHE_TTL=$(get_tmux_option "@theme_plugin_memory_cache_ttl" "$PLUGIN_MEMORY_CACHE_TTL")
-CACHE_KEY="memory"
+# Initialize cache (DRY - sets CACHE_KEY and CACHE_TTL automatically)
+plugin_init "memory"
 
 # Display format: "percent" or "usage" (e.g., "4.2G/16G")
-plugin_memory_format=$(get_tmux_option "@theme_plugin_memory_format" "$PLUGIN_MEMORY_FORMAT")
-
-export plugin_memory_icon plugin_memory_accent_color plugin_memory_accent_color_icon
+plugin_memory_format=$(get_tmux_option "@powerkit_plugin_memory_format" "$POWERKIT_PLUGIN_MEMORY_FORMAT")
 
 # =============================================================================
 # Memory Calculation Functions
@@ -53,7 +37,7 @@ bytes_to_human() {
         awk -v b="$bytes" 'BEGIN {printf "%.1fG", b / 1073741824}'
     else
         # Show in MB if less than 1 GB
-        local mb=$((bytes / 1048576)) # 1 MiB in bytes (1024^2)
+        local mb=$((bytes / POWERKIT_BYTE_MB)) # 1 MiB in bytes
         printf '%dM' "$mb"
     fi
 }
@@ -85,8 +69,8 @@ get_memory_linux() {
     percent=$(( (mem_used * 100) / mem_total ))
     
     if [[ "$plugin_memory_format" == "usage" ]]; then
-        local used_bytes=$((mem_used * 1024))
-        local total_bytes=$((mem_total * 1024))
+        local used_bytes=$((mem_used * POWERKIT_BYTE_KB))
+        local total_bytes=$((mem_total * POWERKIT_BYTE_KB))
         printf '%s/%s' "$(bytes_to_human $used_bytes)" "$(bytes_to_human $total_bytes)"
     else
         printf '%d%%' "$percent"
@@ -97,10 +81,28 @@ get_memory_linux() {
 get_memory_macos() {
     local page_size mem_total mem_used percent
     
+    # Try memory_pressure first (most accurate, matches Activity Monitor)
+    local free_percent
+    free_percent=$(memory_pressure 2>/dev/null | awk '/System-wide memory free percentage:/ {print $5}' | tr -d '%')
+    
+    if [[ -n "$free_percent" && "$free_percent" =~ ^[0-9]+$ ]]; then
+        percent=$((100 - free_percent))
+        
+        if [[ "$plugin_memory_format" == "usage" ]]; then
+            mem_total=$(sysctl -n hw.memsize 2>/dev/null || echo 0)
+            mem_used=$((mem_total * percent / 100))
+            printf '%s/%s' "$(bytes_to_human "$mem_used")" "$(bytes_to_human "$mem_total")"
+        else
+            printf '%d%%' "$percent"
+        fi
+        return
+    fi
+    
+    # Fallback to vm_stat calculation
     page_size=$(sysctl -n hw.pagesize 2>/dev/null || echo 4096)
     mem_total=$(sysctl -n hw.memsize 2>/dev/null || echo 0)
     
-    # Single awk call to parse vm_stat output (faster than multiple greps)
+    # Calculate app memory (active + wired) - most relevant for user
     local pages_used
     pages_used=$(vm_stat | awk '
         /Pages active:/ {active = $3; gsub(/\./, "", active)}
@@ -108,9 +110,7 @@ get_memory_macos() {
         END {print active + wired}
     ')
     
-    # Calculate used memory (active + wired)
     mem_used=$((pages_used * page_size))
-    
     percent=$(( (mem_used * 100) / mem_total ))
     
     if [[ "$plugin_memory_format" == "usage" ]]; then
@@ -124,56 +124,10 @@ get_memory_macos() {
 # Plugin Interface Implementation
 # =============================================================================
 
-# This function is called by render_plugins.sh to get display decisions
+# This function is called by plugin_helpers.sh to get display decisions
 # Output format: "show:accent:accent_icon:icon"
 #
-# Configuration options:
-#   @theme_plugin_memory_display_condition    - Condition: le, lt, ge, gt, eq, always
-#   @theme_plugin_memory_display_threshold    - Show only when condition is met
-#   @theme_plugin_memory_warning_threshold    - Warning level (default: 70)
-#   @theme_plugin_memory_critical_threshold   - Critical level (default: 90)
-#   @theme_plugin_memory_warning_accent_color - Color for warning level
-#   @theme_plugin_memory_critical_accent_color - Color for critical level
-plugin_get_display_info() {
-    local content="$1"
-    local show="1"
-    local accent=""
-    local accent_icon=""
-    local icon=""
-    
-    # Extract numeric value from content
-    local value
-    value=$(extract_numeric "$content")
-    
-    # Check display condition (hide based on threshold)
-    # Use get_cached_option for performance in render loop
-    local display_condition display_threshold
-    display_condition=$(get_cached_option "@theme_plugin_memory_display_condition" "always")
-    display_threshold=$(get_cached_option "@theme_plugin_memory_display_threshold" "")
-    
-    if [[ "$display_condition" != "always" ]] && [[ -n "$display_threshold" ]]; then
-        if ! evaluate_condition "$value" "$display_condition" "$display_threshold"; then
-            show="0"
-        fi
-    fi
-    
-    # Check warning/critical thresholds for color changes
-    local warning_threshold critical_threshold
-    warning_threshold=$(get_cached_option "@theme_plugin_memory_warning_threshold" "$PLUGIN_MEMORY_WARNING_THRESHOLD")
-    critical_threshold=$(get_cached_option "@theme_plugin_memory_critical_threshold" "$PLUGIN_MEMORY_CRITICAL_THRESHOLD")
-    
-    if [[ -n "$value" ]]; then
-        if [[ "$value" -ge "$critical_threshold" ]]; then
-            accent=$(get_cached_option "@theme_plugin_memory_critical_accent_color" "$PLUGIN_MEMORY_CRITICAL_ACCENT_COLOR")
-            accent_icon=$(get_cached_option "@theme_plugin_memory_critical_accent_color_icon" "$PLUGIN_MEMORY_CRITICAL_ACCENT_COLOR_ICON")
-        elif [[ "$value" -ge "$warning_threshold" ]]; then
-            accent=$(get_cached_option "@theme_plugin_memory_warning_accent_color" "$PLUGIN_MEMORY_WARNING_ACCENT_COLOR")
-            accent_icon=$(get_cached_option "@theme_plugin_memory_warning_accent_color_icon" "$PLUGIN_MEMORY_WARNING_ACCENT_COLOR_ICON")
-        fi
-    fi
-    
-    build_display_info "$show" "$accent" "$accent_icon" "$icon"
-}
+# REMOVED: plugin_get_display_info() - Now using centralized theme-controlled system
 
 # =============================================================================
 # Plugin Interface Implementation

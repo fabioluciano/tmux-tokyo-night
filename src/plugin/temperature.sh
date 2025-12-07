@@ -6,11 +6,11 @@
 # =============================================================================
 #
 # Configuration options:
-#   @theme_plugin_temperature_icon                 - Default icon (default: 󰔏)
-#   @theme_plugin_temperature_accent_color         - Default accent color
-#   @theme_plugin_temperature_accent_color_icon    - Default icon accent color
-#   @theme_plugin_temperature_unit                 - Unit: C or F (default: C)
-#   @theme_plugin_temperature_source               - Source (default: cpu)
+#   @powerkit_plugin_temperature_icon                 - Default icon (default: 󰔏)
+#   @powerkit_plugin_temperature_accent_color         - Default accent color
+#   @powerkit_plugin_temperature_accent_color_icon    - Default icon accent color
+#   @powerkit_plugin_temperature_unit                 - Unit: C or F (default: C)
+#   @powerkit_plugin_temperature_source               - Source (default: cpu)
 #       • cpu, coretemp    - CPU cores (Intel coretemp, AMD k10temp)
 #       • cpu-pkg          - CPU package (x86_pkg_temp)
 #       • cpu-acpi, tcpu   - CPU via ACPI (TCPU)
@@ -19,13 +19,13 @@
 #       • acpi, ambient    - System ambient/chassis temperature
 #       • dell, dell_smm   - Dell system sensors
 #       • auto             - Auto-detect (prefer CPU)
-#   @theme_plugin_temperature_cache_ttl            - Cache time in seconds (default: 5)
+#   @powerkit_plugin_temperature_cache_ttl            - Cache time in seconds (default: 5)
 #
 # Threshold options:
-#   @theme_plugin_temperature_warning_threshold    - Warning threshold (default: 60)
-#   @theme_plugin_temperature_critical_threshold   - Critical threshold (default: 80)
-#   @theme_plugin_temperature_warning_accent_color - Warning color
-#   @theme_plugin_temperature_critical_accent_color - Critical color
+#   @powerkit_plugin_temperature_warning_threshold    - Warning threshold (default: 60)
+#   @powerkit_plugin_temperature_critical_threshold   - Critical threshold (default: 80)
+#   @powerkit_plugin_temperature_warning_accent_color - Warning color
+#   @powerkit_plugin_temperature_critical_accent_color - Critical color
 #
 # Platform support:
 #   - macOS: Uses 'osx-cpu-temp' or 'powermetrics' (Apple Silicon)
@@ -34,30 +34,15 @@
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# shellcheck source=src/defaults.sh
-. "$ROOT_DIR/../defaults.sh"
-# shellcheck source=src/utils.sh
-. "$ROOT_DIR/../utils.sh"
-# shellcheck source=src/cache.sh
-. "$ROOT_DIR/../cache.sh"
-# shellcheck source=src/plugin_interface.sh
-. "$ROOT_DIR/../plugin_interface.sh"
+# shellcheck source=src/plugin_bootstrap.sh
+. "$ROOT_DIR/../plugin_bootstrap.sh"
 
 # =============================================================================
 # Plugin Configuration
 # =============================================================================
 
-# shellcheck disable=SC2034
-plugin_temperature_icon=$(get_tmux_option "@theme_plugin_temperature_icon" "$PLUGIN_TEMPERATURE_ICON")
-# shellcheck disable=SC2034
-plugin_temperature_accent_color=$(get_tmux_option "@theme_plugin_temperature_accent_color" "$PLUGIN_TEMPERATURE_ACCENT_COLOR")
-# shellcheck disable=SC2034
-plugin_temperature_accent_color_icon=$(get_tmux_option "@theme_plugin_temperature_accent_color_icon" "$PLUGIN_TEMPERATURE_ACCENT_COLOR_ICON")
-
-# Cache settings
-TEMPERATURE_CACHE_TTL=$(get_tmux_option "@theme_plugin_temperature_cache_ttl" "$PLUGIN_TEMPERATURE_CACHE_TTL")
-# shellcheck disable=SC2034
-TEMPERATURE_CACHE_KEY="temperature"
+# Initialize cache (DRY - sets CACHE_KEY and CACHE_TTL automatically)
+plugin_init "temperature"
 
 # =============================================================================
 # Temperature Detection Functions
@@ -253,7 +238,7 @@ get_temperature() {
     fi
     
     local source
-    source=$(get_tmux_option "@theme_plugin_temperature_source" "$PLUGIN_TEMPERATURE_SOURCE")
+    source=$(get_tmux_option "@powerkit_plugin_temperature_source" "$POWERKIT_PLUGIN_TEMPERATURE_SOURCE")
     
     local temp=""
     
@@ -345,12 +330,12 @@ plugin_get_display_info() {
     
     # Get thresholds
     local warning_threshold critical_threshold
-    warning_threshold=$(get_cached_option "@theme_plugin_temperature_warning_threshold" "$PLUGIN_TEMPERATURE_WARNING_THRESHOLD")
-    critical_threshold=$(get_cached_option "@theme_plugin_temperature_critical_threshold" "$PLUGIN_TEMPERATURE_CRITICAL_THRESHOLD")
+    warning_threshold=$(get_cached_option "@powerkit_plugin_temperature_warning_threshold" "$POWERKIT_PLUGIN_TEMPERATURE_WARNING_THRESHOLD")
+    critical_threshold=$(get_cached_option "@powerkit_plugin_temperature_critical_threshold" "$POWERKIT_PLUGIN_TEMPERATURE_CRITICAL_THRESHOLD")
     
     # Check if unit is Fahrenheit and adjust thresholds accordingly
     local unit
-    unit=$(get_cached_option "@theme_plugin_temperature_unit" "$PLUGIN_TEMPERATURE_UNIT")
+    unit=$(get_cached_option "@powerkit_plugin_temperature_unit" "$POWERKIT_PLUGIN_TEMPERATURE_UNIT")
     
     if [[ "$unit" == "F" ]]; then
         # Convert thresholds to Fahrenheit for comparison
@@ -360,12 +345,12 @@ plugin_get_display_info() {
     
     # Apply threshold colors
     if [[ "$value" -ge "$critical_threshold" ]]; then
-        accent=$(get_cached_option "@theme_plugin_temperature_critical_accent_color" "$PLUGIN_TEMPERATURE_CRITICAL_ACCENT_COLOR")
-        accent_icon=$(get_cached_option "@theme_plugin_temperature_critical_accent_color_icon" "$PLUGIN_TEMPERATURE_CRITICAL_ACCENT_COLOR_ICON")
-        icon=$(get_cached_option "@theme_plugin_temperature_icon_hot" "$PLUGIN_TEMPERATURE_ICON_HOT")
+        accent=$(get_cached_option "@powerkit_plugin_temperature_critical_accent_color" "$POWERKIT_PLUGIN_TEMPERATURE_CRITICAL_ACCENT_COLOR")
+        accent_icon=$(get_cached_option "@powerkit_plugin_temperature_critical_accent_color_icon" "$POWERKIT_PLUGIN_TEMPERATURE_CRITICAL_ACCENT_COLOR_ICON")
+        icon=$(get_cached_option "@powerkit_plugin_temperature_icon_hot" "$POWERKIT_PLUGIN_TEMPERATURE_ICON_HOT")
     elif [[ "$value" -ge "$warning_threshold" ]]; then
-        accent=$(get_cached_option "@theme_plugin_temperature_warning_accent_color" "$PLUGIN_TEMPERATURE_WARNING_ACCENT_COLOR")
-        accent_icon=$(get_cached_option "@theme_plugin_temperature_warning_accent_color_icon" "$PLUGIN_TEMPERATURE_WARNING_ACCENT_COLOR_ICON")
+        accent=$(get_cached_option "@powerkit_plugin_temperature_warning_accent_color" "$POWERKIT_PLUGIN_TEMPERATURE_WARNING_ACCENT_COLOR")
+        accent_icon=$(get_cached_option "@powerkit_plugin_temperature_warning_accent_color_icon" "$POWERKIT_PLUGIN_TEMPERATURE_WARNING_ACCENT_COLOR_ICON")
     fi
     
     build_display_info "$show" "$accent" "$accent_icon" "$icon"
@@ -383,12 +368,12 @@ load_plugin() {
     
     # Get source to make cache specific per source
     local source
-    source=$(get_tmux_option "@theme_plugin_temperature_source" "$PLUGIN_TEMPERATURE_SOURCE")
+    source=$(get_tmux_option "@powerkit_plugin_temperature_source" "$POWERKIT_PLUGIN_TEMPERATURE_SOURCE")
     local cache_key="temperature_${source}"
     
     # Check cache first
     local cached_value
-    if cached_value=$(cache_get "$cache_key" "$TEMPERATURE_CACHE_TTL"); then
+    if cached_value=$(cache_get "$cache_key" "$CACHE_TTL"); then
         printf '%s' "$cached_value"
         return 0
     fi
@@ -400,7 +385,7 @@ load_plugin() {
     fi
     # Get unit preference
     local unit
-    unit=$(get_tmux_option "@theme_plugin_temperature_unit" "$PLUGIN_TEMPERATURE_UNIT")
+    unit=$(get_tmux_option "@powerkit_plugin_temperature_unit" "$POWERKIT_PLUGIN_TEMPERATURE_UNIT")
     local result
     if [[ "$unit" == "F" ]]; then
         local temp_f

@@ -13,7 +13,6 @@ CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # =============================================================================
 . "$CURRENT_DIR/defaults.sh"
 . "$CURRENT_DIR/utils.sh"
-. "$CURRENT_DIR/separators.sh" 
 . "$CURRENT_DIR/cache.sh"
 
 # =============================================================================
@@ -274,14 +273,47 @@ get_plugins_list() {
     for plugin in "${plugins[@]}"; do
         [[ -z "$plugin" ]] && continue
         
+        # Check for plugin keybindings setup
+        local plugin_script="${CURRENT_DIR}/plugin/${plugin}.sh"
+        if [[ -f "$plugin_script" ]]; then
+            # Source plugin and check for keybindings function
+            # shellcheck source=/dev/null
+            if . "$plugin_script" 2>/dev/null && declare -f setup_keybindings &>/dev/null; then
+                setup_keybindings
+                unset -f setup_keybindings
+            fi
+        fi
+        
         # Parse plugin format: name or name:accent:accent_icon:icon:type
         if [[ "$plugin" == *":"* ]]; then
             plugin_configs+="$plugin;"
         else
-            # Use defaults for simple plugin name - use actual color values
-            local accent_color=$(get_powerkit_color 'accent')
-            local primary_color=$(get_powerkit_color 'primary')
-            plugin_configs+="$plugin:$accent_color:$primary_color:⚡:static;"
+            # Get plugin type from the plugin itself
+            local plugin_type="static"
+            local plugin_script="${CURRENT_DIR}/plugin/${plugin}.sh"
+            if [[ -f "$plugin_script" ]]; then
+                # Source plugin and call plugin_get_type function
+                # shellcheck source=/dev/null
+                if . "$plugin_script" 2>/dev/null && declare -f plugin_get_type &>/dev/null; then
+                    plugin_type=$(plugin_get_type)
+                    unset -f plugin_get_type
+                fi
+            fi
+            
+            # Get plugin colors from defaults
+            local plugin_upper="${plugin^^}"
+            plugin_upper="${plugin_upper//-/_}"
+            
+            local accent_var="POWERKIT_PLUGIN_${plugin_upper}_ACCENT_COLOR"
+            local accent_icon_var="POWERKIT_PLUGIN_${plugin_upper}_ACCENT_COLOR_ICON"
+            local icon_var="POWERKIT_PLUGIN_${plugin_upper}_ICON"
+            
+            local accent_color="${!accent_var:-accent}"
+            local accent_icon_color="${!accent_icon_var:-accent}"
+            local icon="${!icon_var:-}"
+            
+            # Use format: name:accent:accent_icon:icon:type
+            plugin_configs+="$plugin:$accent_color:$accent_icon_color:$icon:$plugin_type;"
         fi
     done
     
@@ -289,24 +321,18 @@ get_plugins_list() {
     plugin_configs="${plugin_configs%%;}"
     
     if [[ -n "$plugin_configs" ]]; then
-        # Set environment variables for render_plugins.sh
-        export RENDER_TEXT_COLOR=$(get_powerkit_color 'text')
-        export RENDER_STATUS_BG=$(get_powerkit_color 'surface')
-        export RENDER_TRANSPARENT=$(get_tmux_option "@powerkit_transparent_status_bar" "false")
-        export RENDER_PALETTE=$(serialize_powerkit_palette)
+        # Build tmux command string that will be executed periodically
+        # Include pane_current_path to force cache invalidation when path changes
+        local text_color=$(get_powerkit_color 'text')
+        local status_bg=$(get_powerkit_color 'surface')
+        local transparent=$(get_tmux_option "@powerkit_transparent_status_bar" "false")
+        local palette=$(serialize_powerkit_palette)
+        local right_sep=$(get_tmux_option "@powerkit_right_separator" "$POWERKIT_DEFAULT_RIGHT_SEPARATOR")
+        local right_sep_inv=$(get_tmux_option "@powerkit_right_separator_inverse" "$POWERKIT_DEFAULT_RIGHT_SEPARATOR_INVERSE")
         
-        # Export PowerKit defaults for render_plugins.sh
-        export POWERKIT_DEFAULT_RIGHT_SEPARATOR=$(get_tmux_option "@powerkit_right_separator" "")
-        export POWERKIT_DEFAULT_RIGHT_SEPARATOR_INVERSE=$(get_tmux_option "@powerkit_right_separator_inverse" "")
-        
-        # Source required dependencies for render_plugins.sh
-        export CURRENT_DIR
-        (
-            cd "$CURRENT_DIR"
-            . ./defaults.sh
-            . ./utils.sh
-            bash ./render_plugins.sh "$plugin_configs"
-        )
+        # Create command that tmux will execute with current pane path context
+        printf "#(RENDER_TEXT_COLOR='%s' RENDER_STATUS_BG='%s' RENDER_TRANSPARENT='%s' RENDER_PALETTE='%s' POWERKIT_DEFAULT_RIGHT_SEPARATOR='%s' POWERKIT_DEFAULT_RIGHT_SEPARATOR_INVERSE='%s' %s/render_plugins.sh '%s' 2>/dev/null || true)" \
+            "$text_color" "$status_bg" "$transparent" "$palette" "$right_sep" "$right_sep_inv" "$CURRENT_DIR" "$plugin_configs"
     fi
 }
 
@@ -319,9 +345,20 @@ get_plugins_list_double() {
 # Serialize PowerKit palette for render_plugins.sh
 serialize_powerkit_palette() {
     local palette=""
-    for color in accent primary success warning error info text background surface border; do
-        palette+="$color=$(get_powerkit_color "$color");"
+    
+    # Ensure theme is loaded
+    if [[ -z "${POWERKIT_THEME_COLORS+x}" ]] || [[ "${#POWERKIT_THEME_COLORS[@]}" -eq 0 ]]; then
+        load_powerkit_theme
+    fi
+    
+    # Iterate over all theme colors and serialize them
+    # Sort keys to ensure consistent ordering (important for parsing)
+    for color in $(printf '%s\n' "${!POWERKIT_THEME_COLORS[@]}" | sort); do
+        local color_value="${POWERKIT_THEME_COLORS[$color]}"
+        # Skip empty values
+        [[ -n "$color_value" ]] && palette+="$color=$color_value;"
     done
+    
     echo "${palette%%;}"
 }
 

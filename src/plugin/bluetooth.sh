@@ -6,43 +6,29 @@
 # =============================================================================
 #
 # Configuration options:
-#   @theme_plugin_bluetooth_icon              - Icon when on (default: 󰂯)
-#   @theme_plugin_bluetooth_icon_off          - Icon when off (default: 󰂲)
-#   @theme_plugin_bluetooth_icon_connected    - Icon when device connected (default: 󰂱)
-#   @theme_plugin_bluetooth_accent_color      - Default accent color
-#   @theme_plugin_bluetooth_accent_color_icon - Default icon accent color
-#   @theme_plugin_bluetooth_show_device       - Show connected device name (default: true)
-#   @theme_plugin_bluetooth_show_battery      - Show battery level if available (default: true)
-#   @theme_plugin_bluetooth_format            - Display format: first, count, all (default: all)
-#   @theme_plugin_bluetooth_max_length        - Max device name length (default: 15)
-#   @theme_plugin_bluetooth_cache_ttl         - Cache time in seconds (default: 10)
+#   @powerkit_plugin_bluetooth_icon              - Icon when on (default: 󰂯)
+#   @powerkit_plugin_bluetooth_icon_off          - Icon when off (default: 󰂲)
+#   @powerkit_plugin_bluetooth_icon_connected    - Icon when device connected (default: 󰂱)
+#   @powerkit_plugin_bluetooth_accent_color      - Default accent color
+#   @powerkit_plugin_bluetooth_accent_color_icon - Default icon accent color
+#   @powerkit_plugin_bluetooth_show_device       - Show connected device name (default: true)
+#   @powerkit_plugin_bluetooth_show_battery      - Show battery level if available (default: true)
+#   @powerkit_plugin_bluetooth_format            - Display format: first, count, all (default: all)
+#   @powerkit_plugin_bluetooth_max_length        - Max device name length (default: 15)
+#   @powerkit_plugin_bluetooth_cache_ttl         - Cache time in seconds (default: 10)
 # =============================================================================
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# shellcheck source=src/defaults.sh
-. "$ROOT_DIR/../defaults.sh"
-# shellcheck source=src/utils.sh
-. "$ROOT_DIR/../utils.sh"
-# shellcheck source=src/cache.sh
-. "$ROOT_DIR/../cache.sh"
-# shellcheck source=src/plugin_interface.sh
-. "$ROOT_DIR/../plugin_interface.sh"
+# shellcheck source=src/plugin_bootstrap.sh
+. "$ROOT_DIR/../plugin_bootstrap.sh"
 
 # =============================================================================
 # Plugin Configuration
 # =============================================================================
 
-# shellcheck disable=SC2034
-plugin_bluetooth_icon=$(get_tmux_option "@theme_plugin_bluetooth_icon" "$PLUGIN_BLUETOOTH_ICON")
-# shellcheck disable=SC2034
-plugin_bluetooth_accent_color=$(get_tmux_option "@theme_plugin_bluetooth_accent_color" "$PLUGIN_BLUETOOTH_ACCENT_COLOR")
-# shellcheck disable=SC2034
-plugin_bluetooth_accent_color_icon=$(get_tmux_option "@theme_plugin_bluetooth_accent_color_icon" "$PLUGIN_BLUETOOTH_ACCENT_COLOR_ICON")
-
-# Cache settings
-BLUETOOTH_CACHE_TTL=$(get_tmux_option "@theme_plugin_bluetooth_cache_ttl" "$PLUGIN_BLUETOOTH_CACHE_TTL")
-BLUETOOTH_CACHE_KEY="bluetooth"
+# Initialize cache (DRY - sets CACHE_KEY and CACHE_TTL automatically)
+plugin_init "bluetooth"
 
 # =============================================================================
 # Bluetooth Detection Functions
@@ -264,17 +250,19 @@ plugin_get_display_info() {
     
     case "$status" in
         off)
-            icon=$(get_cached_option "@theme_plugin_bluetooth_icon_off" "$PLUGIN_BLUETOOTH_ICON_OFF")
-            accent=$(get_cached_option "@theme_plugin_bluetooth_off_accent_color" "")
-            accent_icon=$(get_cached_option "@theme_plugin_bluetooth_off_accent_color_icon" "")
+            icon=$(get_cached_option "@powerkit_plugin_bluetooth_icon_off" "$POWERKIT_PLUGIN_BLUETOOTH_ICON_OFF")
+            accent=$(get_cached_option "@powerkit_plugin_bluetooth_off_accent_color" "$POWERKIT_PLUGIN_BLUETOOTH_OFF_ACCENT_COLOR")
+            accent_icon=$(get_cached_option "@powerkit_plugin_bluetooth_off_accent_color_icon" "$POWERKIT_PLUGIN_BLUETOOTH_OFF_ACCENT_COLOR_ICON")
             ;;
         connected)
-            icon=$(get_cached_option "@theme_plugin_bluetooth_icon_connected" "$PLUGIN_BLUETOOTH_ICON_CONNECTED")
-            accent=$(get_cached_option "@theme_plugin_bluetooth_connected_accent_color" "")
-            accent_icon=$(get_cached_option "@theme_plugin_bluetooth_connected_accent_color_icon" "")
+            icon=$(get_cached_option "@powerkit_plugin_bluetooth_icon_connected" "$POWERKIT_PLUGIN_BLUETOOTH_ICON_CONNECTED")
+            accent=$(get_cached_option "@powerkit_plugin_bluetooth_connected_accent_color" "$POWERKIT_PLUGIN_BLUETOOTH_CONNECTED_ACCENT_COLOR")
+            accent_icon=$(get_cached_option "@powerkit_plugin_bluetooth_connected_accent_color_icon" "$POWERKIT_PLUGIN_BLUETOOTH_CONNECTED_ACCENT_COLOR_ICON")
             ;;
         on)
-            # Default icon, no color override
+            # Default colors for "on" state
+            accent=$(get_cached_option "@powerkit_plugin_bluetooth_accent_color" "$POWERKIT_PLUGIN_BLUETOOTH_ACCENT_COLOR")
+            accent_icon=$(get_cached_option "@powerkit_plugin_bluetooth_accent_color_icon" "$POWERKIT_PLUGIN_BLUETOOTH_ACCENT_COLOR_ICON")
             ;;
     esac
     
@@ -288,7 +276,7 @@ plugin_get_display_info() {
 load_plugin() {
     # Check cache first
     local cached_value
-    if cached_value=$(cache_get "$BLUETOOTH_CACHE_KEY" "$BLUETOOTH_CACHE_TTL"); then
+    if cached_value=$(cache_get "$CACHE_KEY" "$CACHE_TTL"); then
         printf '%s' "$cached_value"
         return 0
     fi
@@ -307,10 +295,10 @@ load_plugin() {
     
     local result
     local show_device show_battery format max_length
-    show_device=$(get_tmux_option "@theme_plugin_bluetooth_show_device" "$PLUGIN_BLUETOOTH_SHOW_DEVICE")
-    show_battery=$(get_tmux_option "@theme_plugin_bluetooth_show_battery" "$PLUGIN_BLUETOOTH_SHOW_BATTERY")
-    format=$(get_tmux_option "@theme_plugin_bluetooth_format" "$PLUGIN_BLUETOOTH_FORMAT")
-    max_length=$(get_tmux_option "@theme_plugin_bluetooth_max_length" "$PLUGIN_BLUETOOTH_MAX_LENGTH")
+    show_device=$(get_tmux_option "@powerkit_plugin_bluetooth_show_device" "$POWERKIT_PLUGIN_BLUETOOTH_SHOW_DEVICE")
+    show_battery=$(get_tmux_option "@powerkit_plugin_bluetooth_show_battery" "$POWERKIT_PLUGIN_BLUETOOTH_SHOW_BATTERY")
+    format=$(get_tmux_option "@powerkit_plugin_bluetooth_format" "$POWERKIT_PLUGIN_BLUETOOTH_FORMAT")
+    max_length=$(get_tmux_option "@powerkit_plugin_bluetooth_max_length" "$POWERKIT_PLUGIN_BLUETOOTH_MAX_LENGTH")
     
     case "$status" in
         off)
@@ -383,7 +371,7 @@ load_plugin() {
             ;;
     esac
     
-    cache_set "$BLUETOOTH_CACHE_KEY" "$result"
+    cache_set "$CACHE_KEY" "$result"
     printf '%s' "$result"
 }
 

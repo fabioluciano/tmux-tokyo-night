@@ -7,23 +7,14 @@
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# shellcheck source=src/defaults.sh
-. "$ROOT_DIR/../defaults.sh"
-# shellcheck source=src/utils.sh
-. "$ROOT_DIR/../utils.sh"
+# shellcheck source=src/plugin_bootstrap.sh
+. "$ROOT_DIR/../plugin_bootstrap.sh"
 
 # =============================================================================
 # Plugin Configuration
 # =============================================================================
 
-# shellcheck disable=SC2034
-plugin_hostname_icon=$(get_tmux_option "@theme_plugin_hostname_icon" "$PLUGIN_HOSTNAME_ICON")
-# shellcheck disable=SC2034
-plugin_hostname_accent_color=$(get_tmux_option "@theme_plugin_hostname_accent_color" "$PLUGIN_HOSTNAME_ACCENT_COLOR")
-# shellcheck disable=SC2034
-plugin_hostname_accent_color_icon=$(get_tmux_option "@theme_plugin_hostname_accent_color_icon" "$PLUGIN_HOSTNAME_ACCENT_COLOR_ICON")
-
-export plugin_hostname_icon plugin_hostname_accent_color plugin_hostname_accent_color_icon
+# Note: hostname doesn't need cache initialization as it's a static plugin
 
 # =============================================================================
 # Plugin Interface Implementation
@@ -40,7 +31,7 @@ plugin_get_type() {
 
 load_plugin() {
     local hostname_format
-    hostname_format=$(get_tmux_option "@theme_plugin_hostname_format" "$PLUGIN_HOSTNAME_FORMAT")
+    hostname_format=$(get_tmux_option "@powerkit_plugin_hostname_format" "$POWERKIT_PLUGIN_HOSTNAME_FORMAT")
     
     case "$hostname_format" in
         full)

@@ -7,29 +7,15 @@
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# shellcheck source=src/defaults.sh
-. "$ROOT_DIR/../defaults.sh"
-# shellcheck source=src/utils.sh
-. "$ROOT_DIR/../utils.sh"
-# shellcheck source=src/cache.sh
-. "$ROOT_DIR/../cache.sh"
+# shellcheck source=src/plugin_bootstrap.sh
+. "$ROOT_DIR/../plugin_bootstrap.sh"
 
 # =============================================================================
 # Plugin Configuration
 # =============================================================================
 
-# shellcheck disable=SC2034
-plugin_uptime_icon=$(get_tmux_option "@theme_plugin_uptime_icon" "$PLUGIN_UPTIME_ICON")
-# shellcheck disable=SC2034
-plugin_uptime_accent_color=$(get_tmux_option "@theme_plugin_uptime_accent_color" "$PLUGIN_UPTIME_ACCENT_COLOR")
-# shellcheck disable=SC2034
-plugin_uptime_accent_color_icon=$(get_tmux_option "@theme_plugin_uptime_accent_color_icon" "$PLUGIN_UPTIME_ACCENT_COLOR_ICON")
-
-# Cache TTL in seconds (default: 60 seconds)
-CACHE_TTL=$(get_tmux_option "@theme_plugin_uptime_cache_ttl" "$PLUGIN_UPTIME_CACHE_TTL")
-CACHE_KEY="uptime"
-
-export plugin_uptime_icon plugin_uptime_accent_color plugin_uptime_accent_color_icon
+# Initialize cache (DRY - sets CACHE_KEY and CACHE_TTL automatically)
+plugin_init "uptime"
 
 # =============================================================================
 # Uptime Functions

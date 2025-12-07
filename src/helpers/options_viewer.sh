@@ -15,17 +15,17 @@ ROOT_DIR="$(cd "$CURRENT_DIR/.." && pwd)"
 # shellcheck source=src/utils.sh
 . "$ROOT_DIR/utils.sh"
 
-# Colors for output
-BOLD='\033[1m'
-DIM='\033[2m'
-CYAN='\033[36m'
-GREEN='\033[32m'
-MAGENTA='\033[35m'
-YELLOW='\033[33m'
-# RED='\033[31m'  # Unused
-BLUE='\033[34m'
+# Colors for output (from defaults.sh)
+BOLD="$POWERKIT_ANSI_BOLD"
+DIM="$POWERKIT_ANSI_DIM"
+CYAN="$POWERKIT_ANSI_CYAN"
+GREEN="$POWERKIT_ANSI_GREEN"
+MAGENTA="$POWERKIT_ANSI_MAGENTA"
+YELLOW="$POWERKIT_ANSI_YELLOW"
+# RED="$POWERKIT_ANSI_RED"  # Unused
+BLUE="$POWERKIT_ANSI_BLUE"
 
-RESET='\033[0m'
+RESET="$POWERKIT_ANSI_RESET"
 
 # TPM plugins directory
 TPM_PLUGINS_DIR="${TMUX_PLUGIN_MANAGER_PATH:-$HOME/.tmux/plugins}"
@@ -41,32 +41,32 @@ fi
 
 declare -a THEME_OPTIONS=(
     # Core options
-    "@theme_variation|night|night,storm,moon,day|Color scheme variation"
-    "@theme_plugins|datetime,weather|(comma-separated plugin names)|Enabled plugins"
-    "@theme_disable_plugins|0|0,1|Disable all plugins"
-    "@theme_transparent_status_bar|false|true,false|Transparent status bar"
-    "@theme_bar_layout|single|single,double|Status bar layout"
-    "@theme_status_left_length|100|(integer)|Maximum left status length"
-    "@theme_status_right_length|250|(integer)|Maximum right status length"
+    "@powerkit_variation|night|night,storm,moon,day|Color scheme variation"
+    "@powerkit_plugins|datetime,weather|(comma-separated plugin names)|Enabled plugins"
+    "@powerkit_disable_plugins|0|0,1|Disable all plugins"
+    "@powerkit_transparent_status_bar|false|true,false|Transparent status bar"
+    "@powerkit_bar_layout|single|single,double|Status bar layout"
+    "@powerkit_status_left_length|100|(integer)|Maximum left status length"
+    "@powerkit_status_right_length|250|(integer)|Maximum right status length"
     
     # Separators
-    "@theme_left_separator||Powerline character|Left separator"
-    "@theme_right_separator||Powerline character|Right separator"
-    "@theme_transparent_left_separator_inverse||Powerline character|Inverse left separator"
-    "@theme_transparent_right_separator_inverse||Powerline character|Inverse right separator"
+    "@powerkit_left_separator||Powerline character|Left separator"
+    "@powerkit_right_separator||Powerline character|Right separator"
+    "@powerkit_transparent_left_separator_inverse||Powerline character|Inverse left separator"
+    "@powerkit_transparent_right_separator_inverse||Powerline character|Inverse right separator"
     
     # Session & Window
-    "@theme_session_icon| |Icon/emoji|Session icon"
-    "@theme_active_window_icon||(Icon/emoji)|Active window icon"
-    "@theme_inactive_window_icon||(Icon/emoji)|Inactive window icon"
-    "@theme_zoomed_window_icon||(Icon/emoji)|Zoomed window icon"
-    "@theme_pane_synchronized_icon|✵|Icon/emoji|Synchronized panes icon"
-    "@theme_active_window_title|#W |tmux format|Active window title format"
-    "@theme_inactive_window_title|#W |tmux format|Inactive window title format"
-    "@theme_window_with_activity_style|italics|italics,bold,none|Activity window style"
-    "@theme_status_bell_style|bold|bold,italics,none|Bell status style"
-    "@theme_active_pane_border_style|dark5|palette color|Active pane border color"
-    "@theme_inactive_pane_border_style|bg_highlight|palette color|Inactive pane border color"
+    "@powerkit_session_icon| |Icon/emoji|Session icon"
+    "@powerkit_active_window_icon||(Icon/emoji)|Active window icon"
+    "@powerkit_inactive_window_icon||(Icon/emoji)|Inactive window icon"
+    "@powerkit_zoomed_window_icon||(Icon/emoji)|Zoomed window icon"
+    "@powerkit_pane_synchronized_icon|✵|Icon/emoji|Synchronized panes icon"
+    "@powerkit_active_window_title|#W |tmux format|Active window title format"
+    "@powerkit_inactive_window_title|#W |tmux format|Inactive window title format"
+    "@powerkit_window_with_activity_style|italics|italics,bold,none|Activity window style"
+    "@powerkit_status_bell_style|bold|bold,italics,none|Bell status style"
+    "@powerkit_active_pane_border_style|dark5|palette color|Active pane border color"
+    "@powerkit_inactive_pane_border_style|bg_highlight|palette color|Inactive pane border color"
 )
 
 # =============================================================================
@@ -90,7 +90,7 @@ discover_tokyo_night_plugin_options() {
                 local plugin_name option_name
                 plugin_name=$(echo "$plugin_part" | tr '[:upper:]' '[:lower:]')
                 option_name=$(echo "$option_part" | tr '[:upper:]' '[:lower:]')
-                local option="@theme_plugin_${plugin_name}_${option_name}"
+                local option="@powerkit_plugin_${plugin_name}_${option_name}"
                 
                 plugin_options["$option"]=1
                 default_values["$option"]="$value"
@@ -102,16 +102,16 @@ discover_tokyo_night_plugin_options() {
     while IFS= read -r file; do
         while IFS= read -r line; do
             # Look for get_tmux_option calls
-            if [[ "$line" =~ get_tmux_option[[:space:]]+[\"\'](@theme_plugin_[a-zA-Z0-9_]+)[\"\'][[:space:]]+[\"\']([^\"]*)[\"\'] ]] || \
-               [[ "$line" =~ get_tmux_option[[:space:]]+[\"](@theme_plugin_[a-zA-Z0-9_]+)[\"][[:space:]]+[\"]([^\"]*)[\"] ]] || \
-               [[ "$line" =~ get_tmux_option[[:space:]]+[\'](@theme_plugin_[a-zA-Z0-9_]+)[\'][[:space:]]+[\']([^\']*)[\'] ]]; then
+            if [[ "$line" =~ get_tmux_option[[:space:]]+[\"\'](@powerkit_plugin_[a-zA-Z0-9_]+)[\"\'][[:space:]]+[\"\']([^\"]*)[\"\'] ]] || \
+               [[ "$line" =~ get_tmux_option[[:space:]]+[\"](@powerkit_plugin_[a-zA-Z0-9_]+)[\"][[:space:]]+[\"]([^\"]*)[\"] ]] || \
+               [[ "$line" =~ get_tmux_option[[:space:]]+[\'](@powerkit_plugin_[a-zA-Z0-9_]+)[\'][[:space:]]+[\']([^\']*)[\'] ]]; then
                 local option="${BASH_REMATCH[1]}"
                 local default="${BASH_REMATCH[2]}"
                 plugin_options["$option"]=1
                 [[ -z "${default_values[$option]:-}" ]] && default_values["$option"]="$default"
             fi
         done < "$file"
-    done < <(find "$plugin_dir/plugin" -name "*.sh" -type f 2>/dev/null | head -30)
+    done < <(find "$plugin_dir/plugin" -name "*.sh" -type f 2>/dev/null | head -"$POWERKIT_PERF_OPTIONS_PLUGIN_LIMIT")
     
     # Convert to global array for compatibility
     declare -g -a DISCOVERED_PLUGIN_OPTIONS=()
@@ -148,7 +148,7 @@ print_option() {
     
     current=$(tmux show-option -gqv "$option" 2>/dev/null || echo "")
     
-    printf "${GREEN}%-50s${RESET}" "$option"
+    printf "${GREEN}%-${POWERKIT_FORMAT_OPTION_WIDTH}s${RESET}" "$option"
     
     if [[ -n "$current" && "$current" != "$default" ]]; then
         echo -e " ${YELLOW}= $current${RESET} ${DIM}(default: $default)${RESET}"
@@ -171,7 +171,7 @@ print_tpm_option() {
     # Get current value from tmux (includes values set by plugins at runtime)
     current=$(tmux show-option -gqv "$option" 2>/dev/null || echo "")
     
-    printf "${GREEN}%-50s${RESET}" "$option"
+    printf "${GREEN}%-${POWERKIT_FORMAT_OPTION_WIDTH}s${RESET}" "$option"
     
     if [[ -n "$current" ]]; then
         echo -e " ${YELLOW}= $current${RESET}"
@@ -246,20 +246,20 @@ display_options() {
     # Discover plugin options dynamically
     discover_tokyo_night_plugin_options
     
-    # Get all tmux options that start with @theme_plugin_
-    local all_theme_plugin_options=()
+    # Get all tmux options that start with @powerkit_plugin_
+    local all_powerkit_plugin_options=()
     while IFS= read -r option_line; do
-        if [[ "$option_line" =~ ^@theme_plugin_([a-zA-Z0-9_]+) ]]; then
+        if [[ "$option_line" =~ ^@powerkit_plugin_([a-zA-Z0-9_]+) ]]; then
             local option="${option_line%% *}"
-            all_theme_plugin_options+=("$option")
+            all_powerkit_plugin_options+=("$option")
         fi
-    done < <(tmux show-options -g 2>/dev/null | grep "^@theme_plugin_" || true)
+    done < <(tmux show-options -g 2>/dev/null | grep "^@powerkit_plugin_" || true)
     
     # Also add discovered options that might not be set yet
     for opt in "${DISCOVERED_PLUGIN_OPTIONS[@]}"; do
         IFS='|' read -r option default possible description <<< "$opt"
-        if [[ ! " ${all_theme_plugin_options[*]} " =~ \ $option\  ]]; then
-            all_theme_plugin_options+=("$option")
+        if [[ ! " ${all_powerkit_plugin_options[*]} " =~ \ $option\  ]]; then
+            all_powerkit_plugin_options+=("$option")
         fi
     done
     
@@ -268,8 +268,8 @@ display_options() {
     local -A grouped_options=()
     
     # Group options by plugin
-    for option in "${all_theme_plugin_options[@]}"; do
-        local temp="${option#@theme_plugin_}"
+    for option in "${all_powerkit_plugin_options[@]}"; do
+        local temp="${option#@powerkit_plugin_}"
         local plugin_name="${temp%%_*}"
         
         if [[ -z "${grouped_options[$plugin_name]:-}" ]]; then

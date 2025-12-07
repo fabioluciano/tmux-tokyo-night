@@ -7,34 +7,18 @@
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# shellcheck source=src/defaults.sh
-. "$ROOT_DIR/../defaults.sh"
-# shellcheck source=src/utils.sh
-. "$ROOT_DIR/../utils.sh"
-# shellcheck source=src/cache.sh
-. "$ROOT_DIR/../cache.sh"
-# shellcheck source=src/plugin_interface.sh
-. "$ROOT_DIR/../plugin_interface.sh"
+# shellcheck source=src/plugin_bootstrap.sh
+. "$ROOT_DIR/../plugin_bootstrap.sh"
 
 # =============================================================================
 # Plugin Configuration
 # =============================================================================
 
-# shellcheck disable=SC2034
-plugin_loadavg_icon=$(get_tmux_option "@theme_plugin_loadavg_icon" "$PLUGIN_LOADAVG_ICON")
-# shellcheck disable=SC2034
-plugin_loadavg_accent_color=$(get_tmux_option "@theme_plugin_loadavg_accent_color" "$PLUGIN_LOADAVG_ACCENT_COLOR")
-# shellcheck disable=SC2034
-plugin_loadavg_accent_color_icon=$(get_tmux_option "@theme_plugin_loadavg_accent_color_icon" "$PLUGIN_LOADAVG_ACCENT_COLOR_ICON")
+# Initialize cache (DRY - sets CACHE_KEY and CACHE_TTL automatically)
+plugin_init "loadavg"
 
 # Display format: "1" (1min), "5" (5min), "15" (15min), or "all" (1/5/15)
-plugin_loadavg_format=$(get_tmux_option "@theme_plugin_loadavg_format" "$PLUGIN_LOADAVG_FORMAT")
-
-# Cache TTL in seconds (default: 5 seconds)
-CACHE_TTL=$(get_tmux_option "@theme_plugin_loadavg_cache_ttl" "$PLUGIN_LOADAVG_CACHE_TTL")
-CACHE_KEY="loadavg"
-
-export plugin_loadavg_icon plugin_loadavg_accent_color plugin_loadavg_accent_color_icon
+plugin_loadavg_format=$(get_tmux_option "@powerkit_plugin_loadavg_format" "$POWERKIT_PLUGIN_LOADAVG_FORMAT")
 
 # =============================================================================
 # Load Average Functions
@@ -118,16 +102,16 @@ format_loadavg() {
 # Plugin Interface Implementation
 # =============================================================================
 
-# This function is called by render_plugins.sh to get display decisions
+# This function is called by plugin_helpers.sh to get display decisions
 # Output format: "show:accent:accent_icon:icon"
 #
 # Configuration options:
-#   @theme_plugin_loadavg_display_condition    - Condition: le, lt, ge, gt, eq, always
-#   @theme_plugin_loadavg_display_threshold    - Show only when condition is met
-#   @theme_plugin_loadavg_warning_threshold    - Warning level (default: 2.0 * cores)
-#   @theme_plugin_loadavg_critical_threshold   - Critical level (default: 4.0 * cores)
-#   @theme_plugin_loadavg_warning_accent_color - Color for warning level
-#   @theme_plugin_loadavg_critical_accent_color - Color for critical level
+#   @powerkit_plugin_loadavg_display_condition    - Condition: le, lt, ge, gt, eq, always
+#   @powerkit_plugin_loadavg_display_threshold    - Show only when condition is met
+#   @powerkit_plugin_loadavg_warning_threshold    - Warning level (default: 2.0 * cores)
+#   @powerkit_plugin_loadavg_critical_threshold   - Critical level (default: 4.0 * cores)
+#   @powerkit_plugin_loadavg_warning_accent_color - Color for warning level
+#   @powerkit_plugin_loadavg_critical_accent_color - Color for critical level
 plugin_get_display_info() {
     local content="$1"
     local show="1"
@@ -149,8 +133,8 @@ plugin_get_display_info() {
     # Check display condition (hide based on threshold)
     # Use get_cached_option for performance in render loop
     local display_condition display_threshold
-    display_condition=$(get_cached_option "@theme_plugin_loadavg_display_condition" "always")
-    display_threshold=$(get_cached_option "@theme_plugin_loadavg_display_threshold" "")
+    display_condition=$(get_cached_option "@powerkit_plugin_loadavg_display_condition" "always")
+    display_threshold=$(get_cached_option "@powerkit_plugin_loadavg_display_threshold" "")
     
     if [[ "$display_condition" != "always" ]] && [[ -n "$display_threshold" ]]; then
         local threshold_int
@@ -163,23 +147,23 @@ plugin_get_display_info() {
     # Check warning/critical thresholds for color changes
     # Default: warning at 2x cores, critical at 4x cores
     local warning_multiplier critical_multiplier
-    warning_multiplier=$(get_cached_option "@theme_plugin_loadavg_warning_threshold_multiplier" "$PLUGIN_LOADAVG_WARNING_THRESHOLD_MULTIPLIER")
-    critical_multiplier=$(get_cached_option "@theme_plugin_loadavg_critical_threshold_multiplier" "$PLUGIN_LOADAVG_CRITICAL_THRESHOLD_MULTIPLIER")
+    warning_multiplier=$(get_cached_option "@powerkit_plugin_loadavg_warning_threshold_multiplier" "$POWERKIT_PLUGIN_LOADAVG_WARNING_THRESHOLD_MULTIPLIER")
+    critical_multiplier=$(get_cached_option "@powerkit_plugin_loadavg_critical_threshold_multiplier" "$POWERKIT_PLUGIN_LOADAVG_CRITICAL_THRESHOLD_MULTIPLIER")
     
     local warning_threshold critical_threshold
-    warning_threshold=$(get_cached_option "@theme_plugin_loadavg_warning_threshold" "$((num_cores * warning_multiplier))")
-    critical_threshold=$(get_cached_option "@theme_plugin_loadavg_critical_threshold" "$((num_cores * critical_multiplier))")
+    warning_threshold=$(get_cached_option "@powerkit_plugin_loadavg_warning_threshold" "$((num_cores * warning_multiplier))")
+    critical_threshold=$(get_cached_option "@powerkit_plugin_loadavg_critical_threshold" "$((num_cores * critical_multiplier))")
     
     local warning_int critical_int
     warning_int=$(awk "BEGIN {printf \"%d\", $warning_threshold * 100}" 2>/dev/null || echo 0)
     critical_int=$(awk "BEGIN {printf \"%d\", $critical_threshold * 100}" 2>/dev/null || echo 0)
     
     if [[ "$value_int" -ge "$critical_int" ]]; then
-        accent=$(get_cached_option "@theme_plugin_loadavg_critical_accent_color" "$PLUGIN_LOADAVG_CRITICAL_ACCENT_COLOR")
-        accent_icon=$(get_cached_option "@theme_plugin_loadavg_critical_accent_color_icon" "$PLUGIN_LOADAVG_CRITICAL_ACCENT_COLOR_ICON")
+        accent=$(get_cached_option "@powerkit_plugin_loadavg_critical_accent_color" "$POWERKIT_PLUGIN_LOADAVG_CRITICAL_ACCENT_COLOR")
+        accent_icon=$(get_cached_option "@powerkit_plugin_loadavg_critical_accent_color_icon" "$POWERKIT_PLUGIN_LOADAVG_CRITICAL_ACCENT_COLOR_ICON")
     elif [[ "$value_int" -ge "$warning_int" ]]; then
-        accent=$(get_cached_option "@theme_plugin_loadavg_warning_accent_color" "$PLUGIN_LOADAVG_WARNING_ACCENT_COLOR")
-        accent_icon=$(get_cached_option "@theme_plugin_loadavg_warning_accent_color_icon" "$PLUGIN_LOADAVG_WARNING_ACCENT_COLOR_ICON")
+        accent=$(get_cached_option "@powerkit_plugin_loadavg_warning_accent_color" "$POWERKIT_PLUGIN_LOADAVG_WARNING_ACCENT_COLOR")
+        accent_icon=$(get_cached_option "@powerkit_plugin_loadavg_warning_accent_color_icon" "$POWERKIT_PLUGIN_LOADAVG_WARNING_ACCENT_COLOR_ICON")
     fi
     
     build_display_info "$show" "$accent" "$accent_icon" "$icon"

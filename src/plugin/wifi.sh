@@ -6,14 +6,14 @@
 # =============================================================================
 #
 # Configuration options:
-#   @theme_plugin_wifi_icon                 - Default icon (default: 󰤨)
-#   @theme_plugin_wifi_icon_disconnected    - Icon when disconnected (default: 󰤭)
-#   @theme_plugin_wifi_accent_color         - Default accent color
-#   @theme_plugin_wifi_accent_color_icon    - Default icon accent color
-#   @theme_plugin_wifi_show_ssid            - Show network name (default: true)
-#   @theme_plugin_wifi_show_ip              - Show IP address instead of SSID (default: false)
-#   @theme_plugin_wifi_show_signal          - Show signal strength (default: false)
-#   @theme_plugin_wifi_cache_ttl            - Cache time in seconds (default: 10)
+#   @powerkit_plugin_wifi_icon                 - Default icon (default: 󰤨)
+#   @powerkit_plugin_wifi_icon_disconnected    - Icon when disconnected (default: 󰤭)
+#   @powerkit_plugin_wifi_accent_color         - Default accent color
+#   @powerkit_plugin_wifi_accent_color_icon    - Default icon accent color
+#   @powerkit_plugin_wifi_show_ssid            - Show network name (default: true)
+#   @powerkit_plugin_wifi_show_ip              - Show IP address instead of SSID (default: false)
+#   @powerkit_plugin_wifi_show_signal          - Show signal strength (default: false)
+#   @powerkit_plugin_wifi_cache_ttl            - Cache time in seconds (default: 10)
 #
 # Signal strength icons (when show_signal is true):
 #   󰤯 - No signal (0-20%)
@@ -25,29 +25,15 @@
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# shellcheck source=src/defaults.sh
-. "$ROOT_DIR/../defaults.sh"
-# shellcheck source=src/utils.sh
-. "$ROOT_DIR/../utils.sh"
-# shellcheck source=src/cache.sh
-. "$ROOT_DIR/../cache.sh"
-# shellcheck source=src/plugin_interface.sh
-. "$ROOT_DIR/../plugin_interface.sh"
+# shellcheck source=src/plugin_bootstrap.sh
+. "$ROOT_DIR/../plugin_bootstrap.sh"
 
 # =============================================================================
 # Plugin Configuration
 # =============================================================================
 
-# shellcheck disable=SC2034
-plugin_wifi_icon=$(get_tmux_option "@theme_plugin_wifi_icon" "$PLUGIN_WIFI_ICON")
-# shellcheck disable=SC2034
-plugin_wifi_accent_color=$(get_tmux_option "@theme_plugin_wifi_accent_color" "$PLUGIN_WIFI_ACCENT_COLOR")
-# shellcheck disable=SC2034
-plugin_wifi_accent_color_icon=$(get_tmux_option "@theme_plugin_wifi_accent_color_icon" "$PLUGIN_WIFI_ACCENT_COLOR_ICON")
-
-# Cache settings
-WIFI_CACHE_TTL=$(get_tmux_option "@theme_plugin_wifi_cache_ttl" "$PLUGIN_WIFI_CACHE_TTL")
-WIFI_CACHE_KEY="wifi"
+# Initialize cache (DRY - sets CACHE_KEY and CACHE_TTL automatically)
+plugin_init "wifi"
 
 # =============================================================================
 # WiFi Detection Functions
@@ -348,15 +334,19 @@ plugin_get_display_info() {
     local accent_icon=""
     local icon=""
     
-    # Check if disconnected
-    if [[ -z "$content" ]] || [[ "$content" == "N/A" ]]; then
-        icon=$(get_cached_option "@theme_plugin_wifi_icon_disconnected" "$PLUGIN_WIFI_ICON_DISCONNECTED")
-        accent=$(get_cached_option "@theme_plugin_wifi_disconnected_accent_color" "")
-        accent_icon=$(get_cached_option "@theme_plugin_wifi_disconnected_accent_color_icon" "")
+    # Check if disconnected (content is passed as lowercase from renderer)
+    if [[ -z "$content" ]] || [[ "$content" == "n/a" ]]; then
+        icon=$(get_cached_option "@powerkit_plugin_wifi_icon_disconnected" "$POWERKIT_PLUGIN_WIFI_ICON_DISCONNECTED")
+        accent=$(get_cached_option "@powerkit_plugin_wifi_disconnected_accent_color" "$POWERKIT_PLUGIN_WIFI_DISCONNECTED_ACCENT_COLOR")
+        accent_icon=$(get_cached_option "@powerkit_plugin_wifi_disconnected_accent_color_icon" "$POWERKIT_PLUGIN_WIFI_DISCONNECTED_ACCENT_COLOR_ICON")
     else
+        # WiFi is connected - set default colors
+        accent=$(get_cached_option "@powerkit_plugin_wifi_accent_color" "$POWERKIT_PLUGIN_WIFI_ACCENT_COLOR")
+        accent_icon=$(get_cached_option "@powerkit_plugin_wifi_accent_color_icon" "$POWERKIT_PLUGIN_WIFI_ACCENT_COLOR_ICON")
+        
         # Extract signal from content if present
         local show_signal
-        show_signal=$(get_cached_option "@theme_plugin_wifi_show_signal" "$PLUGIN_WIFI_SHOW_SIGNAL")
+        show_signal=$(get_cached_option "@powerkit_plugin_wifi_show_signal" "$POWERKIT_PLUGIN_WIFI_SHOW_SIGNAL")
         
         if [[ "$show_signal" == "true" ]]; then
             # Content format: "SSID (XX%)" - extract percentage
@@ -387,7 +377,7 @@ plugin_get_type() {
 load_plugin() {
     # Check cache first
     local cached_value
-    if cached_value=$(cache_get "$WIFI_CACHE_KEY" "$WIFI_CACHE_TTL"); then
+    if cached_value=$(cache_get "$CACHE_KEY" "$CACHE_TTL"); then
         printf '%s' "$cached_value"
         return 0
     fi
@@ -398,7 +388,7 @@ load_plugin() {
     if [[ -z "$wifi_info" ]]; then
         # Not connected or WiFi not available
         local result="N/A"
-        cache_set "$WIFI_CACHE_KEY" "$result"
+        cache_set "$CACHE_KEY" "$result"
         printf '%s' "$result"
         return 0
     fi
@@ -410,9 +400,9 @@ load_plugin() {
     
     # Build output based on settings
     local show_ssid show_ip show_signal result display_text
-    show_ssid=$(get_tmux_option "@theme_plugin_wifi_show_ssid" "$PLUGIN_WIFI_SHOW_SSID")
-    show_ip=$(get_tmux_option "@theme_plugin_wifi_show_ip" "$PLUGIN_WIFI_SHOW_IP")
-    show_signal=$(get_tmux_option "@theme_plugin_wifi_show_signal" "$PLUGIN_WIFI_SHOW_SIGNAL")
+    show_ssid=$(get_tmux_option "@powerkit_plugin_wifi_show_ssid" "$POWERKIT_PLUGIN_WIFI_SHOW_SSID")
+    show_ip=$(get_tmux_option "@powerkit_plugin_wifi_show_ip" "$POWERKIT_PLUGIN_WIFI_SHOW_IP")
+    show_signal=$(get_tmux_option "@powerkit_plugin_wifi_show_signal" "$POWERKIT_PLUGIN_WIFI_SHOW_SIGNAL")
     
     # Determine what to display: IP takes priority over SSID
     if [[ "$show_ip" == "true" ]]; then
@@ -430,7 +420,7 @@ load_plugin() {
         result="$display_text"
     fi
     
-    cache_set "$WIFI_CACHE_KEY" "$result"
+    cache_set "$CACHE_KEY" "$result"
     printf '%s' "$result"
 }
 

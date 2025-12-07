@@ -7,10 +7,8 @@
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# shellcheck source=src/defaults.sh
-. "$ROOT_DIR/../defaults.sh"
-# shellcheck source=src/utils.sh
-. "$ROOT_DIR/../utils.sh"
+# shellcheck source=src/plugin_bootstrap.sh
+. "$ROOT_DIR/../plugin_bootstrap.sh"
 
 # =============================================================================
 # Predefined Formats
@@ -39,20 +37,12 @@ declare -A DATETIME_FORMATS=(
 # Plugin Configuration
 # =============================================================================
 
-# shellcheck disable=SC2034
-plugin_datetime_icon=$(get_tmux_option "@powerkit_plugin_datetime_icon" "$(get_tmux_option "@theme_plugin_datetime_icon" "$POWERKIT_PLUGIN_DATETIME_ICON")")
-# shellcheck disable=SC2034
-plugin_datetime_accent_color=$(get_tmux_option "@powerkit_plugin_datetime_accent_color" "$(get_tmux_option "@theme_plugin_datetime_accent_color" "$POWERKIT_PLUGIN_DATETIME_ACCENT_COLOR")")
-# shellcheck disable=SC2034
-plugin_datetime_accent_color_icon=$(get_tmux_option "@powerkit_plugin_datetime_accent_color_icon" "$(get_tmux_option "@theme_plugin_datetime_accent_color_icon" "$POWERKIT_PLUGIN_DATETIME_ACCENT_COLOR_ICON")")
-
+# Plugin-specific settings (no cache needed for datetime)
 # Format configuration
-plugin_datetime_format=$(get_tmux_option "@powerkit_plugin_datetime_format" "$(get_tmux_option "@theme_plugin_datetime_format" "$POWERKIT_PLUGIN_DATETIME_FORMAT")")
-plugin_datetime_timezone=$(get_tmux_option "@powerkit_plugin_datetime_timezone" "$(get_tmux_option "@theme_plugin_datetime_timezone" "$POWERKIT_PLUGIN_DATETIME_TIMEZONE")")
-plugin_datetime_show_week=$(get_tmux_option "@powerkit_plugin_datetime_show_week" "$(get_tmux_option "@theme_plugin_datetime_show_week" "$POWERKIT_PLUGIN_DATETIME_SHOW_WEEK")")
-plugin_datetime_separator=$(get_tmux_option "@powerkit_plugin_datetime_separator" "$(get_tmux_option "@theme_plugin_datetime_separator" "$POWERKIT_PLUGIN_DATETIME_SEPARATOR")")
-
-export plugin_datetime_icon plugin_datetime_accent_color plugin_datetime_accent_color_icon
+plugin_datetime_format=$(get_tmux_option "@powerkit_plugin_datetime_format" "$POWERKIT_PLUGIN_DATETIME_FORMAT")
+plugin_datetime_timezone=$(get_tmux_option "@powerkit_plugin_datetime_timezone" "$POWERKIT_PLUGIN_DATETIME_TIMEZONE")
+plugin_datetime_show_week=$(get_tmux_option "@powerkit_plugin_datetime_show_week" "$POWERKIT_PLUGIN_DATETIME_SHOW_WEEK")
+plugin_datetime_separator=$(get_tmux_option "@powerkit_plugin_datetime_separator" "$POWERKIT_PLUGIN_DATETIME_SEPARATOR")
 
 # =============================================================================
 # Helper Functions
@@ -92,7 +82,7 @@ datetime_get_week_number() {
 
 # Function to inform the plugin type to the renderer
 plugin_get_type() {
-    printf 'datetime'
+    printf 'static'
 }
 
 # =============================================================================
@@ -107,23 +97,21 @@ load_plugin() {
     # Resolve the format (predefined or custom)
     resolved_format=$(datetime_resolve_format "$plugin_datetime_format")
     
-    # Start with main format
-    output="$resolved_format"
-    
     # Add week number if enabled
     if [[ "$plugin_datetime_show_week" == "true" ]]; then
         local week_num
         week_num=$(datetime_get_week_number)
-        output="${week_num}${separator}${output}"
+        output="${week_num}${separator}"
     fi
+    
+    # Get the formatted date/time
+    output+=$(date +"$resolved_format" 2>/dev/null)
     
     # Add secondary timezone if configured
     if [[ -n "$plugin_datetime_timezone" ]]; then
         local tz_time
-        # We need to output this as literal text, not strftime
-        # So we use a shell command substitution that tmux will execute
-        tz_time="#(TZ='$plugin_datetime_timezone' date +'%H:%M')"
-        output="${output}${separator}${tz_time}"
+        tz_time=$(datetime_get_timezone_time "$plugin_datetime_timezone" "%H:%M")
+        output+="${separator}${tz_time}"
     fi
     
     printf '%s' "$output"

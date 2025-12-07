@@ -2,54 +2,57 @@
 # =============================================================================
 # Plugin: microphone
 # Description: Display microphone activity status (active/inactive)
-# Dependencies: Cross-platform (macOS system processes, Linux ALSA/PulseAudio)
+# Platform: Linux only - macOS is not supported due to privacy limitations
+# Dependencies: Linux ALSA/PulseAudio
 # =============================================================================
-
-# Disable microphone plugin on macOS due to privacy limitations and unreliable detection
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    exit 0
-fi
 #
 # Configuration options:
-#   @theme_plugin_microphone_icon                 - Microphone icon (default: 󰍬)
-#   @theme_plugin_microphone_muted_icon           - Muted microphone icon (default: 󰍭)
-#   @theme_plugin_microphone_accent_color         - Accent color (default: blue7)
-#   @theme_plugin_microphone_accent_color_icon    - Icon accent color (default: blue0)
-#   @theme_plugin_microphone_cache_ttl            - Cache time in seconds (default: 1)
+#   @powerkit_plugin_microphone_icon                 - Microphone icon (default: 󰍬)
+#   @powerkit_plugin_microphone_muted_icon           - Muted microphone icon (default: 󰍭)
+#   @powerkit_plugin_microphone_accent_color         - Accent color (default: blue7)
+#   @powerkit_plugin_microphone_accent_color_icon    - Icon accent color (default: blue0)
+#   @powerkit_plugin_microphone_cache_ttl            - Cache time in seconds (default: 1)
 #
 # Example configurations:
 #   # Custom icons
-#   set -g @theme_plugin_microphone_icon ""
-#   set -g @theme_plugin_microphone_muted_icon ""
+#   set -g @powerkit_plugin_microphone_icon ""
+#   set -g @powerkit_plugin_microphone_muted_icon ""
 #   
 #   # Custom cache time
-#   set -g @theme_plugin_microphone_cache_ttl "2"
+#   set -g @powerkit_plugin_microphone_cache_ttl "2"
 #
 # =============================================================================
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# shellcheck source=src/defaults.sh
-source "$ROOT_DIR/../defaults.sh"
-# shellcheck source=src/utils.sh
-source "$ROOT_DIR/../utils.sh"
+# shellcheck source=src/plugin_bootstrap.sh
+source "$ROOT_DIR/../plugin_bootstrap.sh"
 
+# =============================================================================
 # Plugin Configuration
+# =============================================================================
 
-# shellcheck disable=SC2034
-plugin_microphone_icon=$(get_tmux_option "@theme_plugin_microphone_icon" "$PLUGIN_MICROPHONE_ICON")
-# shellcheck disable=SC2034
-plugin_microphone_accent_color=$(get_tmux_option "@theme_plugin_microphone_accent_color" "$PLUGIN_MICROPHONE_ACCENT_COLOR")
-# shellcheck disable=SC2034
-plugin_microphone_accent_color_icon=$(get_tmux_option "@theme_plugin_microphone_accent_color_icon" "$PLUGIN_MICROPHONE_ACCENT_COLOR_ICON")
+# Initialize cache (DRY - sets CACHE_KEY and CACHE_TTL automatically)
+plugin_init "microphone"
 
-# Cache TTL in seconds (default: 1 second)
-# shellcheck disable=SC2034
-CACHE_TTL=$(get_tmux_option "@theme_plugin_microphone_cache_ttl" "$PLUGIN_MICROPHONE_CACHE_TTL")
-# shellcheck disable=SC2034
-CACHE_KEY="microphone"
+# =============================================================================
+# Platform Availability Check
+# =============================================================================
 
-export plugin_microphone_icon plugin_microphone_accent_color plugin_microphone_accent_color_icon
+# Check if microphone plugin is available on this platform
+# Returns: 0 if available, 1 if not
+microphone_is_available() {
+    # Not supported on macOS due to privacy limitations
+    is_macos && return 1
+    
+    # On Linux, check if we have PulseAudio/PipeWire
+    if is_linux; then
+        command -v pactl >/dev/null 2>&1 && return 0
+        command -v amixer >/dev/null 2>&1 && return 0
+    fi
+    
+    return 1
+}
 
 # Microphone Control Functions
 
@@ -102,7 +105,7 @@ setup_keybindings() {
     local mute_key
     
     # Get mute key binding
-    mute_key=$(get_tmux_option "@theme_plugin_microphone_mute_key" "$PLUGIN_MICROPHONE_MUTE_KEY")
+    mute_key=$(get_tmux_option "@powerkit_plugin_microphone_mute_key" "$POWERKIT_PLUGIN_MICROPHONE_MUTE_KEY")
     
     # Only setup keybinding if key is defined
     if [[ -n "$mute_key" ]]; then
@@ -136,13 +139,13 @@ plugin_get_type() {
 }
 
 # Plugin settings
-PLUGIN_ICON="$PLUGIN_MICROPHONE_ICON"
-PLUGIN_MUTED_ICON="$PLUGIN_MICROPHONE_MUTED_ICON"
+PLUGIN_ICON="$POWERKIT_PLUGIN_MICROPHONE_ICON"
+PLUGIN_MUTED_ICON="$POWERKIT_PLUGIN_MICROPHONE_MUTED_ICON"
 # shellcheck disable=SC2034
-PLUGIN_ACCENT_COLOR="$PLUGIN_MICROPHONE_ACCENT_COLOR"
+PLUGIN_ACCENT_COLOR="$POWERKIT_PLUGIN_MICROPHONE_ACCENT_COLOR"
 # shellcheck disable=SC2034
-PLUGIN_ACCENT_COLOR_ICON="$PLUGIN_MICROPHONE_ACCENT_COLOR_ICON"
-PLUGIN_CACHE_TTL="$PLUGIN_MICROPHONE_CACHE_TTL"
+PLUGIN_ACCENT_COLOR_ICON="$POWERKIT_PLUGIN_MICROPHONE_ACCENT_COLOR_ICON"
+PLUGIN_CACHE_TTL="$POWERKIT_PLUGIN_MICROPHONE_CACHE_TTL"
 
 # =============================================================================
 # Microphone Detection - macOS
@@ -286,38 +289,16 @@ detect_microphone_usage() {
 # Cache Management
 # =============================================================================
 
-get_cache_file() {
-    echo "/tmp/tmux_microphone_status_$$"
-}
-
-is_cache_valid() {
-    local cache_file="$1"
-    local ttl="$2"
-    
-    if [[ -f "$cache_file" ]]; then
-        local cache_time current_time
-        cache_time=$(stat -c %Y "$cache_file" 2>/dev/null || stat -f %m "$cache_file" 2>/dev/null || echo 0)
-        current_time=$(date +%s)
-        
-        if [[ $((current_time - cache_time)) -lt $ttl ]]; then
-            return 0
-        fi
-    fi
-    return 1
-}
-
 get_cached_or_fetch() {
-    local cache_file
-    cache_file=$(get_cache_file)
-    
-    if is_cache_valid "$cache_file" "$PLUGIN_CACHE_TTL"; then
-        cat "$cache_file"
+    local cached_value
+    if cached_value=$(cache_get "$CACHE_KEY" "$CACHE_TTL"); then
+        echo "$cached_value"
     else
         local usage_result mute_result
         usage_result=$(detect_microphone_usage)
         mute_result=$(detect_microphone_mute_status)
         local combined_result="${usage_result}:${mute_result}"
-        echo "$combined_result" > "$cache_file"
+        cache_set "$CACHE_KEY" "$combined_result"
         echo "$combined_result"
     fi
 }
@@ -326,10 +307,16 @@ get_cached_or_fetch() {
 # Plugin Display Info for Render System
 # =============================================================================
 
-# This function is called by render_plugins.sh to get display decisions
+# This function is called by plugin_helpers.sh to get display decisions
 # Output format: "show:accent:accent_icon:icon"
 plugin_get_display_info() {
     local _content="$1"
+    
+    # Check platform availability first
+    if ! microphone_is_available; then
+        echo "0:::"
+        return 0
+    fi
     
     local status_result usage_status mute_status
     status_result=$(get_cached_or_fetch)
@@ -340,10 +327,10 @@ plugin_get_display_info() {
     if [[ "$usage_status" == "active" ]]; then
         if [[ "$mute_status" == "muted" ]]; then
             # Muted microphone - red background, muted icon
-            echo "1:$PLUGIN_MICROPHONE_MUTED_ACCENT_COLOR:$PLUGIN_MICROPHONE_MUTED_ACCENT_COLOR_ICON:$PLUGIN_MUTED_ICON"
+            echo "1:$POWERKIT_PLUGIN_MICROPHONE_MUTED_ACCENT_COLOR:$POWERKIT_PLUGIN_MICROPHONE_MUTED_ACCENT_COLOR_ICON:$POWERKIT_PLUGIN_MUTED_ICON"
         else
             # Active microphone - green background, normal icon
-            echo "1:$PLUGIN_MICROPHONE_ACTIVE_ACCENT_COLOR:$PLUGIN_MICROPHONE_ACTIVE_ACCENT_COLOR_ICON:$PLUGIN_ICON"
+            echo "1:$POWERKIT_PLUGIN_MICROPHONE_ACTIVE_ACCENT_COLOR:$POWERKIT_PLUGIN_MICROPHONE_ACTIVE_ACCENT_COLOR_ICON:$POWERKIT_PLUGIN_ICON"
         fi
     else
         # Don't show when microphone is inactive
@@ -356,6 +343,11 @@ plugin_get_display_info() {
 # =============================================================================
 
 load_plugin() {
+    # Check platform availability first
+    if ! microphone_is_available; then
+        return 0
+    fi
+    
     local status_result usage_status mute_status
     status_result=$(get_cached_or_fetch)
     usage_status="${status_result%:*}"

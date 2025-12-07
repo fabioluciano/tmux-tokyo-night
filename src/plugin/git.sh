@@ -7,34 +7,19 @@
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# shellcheck source=src/defaults.sh
-. "$ROOT_DIR/../defaults.sh"
-# shellcheck source=src/utils.sh
-. "$ROOT_DIR/../utils.sh"
-# shellcheck source=src/cache.sh
-. "$ROOT_DIR/../cache.sh"
+# shellcheck source=src/plugin_bootstrap.sh
+. "$ROOT_DIR/../plugin_bootstrap.sh"
 
 # =============================================================================
 # Plugin Configuration
 # =============================================================================
 
-# shellcheck disable=SC2034
-plugin_git_icon=$(get_tmux_option "@theme_plugin_git_icon" "$PLUGIN_GIT_ICON")
-# shellcheck disable=SC2034
-plugin_git_accent_color=$(get_tmux_option "@theme_plugin_git_accent_color" "$PLUGIN_GIT_ACCENT_COLOR")
-# shellcheck disable=SC2034
-plugin_git_accent_color_icon=$(get_tmux_option "@theme_plugin_git_accent_color_icon" "$PLUGIN_GIT_ACCENT_COLOR_ICON")
+# Initialize cache (DRY - sets CACHE_KEY and CACHE_TTL automatically)
+plugin_init "git"
 
-# Colors for when there are changes in the active branch
-# shellcheck disable=SC2034
-plugin_git_modified_accent_color=$(get_tmux_option "@theme_plugin_git_modified_accent_color" "$PLUGIN_GIT_MODIFIED_ACCENT_COLOR")
-# shellcheck disable=SC2034
-plugin_git_modified_accent_color_icon=$(get_tmux_option "@theme_plugin_git_modified_accent_color_icon" "$PLUGIN_GIT_MODIFIED_ACCENT_COLOR_ICON")
-
-# Cache TTL in seconds (default: 5 seconds - short TTL for git status responsiveness)
-CACHE_TTL=$(get_tmux_option "@theme_plugin_git_cache_ttl" "$PLUGIN_GIT_CACHE_TTL")
-
-export plugin_git_icon plugin_git_accent_color plugin_git_accent_color_icon plugin_git_modified_accent_color plugin_git_modified_accent_color_icon
+# Plugin-specific settings for git modified colors
+plugin_git_modified_accent_color=$(get_tmux_option "@powerkit_plugin_git_modified_accent_color" "$POWERKIT_PLUGIN_GIT_MODIFIED_ACCENT_COLOR")
+plugin_git_modified_accent_color_icon=$(get_tmux_option "@powerkit_plugin_git_modified_accent_color_icon" "$POWERKIT_PLUGIN_GIT_MODIFIED_ACCENT_COLOR_ICON")
 
 # =============================================================================
 # Git Functions
@@ -100,17 +85,21 @@ plugin_get_type() {
 plugin_get_display_info() {
     local content="$1"
     
-    # Check if content indicates modifications (starts with MODIFIED:)
-    if [[ "$content" == MODIFIED:* ]]; then
+    # Check if content indicates modifications (starts with modified: - lowercase because renderer normalizes)
+    if [[ "$content" == modified:* ]]; then
         # Override colors to use yellow/orange for modifications
         local modified_accent modified_accent_icon
-        modified_accent=$(get_tmux_option "@theme_plugin_git_modified_accent_color" "$PLUGIN_GIT_MODIFIED_ACCENT_COLOR")
-        modified_accent_icon=$(get_tmux_option "@theme_plugin_git_modified_accent_color_icon" "$PLUGIN_GIT_MODIFIED_ACCENT_COLOR_ICON")
+        modified_accent=$(get_tmux_option "@powerkit_plugin_git_modified_accent_color" "$POWERKIT_PLUGIN_GIT_MODIFIED_ACCENT_COLOR")
+        modified_accent_icon=$(get_tmux_option "@powerkit_plugin_git_modified_accent_color_icon" "$POWERKIT_PLUGIN_GIT_MODIFIED_ACCENT_COLOR_ICON")
         
         printf '1:%s:%s:' "$modified_accent" "$modified_accent_icon"
     else
-        # Use default colors
-        printf '1:::'
+        # Use default colors for clean repo
+        local default_accent default_accent_icon
+        default_accent=$(get_tmux_option "@powerkit_plugin_git_accent_color" "$POWERKIT_PLUGIN_GIT_ACCENT_COLOR")
+        default_accent_icon=$(get_tmux_option "@powerkit_plugin_git_accent_color_icon" "$POWERKIT_PLUGIN_GIT_ACCENT_COLOR_ICON")
+        
+        printf '1:%s:%s:' "$default_accent" "$default_accent_icon"
     fi
 }
 

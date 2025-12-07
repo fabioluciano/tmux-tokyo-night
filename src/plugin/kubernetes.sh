@@ -13,49 +13,36 @@
 # to avoid blocking the status bar. Results are cached aggressively.
 #
 # Configuration options:
-#   @theme_plugin_kubernetes_display_mode          - Display mode (default: context)
-#   @theme_plugin_kubernetes_show_namespace        - Show namespace (default: false)
-#   @theme_plugin_kubernetes_connectivity_timeout  - Timeout for connectivity check in seconds (default: 2)
-#   @theme_plugin_kubernetes_connectivity_cache_ttl - Cache TTL for connectivity check (default: 300)
+#   @powerkit_plugin_kubernetes_display_mode          - Display mode (default: context)
+#   @powerkit_plugin_kubernetes_show_namespace        - Show namespace (default: false)
+#   @powerkit_plugin_kubernetes_connectivity_timeout  - Timeout for connectivity check in seconds (default: 2)
+#   @powerkit_plugin_kubernetes_connectivity_cache_ttl - Cache TTL for connectivity check (default: 300)
 # =============================================================================
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# shellcheck source=src/defaults.sh
-. "$ROOT_DIR/../defaults.sh"
-# shellcheck source=src/utils.sh
-. "$ROOT_DIR/../utils.sh"
-# shellcheck source=src/cache.sh
-. "$ROOT_DIR/../cache.sh"
+# shellcheck source=src/plugin_bootstrap.sh
+. "$ROOT_DIR/../plugin_bootstrap.sh"
 
 # =============================================================================
 # Plugin Configuration
 # =============================================================================
 
-# shellcheck disable=SC2034
-plugin_kubernetes_icon=$(get_tmux_option "@theme_plugin_kubernetes_icon" "$PLUGIN_KUBERNETES_ICON")
-# shellcheck disable=SC2034
-plugin_kubernetes_accent_color=$(get_tmux_option "@theme_plugin_kubernetes_accent_color" "$PLUGIN_KUBERNETES_ACCENT_COLOR")
-# shellcheck disable=SC2034
-plugin_kubernetes_accent_color_icon=$(get_tmux_option "@theme_plugin_kubernetes_accent_color_icon" "$PLUGIN_KUBERNETES_ACCENT_COLOR_ICON")
-
-# Display mode: always, connected, context
-plugin_kubernetes_display_mode=$(get_tmux_option "@theme_plugin_kubernetes_display_mode" "$PLUGIN_KUBERNETES_DISPLAY_MODE")
-
-# Show namespace (true/false) - default: false (context only)
-plugin_kubernetes_show_namespace=$(get_tmux_option "@theme_plugin_kubernetes_show_namespace" "$PLUGIN_KUBERNETES_SHOW_NAMESPACE")
-
-# Connectivity check settings
-plugin_kubernetes_connectivity_timeout=$(get_tmux_option "@theme_plugin_kubernetes_connectivity_timeout" "$PLUGIN_KUBERNETES_CONNECTIVITY_TIMEOUT")
-plugin_kubernetes_connectivity_cache_ttl=$(get_tmux_option "@theme_plugin_kubernetes_connectivity_cache_ttl" "$PLUGIN_KUBERNETES_CONNECTIVITY_CACHE_TTL")
-
-# Cache TTL in seconds (default: 30 seconds)
-CACHE_TTL=$(get_tmux_option "@theme_plugin_kubernetes_cache_ttl" "$PLUGIN_KUBERNETES_CACHE_TTL")
-CACHE_KEY="kubernetes"
+# Initialize cache (DRY - sets CACHE_KEY and CACHE_TTL automatically)
+plugin_init "kubernetes"
 CONNECTIVITY_CACHE_KEY="kubernetes_connectivity"
 CONNECTIVITY_LOCK_FILE="${CACHE_DIR:-$HOME/.cache/tmux-tokyo-night}/kubernetes_checking.lock"
 
-export plugin_kubernetes_icon plugin_kubernetes_accent_color plugin_kubernetes_accent_color_icon
+# Plugin-specific settings
+# Display mode: always, connected, context
+plugin_kubernetes_display_mode=$(get_tmux_option "@powerkit_plugin_kubernetes_display_mode" "$POWERKIT_PLUGIN_KUBERNETES_DISPLAY_MODE")
+
+# Show namespace (true/false) - default: false (context only)
+plugin_kubernetes_show_namespace=$(get_tmux_option "@powerkit_plugin_kubernetes_show_namespace" "$POWERKIT_PLUGIN_KUBERNETES_SHOW_NAMESPACE")
+
+# Connectivity check settings
+plugin_kubernetes_connectivity_timeout=$(get_tmux_option "@powerkit_plugin_kubernetes_connectivity_timeout" "$POWERKIT_PLUGIN_KUBERNETES_CONNECTIVITY_TIMEOUT")
+plugin_kubernetes_connectivity_cache_ttl=$(get_tmux_option "@powerkit_plugin_kubernetes_connectivity_cache_ttl" "$POWERKIT_PLUGIN_KUBERNETES_CONNECTIVITY_CACHE_TTL")
 
 # =============================================================================
 # Kubernetes Functions
@@ -218,14 +205,14 @@ setup_keybindings() {
     local context_key namespace_key popup_width popup_height ns_popup_width ns_popup_height cache_dir
     
     # Context selector settings
-    context_key=$(get_tmux_option "@theme_plugin_kubernetes_context_selector_key" "$PLUGIN_KUBERNETES_CONTEXT_SELECTOR_KEY")
-    popup_width=$(get_tmux_option "@theme_plugin_kubernetes_context_selector_width" "$PLUGIN_KUBERNETES_CONTEXT_SELECTOR_WIDTH")
-    popup_height=$(get_tmux_option "@theme_plugin_kubernetes_context_selector_height" "$PLUGIN_KUBERNETES_CONTEXT_SELECTOR_HEIGHT")
+    context_key=$(get_tmux_option "@powerkit_plugin_kubernetes_context_selector_key" "$POWERKIT_PLUGIN_KUBERNETES_CONTEXT_SELECTOR_KEY")
+    popup_width=$(get_tmux_option "@powerkit_plugin_kubernetes_context_selector_width" "$POWERKIT_PLUGIN_KUBERNETES_CONTEXT_SELECTOR_WIDTH")
+    popup_height=$(get_tmux_option "@powerkit_plugin_kubernetes_context_selector_height" "$POWERKIT_PLUGIN_KUBERNETES_CONTEXT_SELECTOR_HEIGHT")
     
     # Namespace selector settings
-    namespace_key=$(get_tmux_option "@theme_plugin_kubernetes_namespace_selector_key" "$PLUGIN_KUBERNETES_NAMESPACE_SELECTOR_KEY")
-    ns_popup_width=$(get_tmux_option "@theme_plugin_kubernetes_namespace_selector_width" "$PLUGIN_KUBERNETES_NAMESPACE_SELECTOR_WIDTH")
-    ns_popup_height=$(get_tmux_option "@theme_plugin_kubernetes_namespace_selector_height" "$PLUGIN_KUBERNETES_NAMESPACE_SELECTOR_HEIGHT")
+    namespace_key=$(get_tmux_option "@powerkit_plugin_kubernetes_namespace_selector_key" "$POWERKIT_PLUGIN_KUBERNETES_NAMESPACE_SELECTOR_KEY")
+    ns_popup_width=$(get_tmux_option "@powerkit_plugin_kubernetes_namespace_selector_width" "$POWERKIT_PLUGIN_KUBERNETES_NAMESPACE_SELECTOR_WIDTH")
+    ns_popup_height=$(get_tmux_option "@powerkit_plugin_kubernetes_namespace_selector_height" "$POWERKIT_PLUGIN_KUBERNETES_NAMESPACE_SELECTOR_HEIGHT")
     
     # Cache directory for invalidation after context/namespace switch
     cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/tmux-tokyo-night"

@@ -2,38 +2,17 @@
 # Camera status plugin
 # Dependencies: Cross-platform (macOS system processes, Linux v4l2/lsof)
 
-# Disable camera plugin on macOS due to privacy limitations and unreliable detection
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    exit 0
-fi
-
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# shellcheck source=src/defaults.sh
-. "$ROOT_DIR/../defaults.sh"
-# shellcheck source=src/utils.sh
-. "$ROOT_DIR/../utils.sh"
+# shellcheck source=src/plugin_bootstrap.sh
+. "$ROOT_DIR/../plugin_bootstrap.sh"
 
 # =============================================================================
 # Plugin Configuration
 # =============================================================================
 
-# Get plugin options with defaults
-get_plugin_option() {
-    local option="$1"
-    local default="$2"
-    get_tmux_option "@theme_plugin_camera_$option" "$default"
-}
-
-# Plugin variables for theme system
-# shellcheck disable=SC2034
-plugin_camera_icon=$(get_plugin_option "icon" "$THEME_DEFAULT_PLUGIN_CAMERA_ICON")
-# shellcheck disable=SC2034
-plugin_camera_accent_color=$(get_plugin_option "accent_color" "$PLUGIN_CAMERA_ACCENT_COLOR")
-# shellcheck disable=SC2034
-plugin_camera_accent_color_icon=$(get_plugin_option "accent_color_icon" "$PLUGIN_CAMERA_ACCENT_COLOR_ICON")
-
-export plugin_camera_icon plugin_camera_accent_color plugin_camera_accent_color_icon
+# Initialize cache (DRY - sets CACHE_KEY and CACHE_TTL automatically)
+plugin_init "camera"
 
 # =============================================================================
 # Plugin Interface Implementation
@@ -169,36 +148,14 @@ detect_camera_usage() {
 # Cache Management
 # =============================================================================
 
-get_cache_file() {
-    echo "/tmp/tmux_camera_status_$$"
-}
-
-is_cache_valid() {
-    local cache_file="$1"
-    local ttl="$2"
-    
-    if [[ -f "$cache_file" ]]; then
-        local cache_time current_time
-        cache_time=$(stat -c %Y "$cache_file" 2>/dev/null || stat -f %m "$cache_file" 2>/dev/null || echo 0)
-        current_time=$(date +%s)
-        
-        if [[ $((current_time - cache_time)) -lt $ttl ]]; then
-            return 0
-        fi
-    fi
-    return 1
-}
-
 get_cached_or_fetch() {
-    local cache_file
-    cache_file=$(get_cache_file)
-    
-    if is_cache_valid "$cache_file" "$PLUGIN_CACHE_TTL"; then
-        cat "$cache_file"
+    local cached_value
+    if cached_value=$(cache_get "$CACHE_KEY" "$CACHE_TTL"); then
+        echo "$cached_value"
     else
         local result
         result=$(detect_camera_usage)
-        echo "$result" > "$cache_file"
+        cache_set "$CACHE_KEY" "$result"
         echo "$result"
     fi
 }
@@ -214,16 +171,16 @@ show_camera_plugin() {
     # Choose icon and color based on status
     local icon color_icon color_text
     if [[ "$camera_status" == "active" ]]; then
-        icon="$PLUGIN_ICON_ACTIVE"
-        color_icon="$PLUGIN_ACTIVE_ACCENT_COLOR_ICON"  # Green for active camera
-        color_text="$PLUGIN_ACTIVE_ACCENT_COLOR"
+        icon="$POWERKIT_PLUGIN_ICON_ACTIVE"
+        color_icon="$POWERKIT_PLUGIN_ACTIVE_ACCENT_COLOR_ICON"  # Green for active camera
+        color_text="$POWERKIT_PLUGIN_ACTIVE_ACCENT_COLOR"
     else
         # Don't show if inactive and show_when_inactive is false
-        [[ "$PLUGIN_SHOW_WHEN_INACTIVE" == "false" ]] && return
+        [[ "$POWERKIT_PLUGIN_SHOW_WHEN_INACTIVE" == "false" ]] && return
         
-        icon="$PLUGIN_ICON"
-        color_icon="$PLUGIN_ACCENT_COLOR_ICON"
-        color_text="$PLUGIN_ACCENT_COLOR"
+        icon="$POWERKIT_PLUGIN_ICON"
+        color_icon="$POWERKIT_PLUGIN_ACCENT_COLOR_ICON"
+        color_text="$POWERKIT_PLUGIN_ACCENT_COLOR"
     fi
     
     # Build display string
@@ -234,7 +191,7 @@ show_camera_plugin() {
 # Plugin Display Info for Render System
 # =============================================================================
 
-# This function is called by render_plugins.sh to get display decisions
+# This function is called by plugin_helpers.sh to get display decisions
 # Output format: "show:accent:accent_icon:icon"
 plugin_get_display_info() {
     local _content="$1"
@@ -265,7 +222,7 @@ load_plugin() {
     camera_status=$(get_cached_or_fetch)
     
     # Don't show if inactive and show_when_inactive is false
-    if [[ "$camera_status" == "inactive" && "$PLUGIN_SHOW_WHEN_INACTIVE" == "false" ]]; then
+    if [[ "$camera_status" == "inactive" && "$POWERKIT_PLUGIN_SHOW_WHEN_INACTIVE" == "false" ]]; then
         return
     fi
     

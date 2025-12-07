@@ -6,61 +6,45 @@
 # =============================================================================
 #
 # Configuration options:
-#   @theme_plugin_volume_icon              - Default icon (default: 󰕾)
-#   @theme_plugin_volume_icon_muted        - Icon when muted (default: 󰖁)
-#   @theme_plugin_volume_icon_low          - Icon for low volume (default: 󰕿)
-#   @theme_plugin_volume_icon_medium       - Icon for medium volume (default: 󰖀)
-#   @theme_plugin_volume_accent_color      - Default accent color (default: blue7)
-#   @theme_plugin_volume_accent_color_icon - Default icon accent color (default: blue0)
-#   @theme_plugin_volume_muted_accent_color      - Background color when muted (default: red)
-#   @theme_plugin_volume_muted_accent_color_icon - Icon color when muted (default: red1)
-#   @theme_plugin_volume_cache_ttl         - Cache time in seconds (default: 3)
+#   @powerkit_plugin_volume_icon              - Default icon (default: 󰕾)
+#   @powerkit_plugin_volume_icon_muted        - Icon when muted (default: 󰖁)
+#   @powerkit_plugin_volume_icon_low          - Icon for low volume (default: 󰕿)
+#   @powerkit_plugin_volume_icon_medium       - Icon for medium volume (default: 󰖀)
+#   @powerkit_plugin_volume_accent_color      - Default accent color (default: blue7)
+#   @powerkit_plugin_volume_accent_color_icon - Default icon accent color (default: blue0)
+#   @powerkit_plugin_volume_muted_accent_color      - Background color when muted (default: red)
+#   @powerkit_plugin_volume_muted_accent_color_icon - Icon color when muted (default: red1)
+#   @powerkit_plugin_volume_cache_ttl         - Cache time in seconds (default: 3)
 #
 # Threshold options:
-#   @theme_plugin_volume_low_threshold     - Below this = low icon (default: 30)
-#   @theme_plugin_volume_medium_threshold  - Below this = medium icon (default: 70)
+#   @powerkit_plugin_volume_low_threshold     - Below this = low icon (default: 30)
+#   @powerkit_plugin_volume_medium_threshold  - Below this = medium icon (default: 70)
 #
 # Example configurations:
 #   # Custom icons
-#   set -g @theme_plugin_volume_icon "🔊"
-#   set -g @theme_plugin_volume_icon_muted "🔇"
+#   set -g @powerkit_plugin_volume_icon "🔊"
+#   set -g @powerkit_plugin_volume_icon_muted "🔇"
 #
 #   # Custom colors when muted (defaults to red)
-#   set -g @theme_plugin_volume_muted_accent_color "yellow"
-#   set -g @theme_plugin_volume_muted_accent_color_icon "yellow1"
+#   set -g @powerkit_plugin_volume_muted_accent_color "yellow"
+#   set -g @powerkit_plugin_volume_muted_accent_color_icon "yellow1"
 #
 #   # Change thresholds
-#   set -g @theme_plugin_volume_low_threshold "20"
-#   set -g @theme_plugin_volume_medium_threshold "60"
+#   set -g @powerkit_plugin_volume_low_threshold "20"
+#   set -g @powerkit_plugin_volume_medium_threshold "60"
 # =============================================================================
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# shellcheck source=src/defaults.sh
-. "$ROOT_DIR/../defaults.sh"
-# shellcheck source=src/utils.sh
-. "$ROOT_DIR/../utils.sh"
-# shellcheck source=src/cache.sh
-. "$ROOT_DIR/../cache.sh"
-# shellcheck source=src/plugin_interface.sh
-. "$ROOT_DIR/../plugin_interface.sh"
+# shellcheck source=src/plugin_bootstrap.sh
+. "$ROOT_DIR/../plugin_bootstrap.sh"
 
 # =============================================================================
 # Plugin Configuration
 # =============================================================================
 
-# shellcheck disable=SC2034
-plugin_volume_icon=$(get_tmux_option "@theme_plugin_volume_icon" "${PLUGIN_VOLUME_ICON:-󰕾}")
-# shellcheck disable=SC2034
-plugin_volume_accent_color=$(get_tmux_option "@theme_plugin_volume_accent_color" "${PLUGIN_VOLUME_ACCENT_COLOR:-blue7}")
-# shellcheck disable=SC2034
-plugin_volume_accent_color_icon=$(get_tmux_option "@theme_plugin_volume_accent_color_icon" "${PLUGIN_VOLUME_ACCENT_COLOR_ICON:-blue0}")
-
-# Cache TTL in seconds (default: 2 seconds - volume changes frequently)
-VOLUME_CACHE_TTL=$(get_tmux_option "@theme_plugin_volume_cache_ttl" "${PLUGIN_VOLUME_CACHE_TTL:-2}")
-VOLUME_CACHE_KEY="volume"
-
-export plugin_volume_icon plugin_volume_accent_color plugin_volume_accent_color_icon
+# Initialize cache (DRY - sets CACHE_KEY and CACHE_TTL automatically)
+plugin_init "volume"
 
 # =============================================================================
 # Platform Detection
@@ -191,7 +175,7 @@ plugin_get_type() {
     printf 'static'
 }
 
-# This function is called by render_plugins.sh to get display decisions
+# This function is called by plugin_helpers.sh to get display decisions
 # Output format: "show:accent:accent_icon:icon"
 plugin_get_display_info() {
     local content="$1"
@@ -207,21 +191,21 @@ plugin_get_display_info() {
     # Check if muted
     # Use get_cached_option for performance in render loop
     if [[ "$content" == "MUTED" ]] || volume_is_muted; then
-        icon=$(get_cached_option "@theme_plugin_volume_icon_muted" "${PLUGIN_VOLUME_ICON_MUTED:-󰖁}")
-        accent=$(get_cached_option "@theme_plugin_volume_muted_accent_color" "${PLUGIN_VOLUME_MUTED_ACCENT_COLOR:-red}")
-        accent_icon=$(get_cached_option "@theme_plugin_volume_muted_accent_color_icon" "${PLUGIN_VOLUME_MUTED_ACCENT_COLOR_ICON:-red1}")
+        icon=$(get_cached_option "@powerkit_plugin_volume_icon_muted" "${PLUGIN_VOLUME_ICON_MUTED:-󰖁}")
+        accent=$(get_cached_option "@powerkit_plugin_volume_muted_accent_color" "${PLUGIN_VOLUME_MUTED_ACCENT_COLOR:-red}")
+        accent_icon=$(get_cached_option "@powerkit_plugin_volume_muted_accent_color_icon" "${PLUGIN_VOLUME_MUTED_ACCENT_COLOR_ICON:-red1}")
     elif [[ -n "$value" ]]; then
         # Select icon based on volume level
         local low_threshold medium_threshold
-        low_threshold=$(get_cached_option "@theme_plugin_volume_low_threshold" "${PLUGIN_VOLUME_LOW_THRESHOLD:-30}")
-        medium_threshold=$(get_cached_option "@theme_plugin_volume_medium_threshold" "${PLUGIN_VOLUME_MEDIUM_THRESHOLD:-70}")
+        low_threshold=$(get_cached_option "@powerkit_plugin_volume_low_threshold" "${PLUGIN_VOLUME_LOW_THRESHOLD:-30}")
+        medium_threshold=$(get_cached_option "@powerkit_plugin_volume_medium_threshold" "${PLUGIN_VOLUME_MEDIUM_THRESHOLD:-70}")
         
         if [[ "$value" -le "$low_threshold" ]]; then
-            icon=$(get_cached_option "@theme_plugin_volume_icon_low" "${PLUGIN_VOLUME_ICON_LOW:-󰕿}")
+            icon=$(get_cached_option "@powerkit_plugin_volume_icon_low" "${PLUGIN_VOLUME_ICON_LOW:-󰕿}")
         elif [[ "$value" -le "$medium_threshold" ]]; then
-            icon=$(get_cached_option "@theme_plugin_volume_icon_medium" "${PLUGIN_VOLUME_ICON_MEDIUM:-󰖀}")
+            icon=$(get_cached_option "@powerkit_plugin_volume_icon_medium" "${PLUGIN_VOLUME_ICON_MEDIUM:-󰖀}")
         else
-            icon=$(get_cached_option "@theme_plugin_volume_icon" "${PLUGIN_VOLUME_ICON:-󰕾}")
+            icon=$(get_cached_option "@powerkit_plugin_volume_icon" "${PLUGIN_VOLUME_ICON:-󰕾}")
         fi
     fi
     
@@ -235,7 +219,7 @@ plugin_get_display_info() {
 load_plugin() {
     # Check cache first
     local cached_value
-    if cached_value=$(cache_get "$VOLUME_CACHE_KEY" "$VOLUME_CACHE_TTL"); then
+    if cached_value=$(cache_get "$CACHE_KEY" "$CACHE_TTL"); then
         printf '%s\n' "$cached_value"
         return 0
     fi
@@ -257,7 +241,7 @@ load_plugin() {
     fi
 
     # Cache and output
-    cache_set "$VOLUME_CACHE_KEY" "$result"
+    cache_set "$CACHE_KEY" "$result"
     printf '%s\n' "$result"
 }
 

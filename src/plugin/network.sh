@@ -11,33 +11,19 @@
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# shellcheck source=src/defaults.sh
-. "$ROOT_DIR/../defaults.sh"
-# shellcheck source=src/utils.sh
-. "$ROOT_DIR/../utils.sh"
-# shellcheck source=src/cache.sh
-. "$ROOT_DIR/../cache.sh"
+# shellcheck source=src/plugin_bootstrap.sh
+. "$ROOT_DIR/../plugin_bootstrap.sh"
 
 # =============================================================================
 # Plugin Configuration
 # =============================================================================
 
-# shellcheck disable=SC2034
-plugin_network_icon=$(get_tmux_option "@theme_plugin_network_icon" "$PLUGIN_NETWORK_ICON")
-# shellcheck disable=SC2034
-plugin_network_accent_color=$(get_tmux_option "@theme_plugin_network_accent_color" "$PLUGIN_NETWORK_ACCENT_COLOR")
-# shellcheck disable=SC2034
-plugin_network_accent_color_icon=$(get_tmux_option "@theme_plugin_network_accent_color_icon" "$PLUGIN_NETWORK_ACCENT_COLOR_ICON")
-
-# Network interface (auto-detect if empty)
-plugin_network_interface=$(get_tmux_option "@theme_plugin_network_interface" "$PLUGIN_NETWORK_INTERFACE")
-
-# Cache TTL in seconds (default: 2 seconds for smoother updates)
-CACHE_TTL=$(get_tmux_option "@theme_plugin_network_cache_ttl" "$PLUGIN_NETWORK_CACHE_TTL")
-CACHE_KEY="network"
+# Initialize cache (DRY - sets CACHE_KEY and CACHE_TTL automatically)
+plugin_init "network"
 CACHE_KEY_PREV="network_prev"
 
-export plugin_network_icon plugin_network_accent_color plugin_network_accent_color_icon
+# Network interface (auto-detect if empty)
+plugin_network_interface=$(get_tmux_option "@powerkit_plugin_network_interface" "$POWERKIT_PLUGIN_NETWORK_INTERFACE")
 
 # =============================================================================
 # Network Functions
@@ -53,12 +39,12 @@ bytes_to_speed() {
         return
     fi
     
-    if [[ $bytes -ge 1073741824 ]]; then
-        printf '%.1fG' "$(awk "BEGIN {printf \"%.1f\", $bytes / 1073741824}")"
-    elif [[ $bytes -ge 1048576 ]]; then
-        printf '%.1fM' "$(awk "BEGIN {printf \"%.1f\", $bytes / 1048576}")"
-    elif [[ $bytes -ge 1024 ]]; then
-        printf '%.0fK' "$(awk "BEGIN {printf \"%.0f\", $bytes / 1024}")"
+    if [[ $bytes -ge $POWERKIT_BYTE_GB ]]; then
+        printf '%.1fG' "$(awk "BEGIN {printf \"%.1f\", $bytes / $POWERKIT_BYTE_GB}")"
+    elif [[ $bytes -ge $POWERKIT_BYTE_MB ]]; then
+        printf '%.1fM' "$(awk "BEGIN {printf \"%.1f\", $bytes / $POWERKIT_BYTE_MB}")"
+    elif [[ $bytes -ge $POWERKIT_BYTE_KB ]]; then
+        printf '%.0fK' "$(awk "BEGIN {printf \"%.0f\", $bytes / $POWERKIT_BYTE_KB}")"
     else
         printf '%dB' "$bytes"
     fi
@@ -70,7 +56,7 @@ get_default_interface() {
     local cached_interface
     
     # Check cache first (interfaces don't change frequently)
-    if cached_interface=$(cache_get "$cache_key" "300"); then  # 5 min cache
+    if cached_interface=$(cache_get "$cache_key" "$POWERKIT_TIMING_CACHE_INTERFACE"); then
         printf '%s' "$cached_interface"
         return
     fi
@@ -125,6 +111,22 @@ plugin_get_type() {
     printf 'conditional'
 }
 
+# Dynamic display info based on content
+plugin_get_display_info() {
+    local content="$1"
+    local show="1"
+    local accent=""
+    local accent_icon=""
+    local icon=""
+    
+    # Hide plugin when no connectivity (empty or n/a)
+    if [[ -z "$content" ]] || [[ "$content" == "n/a" ]]; then
+        show="0"
+    fi
+    
+    build_display_info "$show" "$accent" "$accent_icon" "$icon"
+}
+
 # =============================================================================
 # Main Plugin Logic - Delta-based (NO SLEEP!)
 # =============================================================================
@@ -162,7 +164,7 @@ load_plugin() {
     
     # Read previous values from cache (format: "rx tx timestamp")
     local prev_data prev_rx prev_tx prev_time
-    prev_data=$(cache_get "$CACHE_KEY_PREV" "3600" 2>/dev/null || echo "")
+    prev_data=$(cache_get "$CACHE_KEY_PREV" "$POWERKIT_TIMING_CACHE_LONG" 2>/dev/null || echo "")
     
     # Parse current values
     local current_rx current_tx
@@ -185,8 +187,8 @@ load_plugin() {
     time_delta=$(awk "BEGIN {printf \"%.3f\", ($current_time - $prev_time) / 1000}")
     
     # Avoid division by zero or negative time
-    if awk "BEGIN {exit !($time_delta <= 0.1)}" 2>/dev/null; then
-        time_delta="1"
+    if awk "BEGIN {exit !($time_delta <= $POWERKIT_TIMING_MIN_DELTA)}" 2>/dev/null; then
+        time_delta="$POWERKIT_TIMING_FALLBACK"
     fi
     
     # Calculate bytes per second
@@ -200,7 +202,7 @@ load_plugin() {
     
     # Get configurable threshold (default: 50KB/s total)
     local threshold
-    threshold=$(get_tmux_option "@theme_plugin_network_threshold" "$PLUGIN_NETWORK_THRESHOLD")
+    threshold=$(get_tmux_option "@powerkit_plugin_network_threshold" "$POWERKIT_PLUGIN_NETWORK_THRESHOLD")
     
     # Only show if there's significant network activity above threshold
     # This excludes normal background traffic but shows actual usage

@@ -3,75 +3,61 @@
 # Dependencies: aws/gcloud/az CLI (optional, reads from config files)
 #
 # Configuration options:
-#   @theme_plugin_cloud_icon              - Default icon (default: ☁️)
-#   @theme_plugin_cloud_accent_color      - Default accent color
-#   @theme_plugin_cloud_accent_color_icon - Default icon accent color
-#   @theme_plugin_cloud_cache_ttl         - Cache time in seconds (default: 30)
+#   @powerkit_plugin_cloud_icon              - Default icon (default: ☁️)
+#   @powerkit_plugin_cloud_accent_color      - Default accent color
+#   @powerkit_plugin_cloud_accent_color_icon - Default icon accent color
+#   @powerkit_plugin_cloud_cache_ttl         - Cache time in seconds (default: 30)
 #
 # Provider-specific icons:
-#   @theme_plugin_cloud_icon_aws          - AWS icon (default: )
-#   @theme_plugin_cloud_icon_gcp          - GCP icon (default: 󱇶)
-#   @theme_plugin_cloud_icon_azure        - Azure icon (default: 󰠅)
-#   @theme_plugin_cloud_icon_multi        - Multiple providers icon (default: ☁️)
+#   @powerkit_plugin_cloud_icon_aws          - AWS icon (default: )
+#   @powerkit_plugin_cloud_icon_gcp          - GCP icon (default: 󱇶)
+#   @powerkit_plugin_cloud_icon_azure        - Azure icon (default: 󰠅)
+#   @powerkit_plugin_cloud_icon_multi        - Multiple providers icon (default: ☁️)
 #
 # Display options:
-#   @theme_plugin_cloud_providers         - Providers to check: aws,gcp,azure or "all" (default: all)
-#   @theme_plugin_cloud_format            - Format: short, full, icon-only (default: short)
-#   @theme_plugin_cloud_show_account      - Show account/project ID: true, false (default: false)
-#   @theme_plugin_cloud_show_region       - Show region: true, false (default: true)
-#   @theme_plugin_cloud_max_length        - Max length for display (default: 40)
-#   @theme_plugin_cloud_separator         - Separator between providers (default: " | ")
+#   @powerkit_plugin_cloud_providers         - Providers to check: aws,gcp,azure or "all" (default: all)
+#   @powerkit_plugin_cloud_format            - Format: short, full, icon-only (default: short)
+#   @powerkit_plugin_cloud_show_account      - Show account/project ID: true, false (default: false)
+#   @powerkit_plugin_cloud_show_region       - Show region: true, false (default: true)
+#   @powerkit_plugin_cloud_max_length        - Max length for display (default: 40)
+#   @powerkit_plugin_cloud_separator         - Separator between providers (default: " | ")
 #
 # Display threshold options:
-#   @theme_plugin_cloud_display_condition - Condition: always (default)
+#   @powerkit_plugin_cloud_display_condition - Condition: always (default)
 #
 # Warning colors (for production detection):
-#   @theme_plugin_cloud_warn_on_prod      - Highlight production: true, false (default: true)
-#   @theme_plugin_cloud_prod_keywords     - Keywords for prod detection (default: "prod,production,prd")
-#   @theme_plugin_cloud_prod_accent_color - Color for prod environments (default: red)
+#   @powerkit_plugin_cloud_warn_on_prod      - Highlight production: true, false (default: true)
+#   @powerkit_plugin_cloud_prod_keywords     - Keywords for prod detection (default: "prod,production,prd")
+#   @powerkit_plugin_cloud_prod_accent_color - Color for prod environments (default: red)
 #
 # Examples:
 #   # Show only AWS with region
-#   set -g @theme_plugin_cloud_providers "aws"
-#   set -g @theme_plugin_cloud_show_region "true"
+#   set -g @powerkit_plugin_cloud_providers "aws"
+#   set -g @powerkit_plugin_cloud_show_region "true"
 #
 #   # Compact format - icon only
-#   set -g @theme_plugin_cloud_format "icon-only"
+#   set -g @powerkit_plugin_cloud_format "icon-only"
 #
 #   # Full details with account ID
-#   set -g @theme_plugin_cloud_format "full"
-#   set -g @theme_plugin_cloud_show_account "true"
+#   set -g @powerkit_plugin_cloud_format "full"
+#   set -g @powerkit_plugin_cloud_show_account "true"
 #
 #   # Highlight production environments
-#   set -g @theme_plugin_cloud_warn_on_prod "true"
-#   set -g @theme_plugin_cloud_prod_keywords "prod,production,live"
+#   set -g @powerkit_plugin_cloud_warn_on_prod "true"
+#   set -g @powerkit_plugin_cloud_prod_keywords "prod,production,live"
 # =============================================================================
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# shellcheck source=src/defaults.sh
-. "$ROOT_DIR/../defaults.sh"
-# shellcheck source=src/utils.sh
-. "$ROOT_DIR/../utils.sh"
-# shellcheck source=src/cache.sh
-. "$ROOT_DIR/../cache.sh"
-# shellcheck source=src/plugin_interface.sh
-. "$ROOT_DIR/../plugin_interface.sh"
+# shellcheck source=src/plugin_bootstrap.sh
+. "$ROOT_DIR/../plugin_bootstrap.sh"
 
 # =============================================================================
 # Plugin Configuration
 # =============================================================================
 
-# shellcheck disable=SC2034
-plugin_cloud_icon=$(get_tmux_option "@theme_plugin_cloud_icon" "$PLUGIN_CLOUD_ICON")
-# shellcheck disable=SC2034
-plugin_cloud_accent_color=$(get_tmux_option "@theme_plugin_cloud_accent_color" "$PLUGIN_CLOUD_ACCENT_COLOR")
-# shellcheck disable=SC2034
-plugin_cloud_accent_color_icon=$(get_tmux_option "@theme_plugin_cloud_accent_color_icon" "$PLUGIN_CLOUD_ACCENT_COLOR_ICON")
-
-# Cache settings
-CLOUD_CACHE_TTL=$(get_tmux_option "@theme_plugin_cloud_cache_ttl" "$PLUGIN_CLOUD_CACHE_TTL")
-CLOUD_CACHE_KEY="cloud"
+# Initialize cache (DRY - sets CACHE_KEY and CACHE_TTL automatically)
+plugin_init "cloud"
 
 # =============================================================================
 # AWS Detection Functions
@@ -158,8 +144,8 @@ get_aws_context() {
     region=$(get_aws_region "$profile")
     
     local show_account show_region
-    show_account=$(get_cached_option "@theme_plugin_cloud_show_account" "false")
-    show_region=$(get_cached_option "@theme_plugin_cloud_show_region" "true")
+    show_account=$(get_cached_option "@powerkit_plugin_cloud_show_account" "false")
+    show_region=$(get_cached_option "@powerkit_plugin_cloud_show_region" "true")
     
     if [[ "$show_account" == "true" ]]; then
         account=$(get_aws_account)
@@ -254,7 +240,7 @@ get_gcp_context() {
     project=$(get_gcp_project) || return 1
     
     local show_region
-    show_region=$(get_cached_option "@theme_plugin_cloud_show_region" "true")
+    show_region=$(get_cached_option "@powerkit_plugin_cloud_show_region" "true")
     
     if [[ "$show_region" == "true" ]]; then
         region=$(get_gcp_region)
@@ -325,7 +311,7 @@ get_azure_context() {
     subscription=$(get_azure_subscription) || return 1
     
     local show_region
-    show_region=$(get_cached_option "@theme_plugin_cloud_show_region" "true")
+    show_region=$(get_cached_option "@powerkit_plugin_cloud_show_region" "true")
     
     if [[ "$show_region" == "true" ]]; then
         location=$(get_azure_location)
@@ -349,7 +335,7 @@ is_production_context() {
     local context="$1"
     local keywords
     
-    keywords=$(get_cached_option "@theme_plugin_cloud_prod_keywords" "$PLUGIN_CLOUD_PROD_KEYWORDS")
+    keywords=$(get_cached_option "@powerkit_plugin_cloud_prod_keywords" "$POWERKIT_PLUGIN_CLOUD_PROD_KEYWORDS")
     
     # Convert comma-separated keywords to array
     IFS=',' read -ra keywords_array <<< "$keywords"
@@ -374,7 +360,7 @@ get_cloud_contexts() {
     local providers contexts=()
     local aws_ctx gcp_ctx azure_ctx
     
-    providers=$(get_cached_option "@theme_plugin_cloud_providers" "$PLUGIN_CLOUD_PROVIDERS")
+    providers=$(get_cached_option "@powerkit_plugin_cloud_providers" "$POWERKIT_PLUGIN_CLOUD_PROVIDERS")
     
     # Normalize "all" to comma-separated list
     if [[ "$providers" == "all" ]]; then
@@ -412,7 +398,7 @@ get_cloud_contexts() {
     fi
     
     local separator
-    separator=$(get_cached_option "@theme_plugin_cloud_separator" "$PLUGIN_CLOUD_SEPARATOR")
+    separator=$(get_cached_option "@powerkit_plugin_cloud_separator" "$POWERKIT_PLUGIN_CLOUD_SEPARATOR")
     
     local IFS="$separator"
     echo "${contexts[*]}"
@@ -436,19 +422,19 @@ plugin_get_display_info() {
     
     # Check for production and set warning color
     local warn_on_prod
-    warn_on_prod=$(get_cached_option "@theme_plugin_cloud_warn_on_prod" "$PLUGIN_CLOUD_WARN_ON_PROD")
+    warn_on_prod=$(get_cached_option "@powerkit_plugin_cloud_warn_on_prod" "$POWERKIT_PLUGIN_CLOUD_WARN_ON_PROD")
     
     if [[ "$warn_on_prod" == "true" ]] && is_production_context "$content"; then
-        accent=$(get_cached_option "@theme_plugin_cloud_prod_accent_color" "$PLUGIN_CLOUD_PROD_ACCENT_COLOR")
+        accent=$(get_cached_option "@powerkit_plugin_cloud_prod_accent_color" "$POWERKIT_PLUGIN_CLOUD_PROD_ACCENT_COLOR")
         accent_icon="$accent"
     fi
     
     # Determine icon based on providers in content
     local icon_aws icon_gcp icon_azure icon_multi
-    icon_aws=$(get_cached_option "@theme_plugin_cloud_icon_aws" "$PLUGIN_CLOUD_ICON_AWS")
-    icon_gcp=$(get_cached_option "@theme_plugin_cloud_icon_gcp" "$PLUGIN_CLOUD_ICON_GCP")
-    icon_azure=$(get_cached_option "@theme_plugin_cloud_icon_azure" "$PLUGIN_CLOUD_ICON_AZURE")
-    icon_multi=$(get_cached_option "@theme_plugin_cloud_icon_multi" "$PLUGIN_CLOUD_ICON_MULTI")
+    icon_aws=$(get_cached_option "@powerkit_plugin_cloud_icon_aws" "$POWERKIT_PLUGIN_CLOUD_ICON_AWS")
+    icon_gcp=$(get_cached_option "@powerkit_plugin_cloud_icon_gcp" "$POWERKIT_PLUGIN_CLOUD_ICON_GCP")
+    icon_azure=$(get_cached_option "@powerkit_plugin_cloud_icon_azure" "$POWERKIT_PLUGIN_CLOUD_ICON_AZURE")
+    icon_multi=$(get_cached_option "@powerkit_plugin_cloud_icon_multi" "$POWERKIT_PLUGIN_CLOUD_ICON_MULTI")
     
     # Count how many providers are in the content
     local provider_count=0
@@ -471,7 +457,7 @@ plugin_get_display_info() {
 load_plugin() {
     # Check cache first
     local cached_value
-    if cached_value=$(cache_get "$CLOUD_CACHE_KEY" "$CLOUD_CACHE_TTL"); then
+    if cached_value=$(cache_get "$CACHE_KEY" "$CACHE_TTL"); then
         printf '%s' "$cached_value"
         return 0
     fi
@@ -482,8 +468,8 @@ load_plugin() {
     
     # Apply format option
     local format max_length
-    format=$(get_cached_option "@theme_plugin_cloud_format" "$PLUGIN_CLOUD_FORMAT")
-    max_length=$(get_cached_option "@theme_plugin_cloud_max_length" "$PLUGIN_CLOUD_MAX_LENGTH")
+    format=$(get_cached_option "@powerkit_plugin_cloud_format" "$POWERKIT_PLUGIN_CLOUD_FORMAT")
+    max_length=$(get_cached_option "@powerkit_plugin_cloud_max_length" "$POWERKIT_PLUGIN_CLOUD_MAX_LENGTH")
     
     local result="$contexts"
     
@@ -493,7 +479,7 @@ load_plugin() {
             # Return empty - icon will be shown via plugin_get_display_info
             result=""
             # Store in cache for icon detection
-            cache_set "$CLOUD_CACHE_KEY" "$contexts"
+            cache_set "$CACHE_KEY" "$contexts"
             return 0
             ;;
         short)
@@ -507,10 +493,10 @@ load_plugin() {
     
     # Truncate if needed
     if [[ ${#result} -gt $max_length ]]; then
-        result="${result:0:$max_length}…"
+        result="${result:0:$max_length}\u2026"
     fi
     
-    cache_set "$CLOUD_CACHE_KEY" "$contexts"
+    cache_set "$CACHE_KEY" "$contexts"
     printf '%s' "$result"
 }
 

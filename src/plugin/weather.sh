@@ -6,8 +6,8 @@
 # =============================================================================
 #
 # Configuration options:
-#   @theme_plugin_weather_icon            - Plugin icon (default: 󰖐)
-#   @theme_plugin_weather_format          - Display format (default: "compact")
+#   @powerkit_plugin_weather_icon            - Plugin icon (default: 󰖐)
+#   @powerkit_plugin_weather_format          - Display format (default: "compact")
 #                                           Predefined formats:
 #                                             "compact"  - 25° ☀️
 #                                             "full"     - 25°C ☀️ H:73%
@@ -17,48 +17,34 @@
 #                                             %t - temperature, %c - condition icon
 #                                             %h - humidity, %w - wind, %l - location
 #                                             %C - condition text, %p - precipitation
-#   @theme_plugin_weather_location        - Location (default: auto-detect by IP)
-#   @theme_plugin_weather_unit            - Unit: "m" (metric), "u" (USCS), "M" (metric m/s)
-#   @theme_plugin_weather_cache_ttl       - Cache TTL in seconds (default: 900)
+#   @powerkit_plugin_weather_location        - Location (default: auto-detect by IP)
+#   @powerkit_plugin_weather_unit            - Unit: "m" (metric), "u" (USCS), "M" (metric m/s)
+#   @powerkit_plugin_weather_cache_ttl       - Cache TTL in seconds (default: 900)
 #
 # Examples:
-#   set -g @theme_plugin_weather_format "compact"
-#   set -g @theme_plugin_weather_format "full"
-#   set -g @theme_plugin_weather_format "%t %C"  # Custom: "25°C Sunny"
+#   set -g @powerkit_plugin_weather_format "compact"
+#   set -g @powerkit_plugin_weather_format "full"
+#   set -g @powerkit_plugin_weather_format "%t %C"  # Custom: "25°C Sunny"
 # =============================================================================
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# shellcheck source=src/defaults.sh
-. "$ROOT_DIR/../defaults.sh"
-# shellcheck source=src/utils.sh
-. "$ROOT_DIR/../utils.sh"
-# shellcheck source=src/cache.sh
-. "$ROOT_DIR/../cache.sh"
+# shellcheck source=src/plugin_bootstrap.sh
+. "$ROOT_DIR/../plugin_bootstrap.sh"
 
 # =============================================================================
 # Plugin Configuration
 # =============================================================================
 
-# shellcheck disable=SC2034
-plugin_weather_icon=$(get_tmux_option "@powerkit_plugin_weather_icon" "$PLUGIN_WEATHER_ICON")
-# shellcheck disable=SC2034
-plugin_weather_accent_color=$(get_tmux_option "@powerkit_plugin_weather_accent_color" "$PLUGIN_WEATHER_ACCENT_COLOR")
-# shellcheck disable=SC2034
-plugin_weather_accent_color_icon=$(get_tmux_option "@powerkit_plugin_weather_accent_color_icon" "$PLUGIN_WEATHER_ACCENT_COLOR_ICON")
-
-# Plugin-specific options
-plugin_weather_location=$(get_tmux_option "@theme_plugin_weather_location" "$PLUGIN_WEATHER_LOCATION")
-plugin_weather_unit=$(get_tmux_option "@theme_plugin_weather_unit" "$PLUGIN_WEATHER_UNIT")
-plugin_weather_format=$(get_tmux_option "@theme_plugin_weather_format" "$PLUGIN_WEATHER_FORMAT")
-
-# Cache TTL in seconds (default: 900 seconds = 15 minutes)
-WEATHER_CACHE_TTL=$(get_tmux_option "@theme_plugin_weather_cache_ttl" "$PLUGIN_WEATHER_CACHE_TTL")
-WEATHER_CACHE_KEY="weather"
+# Initialize cache (DRY - sets CACHE_KEY and CACHE_TTL automatically)
+plugin_init "weather"
 WEATHER_LOCATION_CACHE_KEY="weather_location"
 WEATHER_LOCATION_CACHE_TTL="3600"  # 1 hour for location
 
-export plugin_weather_icon plugin_weather_accent_color plugin_weather_accent_color_icon
+# Plugin-specific options
+plugin_weather_location=$(get_tmux_option "@powerkit_plugin_weather_location" "$POWERKIT_PLUGIN_WEATHER_LOCATION")
+plugin_weather_unit=$(get_tmux_option "@powerkit_plugin_weather_unit" "$POWERKIT_PLUGIN_WEATHER_UNIT")
+plugin_weather_format=$(get_tmux_option "@powerkit_plugin_weather_format" "$POWERKIT_PLUGIN_WEATHER_FORMAT")
 
 # =============================================================================
 # Predefined Format Templates
@@ -215,7 +201,7 @@ load_plugin() {
     
     # Try cache first
     local cached_value
-    if cached_value=$(cache_get "$WEATHER_CACHE_KEY" "$WEATHER_CACHE_TTL"); then
+    if cached_value=$(cache_get "$CACHE_KEY" "$CACHE_TTL"); then
         # Don't return cached N/A
         if [[ "$cached_value" != "N/A" ]]; then
             printf '%s' "$cached_value"
@@ -234,7 +220,7 @@ load_plugin() {
     result=$(weather_fetch "$location")
     
     # Cache and output
-    cache_set "$WEATHER_CACHE_KEY" "$result"
+    cache_set "$CACHE_KEY" "$result"
     printf '%s' "$result"
 }
 

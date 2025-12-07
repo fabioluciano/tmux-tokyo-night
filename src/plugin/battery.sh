@@ -8,64 +8,42 @@
 # Copyright (C) 2014 Bruno Sutic - MIT License
 #
 # Configuration options:
-#   @theme_plugin_battery_icon                 - Default icon (default: 󰁹)
-#   @theme_plugin_battery_icon_charging        - Icon when charging (default: 󰂄)
-#   @theme_plugin_battery_icon_low             - Icon when battery is low (default: 󰂃)
-#   @theme_plugin_battery_accent_color         - Default accent color
-#   @theme_plugin_battery_accent_color_icon    - Default icon accent color
-#   @theme_plugin_battery_display_mode         - "percentage" or "time" (default: percentage)
-#   @theme_plugin_battery_cache_ttl            - Cache time in seconds (default: 30)
+#   @powerkit_plugin_battery_icon                 - Default icon (default: 󰁹)
+#   @powerkit_plugin_battery_icon_charging        - Icon when charging (default: 󰂄)
+#   @powerkit_plugin_battery_icon_low             - Icon when battery is low (default: 󰂃)
+#   @powerkit_plugin_battery_accent_color         - Default accent color
+#   @powerkit_plugin_battery_accent_color_icon    - Default icon accent color
+#   @powerkit_plugin_battery_display_mode         - "percentage" or "time" (default: percentage)
+#   @powerkit_plugin_battery_cache_ttl            - Cache time in seconds (default: 30)
 #
 # Threshold/Display options:
-#   @theme_plugin_battery_display_threshold    - Show only when condition is met
-#   @theme_plugin_battery_display_condition    - Condition: le, lt, ge, gt, eq, always
-#   @theme_plugin_battery_low_threshold        - Threshold for low state (default: 30)
-#   @theme_plugin_battery_low_accent_color     - Color when low (default: red)
-#   @theme_plugin_battery_low_accent_color_icon - Icon color when low (default: red1)
+#   @powerkit_plugin_battery_display_threshold    - Show only when condition is met
+#   @powerkit_plugin_battery_display_condition    - Condition: le, lt, ge, gt, eq, always
+#   @powerkit_plugin_battery_low_threshold        - Threshold for low state (default: 30)
+#   @powerkit_plugin_battery_low_accent_color     - Color when low (default: red)
+#   @powerkit_plugin_battery_low_accent_color_icon - Icon color when low (default: red1)
 #
 # Example configurations:
 #   # Show battery only when below 50%
-#   set -g @theme_plugin_battery_display_threshold "50"
-#   set -g @theme_plugin_battery_display_condition "le"
+#   set -g @powerkit_plugin_battery_display_threshold "50"
+#   set -g @powerkit_plugin_battery_display_condition "le"
 #
 #   # Change colors when battery is below 20%
-#   set -g @theme_plugin_battery_low_threshold "20"
-#   set -g @theme_plugin_battery_low_accent_color "red"
+#   set -g @powerkit_plugin_battery_low_threshold "20"
+#   set -g @powerkit_plugin_battery_low_accent_color "red"
 # =============================================================================
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# shellcheck source=src/defaults.sh
-. "$ROOT_DIR/../defaults.sh"
-# shellcheck source=src/utils.sh
-. "$ROOT_DIR/../utils.sh"
-# shellcheck source=src/cache.sh
-. "$ROOT_DIR/../cache.sh"
-# shellcheck source=src/plugin_interface.sh
-. "$ROOT_DIR/../plugin_interface.sh"
+# shellcheck source=src/plugin_bootstrap.sh
+. "$ROOT_DIR/../plugin_bootstrap.sh"
 
 # =============================================================================
 # Plugin Configuration
 # =============================================================================
 
-# =============================================================================
-# PowerKit Plugin Configuration
-# =============================================================================
-
-# Get plugin options with PowerKit semantic color support
-plugin_battery_icon=$(get_powerkit_plugin_option "battery" "icon" "$POWERKIT_PLUGIN_BATTERY_ICON")
-plugin_battery_accent_color=$(get_powerkit_plugin_color "battery" "accent" "$(get_powerkit_color 'accent')")
-plugin_battery_accent_color_icon=$(get_powerkit_plugin_color "battery" "accent" "$(get_powerkit_color 'accent')")
-
-# Cache TTL in seconds
-BATTERY_CACHE_TTL=$(get_powerkit_plugin_option "battery" "cache_ttl" "$POWERKIT_PLUGIN_BATTERY_CACHE_TTL")
-BATTERY_CACHE_KEY="battery"
-
-# Legacy compatibility layer
-plugin_battery_icon=$(get_tmux_option "@theme_plugin_battery_icon" "$plugin_battery_icon")
-plugin_battery_accent_color=$(get_tmux_option "@theme_plugin_battery_accent_color" "$plugin_battery_accent_color")
-plugin_battery_accent_color_icon=$(get_tmux_option "@theme_plugin_battery_accent_color_icon" "$plugin_battery_accent_color_icon")
-BATTERY_CACHE_TTL=$(get_tmux_option "@theme_plugin_battery_cache_ttl" "$BATTERY_CACHE_TTL")
+# Initialize cache (DRY - sets CACHE_KEY and CACHE_TTL automatically)
+plugin_init "battery"
 
 # =============================================================================
 # Platform Detection
@@ -266,7 +244,7 @@ plugin_get_type() {
     printf 'conditional'
 }
 
-# This function is called by render_plugins.sh to get display decisions
+# This function is called by plugin_helpers.sh to get display decisions
 # Output format: "show:accent:accent_icon:icon"
 plugin_get_display_info() {
     local content="$1"
@@ -282,8 +260,8 @@ plugin_get_display_info() {
     # Check display condition (hide based on threshold)
     # Use get_cached_option for performance in render loop
     local display_condition display_threshold
-    display_condition=$(get_cached_option "@theme_plugin_battery_display_condition" "always")
-    display_threshold=$(get_cached_option "@theme_plugin_battery_display_threshold" "")
+    display_condition=$(get_cached_option "@powerkit_plugin_battery_display_condition" "always")
+    display_threshold=$(get_cached_option "@powerkit_plugin_battery_display_threshold" "")
     
     if [[ "$display_condition" != "always" ]] && [[ -n "$display_threshold" ]]; then
         if ! evaluate_condition "$value" "$display_condition" "$display_threshold"; then
@@ -291,24 +269,28 @@ plugin_get_display_info() {
         fi
     fi
     
+    # Default colors
+    accent=$(get_cached_option "@powerkit_plugin_battery_accent_color" "$POWERKIT_PLUGIN_BATTERY_ACCENT_COLOR")
+    accent_icon=$(get_cached_option "@powerkit_plugin_battery_accent_color_icon" "$POWERKIT_PLUGIN_BATTERY_ACCENT_COLOR_ICON")
+    
     # Check if charging - use charging icon, skip low threshold colors
     if battery_is_charging; then
-        icon=$(get_cached_option "@theme_plugin_battery_icon_charging" "$PLUGIN_BATTERY_ICON_CHARGING")
+        icon=$(get_cached_option "@powerkit_plugin_battery_icon_charging" "$POWERKIT_PLUGIN_BATTERY_ICON_CHARGING")
     else
         # Check thresholds for color and icon changes (check low first, then warning)
         local low_threshold warning_threshold
-        low_threshold=$(get_cached_option "@theme_plugin_battery_low_threshold" "$PLUGIN_BATTERY_LOW_THRESHOLD")
-        warning_threshold=$(get_cached_option "@theme_plugin_battery_warning_threshold" "$PLUGIN_BATTERY_WARNING_THRESHOLD")
+        low_threshold=$(get_cached_option "@powerkit_plugin_battery_low_threshold" "$POWERKIT_PLUGIN_BATTERY_LOW_THRESHOLD")
+        warning_threshold=$(get_cached_option "@powerkit_plugin_battery_warning_threshold" "$POWERKIT_PLUGIN_BATTERY_WARNING_THRESHOLD")
         
         if [[ -n "$value" ]] && [[ "$value" -le "$low_threshold" ]]; then
             # Critical low (30% or less) - red colors
-            accent=$(get_cached_option "@theme_plugin_battery_low_accent_color" "$PLUGIN_BATTERY_LOW_ACCENT_COLOR")
-            accent_icon=$(get_cached_option "@theme_plugin_battery_low_accent_color_icon" "$PLUGIN_BATTERY_LOW_ACCENT_COLOR_ICON")
-            icon=$(get_cached_option "@theme_plugin_battery_icon_low" "$PLUGIN_BATTERY_ICON_LOW")
+            accent=$(get_cached_option "@powerkit_plugin_battery_low_accent_color" "$POWERKIT_PLUGIN_BATTERY_LOW_ACCENT_COLOR")
+            accent_icon=$(get_cached_option "@powerkit_plugin_battery_low_accent_color_icon" "$POWERKIT_PLUGIN_BATTERY_LOW_ACCENT_COLOR_ICON")
+            icon=$(get_cached_option "@powerkit_plugin_battery_icon_low" "$POWERKIT_PLUGIN_BATTERY_ICON_LOW")
         elif [[ -n "$value" ]] && [[ "$value" -le "$warning_threshold" ]]; then
             # Warning level (50% or less) - yellow colors
-            accent=$(get_cached_option "@theme_plugin_battery_warning_accent_color" "$PLUGIN_BATTERY_WARNING_ACCENT_COLOR")
-            accent_icon=$(get_cached_option "@theme_plugin_battery_warning_accent_color_icon" "$PLUGIN_BATTERY_WARNING_ACCENT_COLOR_ICON")
+            accent=$(get_cached_option "@powerkit_plugin_battery_warning_accent_color" "$POWERKIT_PLUGIN_BATTERY_WARNING_ACCENT_COLOR")
+            accent_icon=$(get_cached_option "@powerkit_plugin_battery_warning_accent_color_icon" "$POWERKIT_PLUGIN_BATTERY_WARNING_ACCENT_COLOR_ICON")
         fi
     fi
     
@@ -325,10 +307,10 @@ load_plugin() {
     fi
 
     local display_mode
-    display_mode=$(get_tmux_option "@theme_plugin_battery_display_mode" "$PLUGIN_BATTERY_DISPLAY_MODE")
+    display_mode=$(get_tmux_option "@powerkit_plugin_battery_display_mode" "$POWERKIT_PLUGIN_BATTERY_DISPLAY_MODE")
 
     local cached_value
-    if cached_value=$(cache_get "$BATTERY_CACHE_KEY" "$BATTERY_CACHE_TTL"); then
+    if cached_value=$(cache_get "$CACHE_KEY" "$CACHE_TTL"); then
         printf '%s' "$cached_value"
         return 0
     fi
@@ -339,7 +321,7 @@ load_plugin() {
     local result
     result=$(battery_format_output "$percentage" "$display_mode")
 
-    cache_set "$BATTERY_CACHE_KEY" "$result"
+    cache_set "$CACHE_KEY" "$result"
     printf '%s' "$result"
 }
 

@@ -15,38 +15,23 @@
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# shellcheck source=src/defaults.sh
-. "$ROOT_DIR/../defaults.sh"
-# shellcheck source=src/utils.sh
-. "$ROOT_DIR/../utils.sh"
-# shellcheck source=src/cache.sh
-. "$ROOT_DIR/../cache.sh"
-# shellcheck source=src/plugin_interface.sh
-. "$ROOT_DIR/../plugin_interface.sh"
+# shellcheck source=src/plugin_bootstrap.sh
+. "$ROOT_DIR/../plugin_bootstrap.sh"
 
 # =============================================================================
 # Plugin Configuration
 # =============================================================================
 
-# shellcheck disable=SC2034
-plugin_packages_icon=$(get_tmux_option "@theme_plugin_packages_icon" "$PLUGIN_PACKAGES_ICON")
-# shellcheck disable=SC2034
-plugin_packages_accent_color=$(get_tmux_option "@theme_plugin_packages_accent_color" "$PLUGIN_PACKAGES_ACCENT_COLOR")
-# shellcheck disable=SC2034
-plugin_packages_accent_color_icon=$(get_tmux_option "@theme_plugin_packages_accent_color_icon" "$PLUGIN_PACKAGES_ACCENT_COLOR_ICON")
-
-# Preferred backend: auto, brew, yay, apt, dnf, pacman
-plugin_packages_backend=$(get_tmux_option "@theme_plugin_packages_backend" "$PLUGIN_PACKAGES_BACKEND")
-
-# Additional options for specific backends
-plugin_packages_brew_options=$(get_tmux_option "@theme_plugin_packages_brew_options" "$PLUGIN_PACKAGES_BREW_OPTIONS")
-
-# Cache TTL in seconds (default: 1800 = 30 minutes)
-CACHE_TTL=$(get_tmux_option "@theme_plugin_packages_cache_ttl" "$PLUGIN_PACKAGES_CACHE_TTL")
-CACHE_KEY="packages"
+# Initialize cache (DRY - sets CACHE_KEY and CACHE_TTL automatically)
+plugin_init "packages"
 LOCK_DIR="${CACHE_DIR:-$HOME/.cache/tmux-tokyo-night}/packages_updating.lock"
 
-export plugin_packages_icon plugin_packages_accent_color plugin_packages_accent_color_icon
+# Plugin-specific settings
+# Preferred backend: auto, brew, yay, apt, dnf, pacman
+plugin_packages_backend=$(get_tmux_option "@powerkit_plugin_packages_backend" "$POWERKIT_PLUGIN_PACKAGES_BACKEND")
+
+# Additional options for specific backends
+plugin_packages_brew_options=$(get_tmux_option "@powerkit_plugin_packages_brew_options" "$POWERKIT_PLUGIN_PACKAGES_BREW_OPTIONS")
 
 # =============================================================================
 # Backend Detection

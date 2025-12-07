@@ -1,71 +1,39 @@
 #!/usr/bin/env bash
-# Cache System for tmux-tokyo-night plugins
-# File-based caching for external data
+# =============================================================================
+# PowerKit Cache System - KISS/DRY Version
+# =============================================================================
 
-# Source guard - prevent multiple sourcing
-# shellcheck disable=SC2317
-if [[ -n "${_TMUX_TOKYO_NIGHT_CACHE_LOADED:-}" ]]; then
-    # Already loaded, just return (don't exit as we might be in a subshell)
-    return 0 2>/dev/null || true
-fi
-_TMUX_TOKYO_NIGHT_CACHE_LOADED=1
+# Source guard
+[[ -n "${_POWERKIT_CACHE_LOADED:-}" ]] && return 0
+_POWERKIT_CACHE_LOADED=1
 
-# Default cache directory (uses XDG_CACHE_HOME or fallback to ~/.cache)
+# Cache directory
 CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/tmux-tokyo-night"
 
-# Detect OS once for stat command compatibility (use utils.sh if available)
+# OS detection for stat command (reuse from utils.sh if available)
 _CACHE_IS_MACOS=""
-if [[ -n "$_CACHED_OS" ]]; then
+if [[ -n "${_CACHED_OS:-}" ]]; then
     [[ "$_CACHED_OS" == "Darwin" ]] && _CACHE_IS_MACOS="1"
 else
-    [[ "$(uname)" == "Darwin" ]] && _CACHE_IS_MACOS="1"
+    [[ "$(uname -s)" == "Darwin" ]] && _CACHE_IS_MACOS="1"
 fi
 
-# Flag to track if cache directory has been initialized
-_CACHE_DIR_INITIALIZED=""
-
-# -----------------------------------------------------------------------------
-# Ensures the cache directory exists (only runs once per session)
-# -----------------------------------------------------------------------------
+# Initialize cache directory (once per session)
+_CACHE_INIT=""
 cache_init() {
-    [[ -n "$_CACHE_DIR_INITIALIZED" ]] && return
+    [[ -n "$_CACHE_INIT" ]] && return
     [[ -d "$CACHE_DIR" ]] || mkdir -p "$CACHE_DIR"
-    _CACHE_DIR_INITIALIZED=1
+    _CACHE_INIT=1
 }
 
-# -----------------------------------------------------------------------------
-# Get the cache file path for a given plugin
-#
-# Arguments:
-#   $1 - Plugin name (used as cache file identifier)
-#
-# Output:
-#   Path to the cache file
-# -----------------------------------------------------------------------------
-cache_file_path() {
-    local plugin_name="$1"
-    echo "${CACHE_DIR}/${plugin_name}.cache"
-}
-
-# -----------------------------------------------------------------------------
-# Check if cache exists and is still valid (not expired)
-#
-# Arguments:
-#   $1 - Plugin name
-#   $2 - TTL (Time To Live) in seconds
-#
-# Returns:
-#   0 if cache is valid, 1 otherwise
-# -----------------------------------------------------------------------------
+# Check if cache is valid
+# Usage: cache_is_valid <key> <ttl_seconds>
 cache_is_valid() {
-    local plugin_name="$1"
+    local cache_file="${CACHE_DIR}/${1}.cache"
     local ttl_seconds="$2"
-    local cache_file="${CACHE_DIR}/${plugin_name}.cache"
     
-    # Single existence check and stat call
     [[ -f "$cache_file" ]] || return 1
     
-    # Get file modification time - use simpler approach
     local file_mtime current_time
     current_time=$(date +%s)
     
@@ -75,122 +43,49 @@ cache_is_valid() {
         file_mtime=$(stat -c "%Y" "$cache_file" 2>/dev/null) || return 1
     fi
     
-    # Check expiration inline
     (( (current_time - file_mtime) < ttl_seconds ))
 }
 
-# -----------------------------------------------------------------------------
-# Get cached value if valid
-#
-# Arguments:
-#   $1 - Plugin name
-#   $2 - TTL (Time To Live) in seconds
-#
-# Output:
-#   Cached value if valid
-#
-# Returns:
-#   0 if cache hit and value returned, 1 if cache miss
-# -----------------------------------------------------------------------------
+# Get cached value
+# Usage: cache_get <key> <ttl_seconds>
 cache_get() {
-    local plugin_name="$1"
+    local cache_file="${CACHE_DIR}/${1}.cache"
     local ttl_seconds="$2"
-    local cache_file="${CACHE_DIR}/${plugin_name}.cache"
     
     cache_init
     
-    if cache_is_valid "$plugin_name" "$ttl_seconds"; then
-        # Faster file reading - avoid subshell for small files
-        if [[ -r "$cache_file" ]]; then
-            printf '%s' "$(<"$cache_file")"
-            return 0
-        fi
+    if cache_is_valid "$1" "$ttl_seconds" && [[ -r "$cache_file" ]]; then
+        printf '%s' "$(<"$cache_file")"
+        return 0
     fi
-    
     return 1
 }
 
-# -----------------------------------------------------------------------------
 # Store value in cache
-#
-# Arguments:
-#   $1 - Plugin name
-#   $2 - Value to cache
-# -----------------------------------------------------------------------------
+# Usage: cache_set <key> <value>
 cache_set() {
-    local plugin_name="$1"
-    local value="$2"
-    
     cache_init
-    printf '%s' "$value" > "${CACHE_DIR}/${plugin_name}.cache"
+    printf '%s' "$2" > "${CACHE_DIR}/${1}.cache"
 }
 
-# -----------------------------------------------------------------------------
-# Invalidate (delete) cache for a plugin
-#
-# Arguments:
-#   $1 - Plugin name
-# -----------------------------------------------------------------------------
+# Invalidate cache
+# Usage: cache_invalidate <key>
 cache_invalidate() {
     local cache_file="${CACHE_DIR}/${1}.cache"
     [[ -f "$cache_file" ]] && rm -f "$cache_file"
 }
 
-# -----------------------------------------------------------------------------
-# Clear all cache files
-# -----------------------------------------------------------------------------
+# Clear all caches
 cache_clear_all() {
     [[ -d "$CACHE_DIR" ]] && rm -rf "${CACHE_DIR:?}"/*
 }
 
-# =============================================================================
-# Keybinding Setup
-# =============================================================================
-
-# -----------------------------------------------------------------------------
-# Setup cache clear keybinding (called during theme initialization)
-# -----------------------------------------------------------------------------
+# Setup cache clear keybinding
 setup_keybindings() {
     local clear_key
+    clear_key=$(get_tmux_option "@powerkit_cache_clear_key" "${POWERKIT_PLUGIN_CACHE_CLEAR_KEY:-Q}")
     
-    # Get keybinding from defaults (can be overridden by user)
-    clear_key=$(get_tmux_option "@powerkit_cache_clear_key" "${PLUGIN_CACHE_CLEAR_KEY:-M}")
-    
-    # Setup cache clear keybinding: clear all caches and refresh status bar
-    if [[ -n "$clear_key" ]]; then
-        tmux bind-key "$clear_key" run-shell \
-            "rm -rf '${CACHE_DIR:?}'/* 2>/dev/null; tmux refresh-client -S" \
-            \\\; display "Tokyo Night plugin cache cleared!"
-    fi
-}
-
-# -----------------------------------------------------------------------------
-# Get remaining TTL for a cached value
-#
-# Arguments:
-#   $1 - Plugin name
-#   $2 - Original TTL in seconds
-#
-# Output:
-#   Remaining seconds until cache expires, or 0 if expired/missing
-# -----------------------------------------------------------------------------
-cache_remaining_ttl() {
-    local plugin_name="$1"
-    local ttl_seconds="$2"
-    local cache_file="${CACHE_DIR}/${plugin_name}.cache"
-    
-    [[ -f "$cache_file" ]] || { printf '0'; return; }
-    
-    local file_mtime
-    if [[ -n "$_CACHE_IS_MACOS" ]]; then
-        file_mtime=$(stat -f "%m" "$cache_file" 2>/dev/null) || { printf '0'; return; }
-    else
-        file_mtime=$(stat -c "%Y" "$cache_file" 2>/dev/null) || { printf '0'; return; }
-    fi
-    
-    local current_time remaining
-    current_time=$(date +%s)
-    remaining=$((ttl_seconds - (current_time - file_mtime)))
-    
-    (( remaining > 0 )) && printf '%d' "$remaining" || printf '0'
+    [[ -n "$clear_key" ]] && tmux bind-key "$clear_key" run-shell \
+        "rm -rf '${CACHE_DIR:?}'/* 2>/dev/null; tmux refresh-client -S" \
+        \\\; display "PowerKit cache cleared!"
 }

@@ -5,31 +5,15 @@
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# shellcheck source=src/defaults.sh
-. "$ROOT_DIR/../defaults.sh"
-# shellcheck source=src/utils.sh
-. "$ROOT_DIR/../utils.sh"
+# shellcheck source=src/plugin_bootstrap.sh
+. "$ROOT_DIR/../plugin_bootstrap.sh"
 
 # =============================================================================
 # Plugin Configuration
 # =============================================================================
 
-# Get plugin options with defaults
-get_plugin_option() {
-    local option="$1"
-    local default="$2"
-    get_tmux_option "@theme_plugin_smartkey_$option" "$default"
-}
-
-# Plugin variables for theme system
-# shellcheck disable=SC2034
-plugin_smartkey_icon=$(get_plugin_option "icon" "$PLUGIN_SMARTKEY_ICON")
-# shellcheck disable=SC2034
-plugin_smartkey_accent_color=$(get_plugin_option "accent_color" "$PLUGIN_SMARTKEY_ACCENT_COLOR")
-# shellcheck disable=SC2034
-plugin_smartkey_accent_color_icon=$(get_plugin_option "accent_color_icon" "$PLUGIN_SMARTKEY_ACCENT_COLOR_ICON")
-
-export plugin_smartkey_icon plugin_smartkey_accent_color plugin_smartkey_accent_color_icon
+# Initialize cache (DRY - sets CACHE_KEY and CACHE_TTL automatically)
+plugin_init "smartkey"
 
 # =============================================================================
 # Plugin Interface Implementation
@@ -41,9 +25,9 @@ plugin_get_type() {
 }
 
 # Plugin settings (from defaults.sh)
-PLUGIN_CACHE_TTL=$(get_plugin_option "cache_ttl" "$PLUGIN_SMARTKEY_CACHE_TTL")
+PLUGIN_CACHE_TTL=$(get_plugin_option "cache_ttl" "$POWERKIT_PLUGIN_SMARTKEY_CACHE_TTL")
 # Use shorter cache for more responsive detection during touch operations
-if [[ -z "$PLUGIN_CACHE_TTL" ]]; then
+if [[ -z "$POWERKIT_PLUGIN_CACHE_TTL" ]]; then
     PLUGIN_CACHE_TTL=1
 fi
 
@@ -242,38 +226,14 @@ check_piv_waiting() {
 # Cache Management
 # =============================================================================
 
-get_cache_file() {
-    local cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/tmux-tokyo-night"
-    mkdir -p "$cache_dir" 2>/dev/null
-    echo "$cache_dir/smartkey.cache"
-}
-
-is_cache_valid() {
-    local cache_file="$1"
-    local ttl="$2"
-    
-    if [[ -f "$cache_file" ]]; then
-        local cache_time current_time
-        cache_time=$(stat -c %Y "$cache_file" 2>/dev/null || stat -f %m "$cache_file" 2>/dev/null || echo 0)
-        current_time=$(date +%s)
-        
-        if [[ $((current_time - cache_time)) -lt $ttl ]]; then
-            return 0
-        fi
-    fi
-    return 1
-}
-
 get_cached_or_fetch() {
-    local cache_file
-    cache_file=$(get_cache_file)
-    
-    if is_cache_valid "$cache_file" "$PLUGIN_CACHE_TTL"; then
-        cat "$cache_file"
+    local cached_value
+    if cached_value=$(cache_get "$CACHE_KEY" "$CACHE_TTL"); then
+        echo "$cached_value"
     else
         local result
         result=$(detect_smartkey_waiting)
-        echo "$result" > "$cache_file"
+        cache_set "$CACHE_KEY" "$result"
         echo "$result"
     fi
 }
@@ -282,7 +242,7 @@ get_cached_or_fetch() {
 # Plugin Display Info for Render System
 # =============================================================================
 
-# This function is called by render_plugins.sh to get display decisions
+# This function is called by plugin_helpers.sh to get display decisions
 # Output format: "show:accent:accent_icon:icon"
 plugin_get_display_info() {
     local _content="$1"
@@ -295,11 +255,11 @@ plugin_get_display_info() {
     # Show when smart card/hardware key is waiting for interaction
     if [[ "$waiting_status" == "true" ]]; then
         # Waiting for touch - yellow/orange colors with special icon
-        local waiting_accent=$(get_plugin_option "waiting_accent_color" "$PLUGIN_SMARTKEY_WAITING_ACCENT_COLOR")
-        local waiting_accent_icon=$(get_plugin_option "waiting_accent_color_icon" "$PLUGIN_SMARTKEY_WAITING_ACCENT_COLOR_ICON")
-        local waiting_icon=$(get_plugin_option "waiting_icon" "$PLUGIN_SMARTKEY_WAITING_ICON")
+        local waiting_accent=$(get_plugin_option "waiting_accent_color" "$POWERKIT_PLUGIN_SMARTKEY_WAITING_ACCENT_COLOR")
+        local waiting_accent_icon=$(get_plugin_option "waiting_accent_color_icon" "$POWERKIT_PLUGIN_SMARTKEY_WAITING_ACCENT_COLOR_ICON")
+        local waiting_icon=$(get_plugin_option "waiting_icon" "$POWERKIT_PLUGIN_SMARTKEY_WAITING_ICON")
         echo "1:$waiting_accent:$waiting_accent_icon:$waiting_icon"
-    elif [[ "$(get_plugin_option "show_when_inactive" "$PLUGIN_SMARTKEY_SHOW_WHEN_INACTIVE")" == "true" ]]; then
+    elif [[ "$(get_plugin_option "show_when_inactive" "$POWERKIT_PLUGIN_SMARTKEY_SHOW_WHEN_INACTIVE")" == "true" ]]; then
         # Show inactive state if configured
         echo "1:$plugin_smartkey_accent_color:$plugin_smartkey_accent_color_icon:$plugin_smartkey_icon"
     else
@@ -330,7 +290,7 @@ load_plugin() {
             "logs")      printf 'TOUCH' ;;
             *)           printf 'TOUCH' ;;
         esac
-    elif [[ "$(get_plugin_option "show_when_inactive" "$PLUGIN_SMARTKEY_SHOW_WHEN_INACTIVE")" == "true" ]]; then
+    elif [[ "$(get_plugin_option "show_when_inactive" "$POWERKIT_PLUGIN_SMARTKEY_SHOW_WHEN_INACTIVE")" == "true" ]]; then
         # Show key icon when inactive but plugin visible
         printf 'KEY'
     fi

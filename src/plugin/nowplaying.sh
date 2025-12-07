@@ -14,46 +14,31 @@
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# shellcheck source=src/defaults.sh
-. "$ROOT_DIR/../defaults.sh"
-# shellcheck source=src/utils.sh
-. "$ROOT_DIR/../utils.sh"
-# shellcheck source=src/cache.sh
-. "$ROOT_DIR/../cache.sh"
-# shellcheck source=src/plugin_interface.sh
-. "$ROOT_DIR/../plugin_interface.sh"
+# shellcheck source=src/plugin_bootstrap.sh
+. "$ROOT_DIR/../plugin_bootstrap.sh"
 
 # =============================================================================
 # Plugin Configuration
 # =============================================================================
 
-# shellcheck disable=SC2034
-plugin_nowplaying_icon=$(get_tmux_option "@theme_plugin_nowplaying_icon" "$PLUGIN_NOWPLAYING_ICON")
-# shellcheck disable=SC2034
-plugin_nowplaying_accent_color=$(get_tmux_option "@theme_plugin_nowplaying_accent_color" "$PLUGIN_NOWPLAYING_ACCENT_COLOR")
-# shellcheck disable=SC2034
-plugin_nowplaying_accent_color_icon=$(get_tmux_option "@theme_plugin_nowplaying_accent_color_icon" "$PLUGIN_NOWPLAYING_ACCENT_COLOR_ICON")
+# Initialize cache (DRY - sets CACHE_KEY and CACHE_TTL automatically)
+plugin_init "nowplaying"
 
+# Plugin-specific settings
 # Format: %artist%, %track%, %album%
-plugin_nowplaying_format=$(get_tmux_option "@theme_plugin_nowplaying_format" "$PLUGIN_NOWPLAYING_FORMAT")
+plugin_nowplaying_format=$(get_tmux_option "@powerkit_plugin_nowplaying_format" "$POWERKIT_PLUGIN_NOWPLAYING_FORMAT")
 
 # Maximum length for output (0 = no limit)
-plugin_nowplaying_max_length=$(get_tmux_option "@theme_plugin_nowplaying_max_length" "$PLUGIN_NOWPLAYING_MAX_LENGTH")
+plugin_nowplaying_max_length=$(get_tmux_option "@powerkit_plugin_nowplaying_max_length" "$POWERKIT_PLUGIN_NOWPLAYING_MAX_LENGTH")
 
 # What to show when not playing (empty = hide plugin)
-plugin_nowplaying_not_playing=$(get_tmux_option "@theme_plugin_nowplaying_not_playing" "$PLUGIN_NOWPLAYING_NOT_PLAYING")
+plugin_nowplaying_not_playing=$(get_tmux_option "@powerkit_plugin_nowplaying_not_playing" "$POWERKIT_PLUGIN_NOWPLAYING_NOT_PLAYING")
 
 # Preferred backend: auto, osascript, playerctl, spotify, spt
-plugin_nowplaying_backend=$(get_tmux_option "@theme_plugin_nowplaying_backend" "$PLUGIN_NOWPLAYING_BACKEND")
+plugin_nowplaying_backend=$(get_tmux_option "@powerkit_plugin_nowplaying_backend" "$POWERKIT_PLUGIN_NOWPLAYING_BACKEND")
 
 # Ignore specific players for playerctl (comma-separated)
-plugin_nowplaying_ignore_players=$(get_tmux_option "@theme_plugin_nowplaying_ignore_players" "$PLUGIN_NOWPLAYING_IGNORE_PLAYERS")
-
-# Cache TTL in seconds
-CACHE_TTL=$(get_tmux_option "@theme_plugin_nowplaying_cache_ttl" "$PLUGIN_NOWPLAYING_CACHE_TTL")
-CACHE_KEY="nowplaying"
-
-export plugin_nowplaying_icon plugin_nowplaying_accent_color plugin_nowplaying_accent_color_icon
+plugin_nowplaying_ignore_players=$(get_tmux_option "@powerkit_plugin_nowplaying_ignore_players" "$POWERKIT_PLUGIN_NOWPLAYING_IGNORE_PLAYERS")
 
 # =============================================================================
 # Backend Detection

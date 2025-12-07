@@ -7,29 +7,15 @@
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# shellcheck source=src/defaults.sh
-. "$ROOT_DIR/../defaults.sh"
-# shellcheck source=src/utils.sh
-. "$ROOT_DIR/../utils.sh"
-# shellcheck source=src/cache.sh
-. "$ROOT_DIR/../cache.sh"
-# shellcheck source=src/plugin_interface.sh
-. "$ROOT_DIR/../plugin_interface.sh"
+# shellcheck source=src/plugin_bootstrap.sh
+. "$ROOT_DIR/../plugin_bootstrap.sh"
 
 # =============================================================================
 # Plugin Configuration
 # =============================================================================
 
-# shellcheck disable=SC2034
-plugin_external_ip_icon=$(get_tmux_option "@theme_plugin_external_ip_icon" "$PLUGIN_EXTERNAL_IP_ICON")
-# shellcheck disable=SC2034
-plugin_external_ip_accent_color=$(get_tmux_option "@theme_plugin_external_ip_accent_color" "$PLUGIN_EXTERNAL_IP_ACCENT_COLOR")
-# shellcheck disable=SC2034
-plugin_external_ip_accent_color_icon=$(get_tmux_option "@theme_plugin_external_ip_accent_color_icon" "$PLUGIN_EXTERNAL_IP_ACCENT_COLOR_ICON")
-
-# Cache settings
-EXTERNAL_IP_CACHE_TTL=$(get_tmux_option "@theme_plugin_external_ip_cache_ttl" "$PLUGIN_EXTERNAL_IP_CACHE_TTL")
-EXTERNAL_IP_CACHE_KEY="external_ip"
+# Initialize cache (DRY - sets CACHE_KEY and CACHE_TTL automatically)
+plugin_init "external_ip"
 
 # =============================================================================
 # External IP Detection
@@ -52,15 +38,8 @@ plugin_get_type() {
     printf 'conditional'
 }
 
-plugin_get_display_info() {
-    local content="$1"
-    local show="1"
-    local accent=""
-    local accent_icon=""
-    local icon=""
-    
-    build_display_info "$show" "$accent" "$accent_icon" "$icon"
-}
+# NOTE: plugin_get_display_info() removed - uses centralized theme-controlled system
+# No custom threshold/icon logic needed for this plugin
 
 # =============================================================================
 # Main Plugin Logic
@@ -69,7 +48,7 @@ plugin_get_display_info() {
 load_plugin() {
     # Check cache first
     local cached_value
-    if cached_value=$(cache_get "$EXTERNAL_IP_CACHE_KEY" "$EXTERNAL_IP_CACHE_TTL"); then
+    if cached_value=$(cache_get "$CACHE_KEY" "$CACHE_TTL"); then
         printf '%s' "$cached_value"
         return 0
     fi
@@ -81,7 +60,7 @@ load_plugin() {
         return 0
     fi
     
-    cache_set "$EXTERNAL_IP_CACHE_KEY" "$ip"
+    cache_set "$CACHE_KEY" "$ip"
     printf '%s' "$ip"
 }
 

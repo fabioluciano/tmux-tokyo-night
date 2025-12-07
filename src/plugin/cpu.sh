@@ -7,31 +7,15 @@
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# shellcheck source=src/defaults.sh
-. "$ROOT_DIR/../defaults.sh"
-# shellcheck source=src/utils.sh
-. "$ROOT_DIR/../utils.sh"
-# shellcheck source=src/cache.sh
-. "$ROOT_DIR/../cache.sh"
-# shellcheck source=src/plugin_interface.sh
-. "$ROOT_DIR/../plugin_interface.sh"
+# shellcheck source=src/plugin_bootstrap.sh
+. "$ROOT_DIR/../plugin_bootstrap.sh"
 
 # =============================================================================
 # Plugin Configuration
 # =============================================================================
 
-# shellcheck disable=SC2034
-plugin_cpu_icon=$(get_tmux_option "@powerkit_plugin_cpu_icon" "$POWERKIT_PLUGIN_CPU_ICON")
-# shellcheck disable=SC2034
-plugin_cpu_accent_color=$(get_tmux_option "@powerkit_plugin_cpu_accent_color" "$POWERKIT_PLUGIN_CPU_ACCENT_COLOR")
-# shellcheck disable=SC2034
-plugin_cpu_accent_color_icon=$(get_tmux_option "@powerkit_plugin_cpu_accent_color_icon" "$POWERKIT_PLUGIN_CPU_ACCENT_COLOR_ICON")
-
-# Cache TTL in seconds (default: 2 seconds)
-CACHE_TTL=$(get_tmux_option "@powerkit_plugin_cpu_cache_ttl" "$POWERKIT_PLUGIN_CPU_CACHE_TTL")
-CACHE_KEY="cpu"
-
-export plugin_cpu_icon plugin_cpu_accent_color plugin_cpu_accent_color_icon
+# Initialize cache (DRY - sets CACHE_KEY and CACHE_TTL automatically)
+plugin_init "cpu"
 
 # =============================================================================
 # CPU Calculation Functions
@@ -55,7 +39,7 @@ get_cpu_linux() {
     done
 
     # Wait a bit for second measurement
-    sleep 0.1
+    sleep "$POWERKIT_TIMING_CPU_SAMPLE"
 
     # Read second measurement
     cpu_line=$(command grep '^cpu ' /proc/stat)
@@ -87,7 +71,7 @@ get_cpu_macos() {
     
     # Use iostat which provides instant CPU utilization
     # Last line contains current stats (no historical average)
-    cpu_usage=$(iostat -c 1 2>/dev/null | tail -1 | awk '{print 100-$6}' | awk '{printf "%.0f", $1}')
+    cpu_usage=$(iostat -c "$POWERKIT_IOSTAT_COUNT" 2>/dev/null | tail -1 | awk -v base="$POWERKIT_IOSTAT_BASELINE" -v field="$POWERKIT_IOSTAT_CPU_FIELD" '{print base-$field}' | awk '{printf "%.0f", $1}')
     
     # Fallback to ps if iostat not available
     if [[ -z "$cpu_usage" || "$cpu_usage" == "100" ]]; then
@@ -95,8 +79,8 @@ get_cpu_macos() {
         num_cores=$(sysctl -n hw.ncpu 2>/dev/null || echo 1)
         
         # Use more efficient ps with reduced process scanning
-        cpu_usage=$(command ps -axo %cpu | command awk -v cores="$num_cores" '
-            NR>1 && NR<=50 {sum+=$1}  # Only scan first 50 processes for performance
+        cpu_usage=$(command ps -axo %cpu | command awk -v cores="$num_cores" -v limit="$POWERKIT_PERF_CPU_PROCESS_LIMIT" '
+            NR>1 && NR<=limit {sum+=$1}  # Only scan first N processes for performance
             END {
                 avg = sum / cores
                 if (avg > 100) avg = 100
@@ -117,56 +101,12 @@ plugin_get_type() {
     printf 'static'
 }
 
-# This function is called by render_plugins.sh to get display decisions
+# This function is called by plugin_helpers.sh to get display decisions
 # Output format: "show:accent:accent_icon:icon"
 #
 # Configuration options:
 #   @powerkit_plugin_cpu_display_condition    - Condition: le, lt, ge, gt, eq, always
-#   @powerkit_plugin_cpu_display_threshold    - Show only when condition is met
-#   @powerkit_plugin_cpu_warning_threshold    - Warning level (default: 70)
-#   @powerkit_plugin_cpu_critical_threshold   - Critical level (default: 90)
-#   @powerkit_plugin_cpu_warning_accent_color - Color for warning level
-#   @powerkit_plugin_cpu_critical_accent_color - Color for critical level
-plugin_get_display_info() {
-    local content="$1"
-    local show="1"
-    local accent=""
-    local accent_icon=""
-    local icon=""
-    
-    # Extract numeric value from content
-    local value
-    value=$(extract_numeric "$content")
-    
-    # Check display condition (hide based on threshold)
-    # Use get_cached_option for performance in render loop
-    local display_condition display_threshold
-    display_condition=$(get_cached_option "@powerkit_plugin_cpu_display_condition" "always")
-    display_threshold=$(get_cached_option "@powerkit_plugin_cpu_display_threshold" "")
-    
-    if [[ "$display_condition" != "always" ]] && [[ -n "$display_threshold" ]]; then
-        if ! evaluate_condition "$value" "$display_condition" "$display_threshold"; then
-            show="0"
-        fi
-    fi
-    
-    # Check warning/critical thresholds for color changes
-    local warning_threshold critical_threshold
-    warning_threshold=$(get_cached_option "@powerkit_plugin_cpu_warning_threshold" "$PLUGIN_CPU_WARNING_THRESHOLD")
-    critical_threshold=$(get_cached_option "@powerkit_plugin_cpu_critical_threshold" "$PLUGIN_CPU_CRITICAL_THRESHOLD")
-    
-    if [[ -n "$value" ]]; then
-        if [[ "$value" -ge "$critical_threshold" ]]; then
-            accent=$(get_cached_option "@theme_plugin_cpu_critical_accent_color" "$PLUGIN_CPU_CRITICAL_ACCENT_COLOR")
-            accent_icon=$(get_cached_option "@theme_plugin_cpu_critical_accent_color_icon" "$PLUGIN_CPU_CRITICAL_ACCENT_COLOR_ICON")
-        elif [[ "$value" -ge "$warning_threshold" ]]; then
-            accent=$(get_cached_option "@theme_plugin_cpu_warning_accent_color" "$PLUGIN_CPU_WARNING_ACCENT_COLOR")
-            accent_icon=$(get_cached_option "@theme_plugin_cpu_warning_accent_color_icon" "$PLUGIN_CPU_WARNING_ACCENT_COLOR_ICON")
-        fi
-    fi
-    
-    build_display_info "$show" "$accent" "$accent_icon" "$icon"
-}
+# REMOVED: plugin_get_display_info() - Now using centralized theme-controlled system
 
 # =============================================================================
 # Main Plugin Logic
