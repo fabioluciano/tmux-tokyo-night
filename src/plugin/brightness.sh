@@ -1,197 +1,81 @@
 #!/usr/bin/env bash
-# =============================================================================
-# Plugin: brightness
-# Description: Display screen brightness level (Linux only)
-# Platform: Linux only - macOS is not supported
-# Dependencies: 
-#   - Linux: brightnessctl, light, or xbacklight
-# =============================================================================
-#
-# Configuration options:
-#   @powerkit_plugin_brightness_icon              - Default icon (default: 󰃞)
-#   @powerkit_plugin_brightness_accent_color      - Default accent color
-#   @powerkit_plugin_brightness_accent_color_icon - Default icon accent color
-#   @powerkit_plugin_brightness_cache_ttl         - Cache time in seconds (default: 2)
-#
-# Display threshold options:
-#   @powerkit_plugin_brightness_display_condition - Condition: le, lt, ge, gt, eq, ne, always
-#   @powerkit_plugin_brightness_display_threshold - Show only when condition is met
-#
-# Dynamic icon options:
-#   @powerkit_plugin_brightness_icon_low          - Icon when brightness < 30% (default: 󰃚)
-#   @powerkit_plugin_brightness_icon_medium       - Icon when brightness < 70% (default: 󰃝)
-#   @powerkit_plugin_brightness_icon_high         - Icon when brightness >= 70% (default: 󰃞)
-#
-# Linux Setup (one of):
-#   - Ubuntu/Debian: sudo apt install brightnessctl
-#   - Arch: sudo pacman -S brightnessctl
-#   - Alternative: sudo apt install light
-#   - X11: sudo apt install xbacklight
-#
-# Example configurations:
-#   # Show brightness only when below 50%
-#   set -g @powerkit_plugin_brightness_display_threshold "50"
-#   set -g @powerkit_plugin_brightness_display_condition "le"
-# =============================================================================
+# Plugin: brightness - Display screen brightness level (Linux only)
+# Methods: sysfs, brightnessctl, light, xbacklight
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-# shellcheck source=src/plugin_bootstrap.sh
 . "$ROOT_DIR/../plugin_bootstrap.sh"
 
-# =============================================================================
-# Plugin Configuration
-# =============================================================================
-
-# Initialize cache (DRY - sets CACHE_KEY and CACHE_TTL automatically)
 plugin_init "brightness"
 
-# =============================================================================
-# Brightness Detection Functions
-# =============================================================================
+# Get brightness (Linux only)
+get_brightness() {
+    is_linux || return 1
 
-# Get brightness on Linux
-get_brightness_linux() {
-    # Method 1: Read directly from sysfs with optimized search
-    local backlight_dir="/sys/class/backlight"
-    if [[ -d "$backlight_dir" ]]; then
-        # Find first working backlight device more efficiently
-        local device
-        for device in "$backlight_dir"/*; do
-            [[ -d "$device" && -f "$device/brightness" && -f "$device/max_brightness" ]] || continue
-            
-            # Single read operation for both values
-            local values
-            values=$(awk 'FNR==1{current=$0} END{if(FNR==2 && $0>0) printf "%d", (current/$0)*100}' \
-                     "$device/brightness" "$device/max_brightness" 2>/dev/null)
-            
-            if [[ -n "$values" && "$values" =~ ^[0-9]+$ ]]; then
-                printf '%s' "$values"
-                return 0
-            fi
+    # Method 1: sysfs
+    local dir="/sys/class/backlight"
+    if [[ -d "$dir" ]]; then
+        for d in "$dir"/*; do
+            [[ -f "$d/brightness" && -f "$d/max_brightness" ]] || continue
+            awk 'FNR==1{c=$0} END{if(FNR==2 && $0>0) printf "%d", (c/$0)*100}' \
+                "$d/brightness" "$d/max_brightness" 2>/dev/null && return 0
         done
     fi
-    
-    # Method 2: Try using brightnessctl (if sysfs not available)
-    local max
-    max=$(brightnessctl max 2>/dev/null)
-    if brightnessctl get 2>/dev/null | awk -v max="$max" 'BEGIN {if(max>0) printf "%d", ($0/max)*100}'; then
-        return 0
-    fi
-    
-    # Method 3: Try using light
-    if light -G 2>/dev/null | awk '{printf "%d", $1}'; then
-        return 0
-    fi
-    
-    # Method 4: Try using xbacklight
-    if xbacklight -get 2>/dev/null | awk '{printf "%d", $1}'; then
-        return 0
-    fi
-    
+
+    # Method 2: brightnessctl
+    local max=$(brightnessctl max 2>/dev/null)
+    [[ -n "$max" && "$max" -gt 0 ]] && { brightnessctl get 2>/dev/null | awk -v m="$max" '{printf "%d", ($0/m)*100}'; return 0; }
+
+    # Method 3: light
+    light -G 2>/dev/null | awk '{printf "%d", $1}' && return 0
+
+    # Method 4: xbacklight
+    xbacklight -get 2>/dev/null | awk '{printf "%d", $1}' && return 0
+
     return 1
 }
 
-# Main function to get brightness (Linux only)
-get_brightness() {
-    # Only Linux is supported
-    if ! is_linux; then
-        return 1
-    fi
-    
-    get_brightness_linux
+has_brightness() {
+    local b=$(get_brightness)
+    [[ -n "$b" && "$b" =~ ^[0-9]+$ ]]
 }
 
-# Check if brightness is available
-brightness_is_available() {
-    local test_brightness
-    test_brightness=$(get_brightness)
-    [[ -n "$test_brightness" ]] && [[ "$test_brightness" =~ ^[0-9]+$ ]]
-}
-
-# =============================================================================
-# Plugin Interface Implementation
-# =============================================================================
-
-# Function to inform the plugin type to the renderer
-plugin_get_type() {
-    printf 'conditional'
-}
+plugin_get_type() { printf 'conditional'; }
 
 plugin_get_display_info() {
-    local content="$1"
-    local show="1"
-    local accent=""
-    local accent_icon=""
-    local icon=""
-    
-    # Extract numeric value from content
-    local value
-    value=$(extract_numeric "$content")
-    
-    # Check display condition
-    local display_condition display_threshold
-    display_condition=$(get_cached_option "@powerkit_plugin_brightness_display_condition" "always")
-    display_threshold=$(get_cached_option "@powerkit_plugin_brightness_display_threshold" "")
-    
-    if [[ "$display_condition" != "always" ]] && [[ -n "$display_threshold" ]]; then
-        if ! evaluate_condition "$value" "$display_condition" "$display_threshold"; then
-            show="0"
-        fi
-    fi
-    
-    # Dynamic icon based on brightness level
+    local content="$1" show="1" accent="" accent_icon="" icon=""
+    local value=$(extract_numeric "$content")
+
+    # Display condition
+    local cond=$(get_cached_option "@powerkit_plugin_brightness_display_condition" "always")
+    local thresh=$(get_cached_option "@powerkit_plugin_brightness_display_threshold" "")
+    [[ "$cond" != "always" && -n "$thresh" ]] && ! evaluate_condition "$value" "$cond" "$thresh" && show="0"
+
+    # Dynamic icon
     if [[ -n "$value" ]]; then
-        local icon_low icon_medium icon_high
-        icon_low=$(get_cached_option "@powerkit_plugin_brightness_icon_low" "$POWERKIT_PLUGIN_BRIGHTNESS_ICON_LOW")
-        icon_medium=$(get_cached_option "@powerkit_plugin_brightness_icon_medium" "$POWERKIT_PLUGIN_BRIGHTNESS_ICON_MEDIUM")
-        icon_high=$(get_cached_option "@powerkit_plugin_brightness_icon_high" "$POWERKIT_PLUGIN_BRIGHTNESS_ICON_HIGH")
-        
-        if [[ "$value" -lt 30 ]]; then
-            icon="$icon_low"
-        elif [[ "$value" -lt 70 ]]; then
-            icon="$icon_medium"
-        else
-            icon="$icon_high"
-        fi
+        local low=$(get_cached_option "@powerkit_plugin_brightness_icon_low" "$POWERKIT_PLUGIN_BRIGHTNESS_ICON_LOW")
+        local med=$(get_cached_option "@powerkit_plugin_brightness_icon_medium" "$POWERKIT_PLUGIN_BRIGHTNESS_ICON_MEDIUM")
+        local high=$(get_cached_option "@powerkit_plugin_brightness_icon_high" "$POWERKIT_PLUGIN_BRIGHTNESS_ICON_HIGH")
+        [[ "$value" -lt 30 ]] && icon="$low" || { [[ "$value" -lt 70 ]] && icon="$med" || icon="$high"; }
     fi
-    
+
     build_display_info "$show" "$accent" "$accent_icon" "$icon"
 }
 
-# =============================================================================
-# Main Plugin Logic
-# =============================================================================
-
 load_plugin() {
-    # Check if brightness is available
-    if ! brightness_is_available; then
+    has_brightness || return 0
+
+    local cached
+    if cached=$(cache_get "$CACHE_KEY" "$CACHE_TTL"); then
+        printf '%s' "$cached"
         return 0
     fi
-    
-    # Check cache first
-    local cached_value
-    if cached_value=$(cache_get "$CACHE_KEY" "$CACHE_TTL"); then
-        printf '%s' "$cached_value"
-        return 0
-    fi
-    
-    # Get brightness level
-    local brightness
-    brightness=$(get_brightness)
-    
-    if [[ -z "$brightness" ]] || ! [[ "$brightness" =~ ^[0-9]+$ ]]; then
-        return 0
-    fi
-    
-    # Format output
-    local result="${brightness}%"
-    
+
+    local b=$(get_brightness)
+    [[ -z "$b" || ! "$b" =~ ^[0-9]+$ ]] && return 0
+
+    local result="${b}%"
     cache_set "$CACHE_KEY" "$result"
     printf '%s' "$result"
 }
 
-# Only run if executed directly (not sourced)
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    load_plugin
-fi
+[[ "${BASH_SOURCE[0]}" == "${0}" ]] && load_plugin || true

@@ -1,147 +1,59 @@
 #!/usr/bin/env bash
-# =============================================================================
-# Plugin: cpu
-# Description: Display CPU usage percentage
-# Dependencies: None (uses /proc/stat on Linux, vm_stat on macOS)
-# =============================================================================
+# Plugin: cpu - Display CPU usage percentage
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-# shellcheck source=src/plugin_bootstrap.sh
 . "$ROOT_DIR/../plugin_bootstrap.sh"
 
-# =============================================================================
-# Plugin Configuration
-# =============================================================================
-
-# Initialize cache (DRY - sets CACHE_KEY and CACHE_TTL automatically)
 plugin_init "cpu"
 
-# =============================================================================
-# CPU Calculation Functions
-# =============================================================================
-
-# Get CPU usage on Linux using /proc/stat
+# Linux: /proc/stat with sampling
 get_cpu_linux() {
-    local cpu_line
-    local -a cpu_values
-    local idle_prev total_prev idle_curr total_curr
-    local diff_idle diff_total cpu_usage
+    local line vals idle1 total1 idle2 total2 v
 
-    # Read first measurement
-    cpu_line=$(command grep '^cpu ' /proc/stat)
-    read -ra cpu_values <<< "${cpu_line#cpu }"
-    
-    idle_prev=${cpu_values[3]}
-    total_prev=0
-    for val in "${cpu_values[@]}"; do
-        total_prev=$((total_prev + val))
-    done
+    line=$(grep '^cpu ' /proc/stat)
+    read -ra vals <<< "${line#cpu }"
+    idle1=${vals[3]}; total1=0
+    for v in "${vals[@]}"; do total1=$((total1 + v)); done
 
-    # Wait a bit for second measurement
     sleep "$POWERKIT_TIMING_CPU_SAMPLE"
 
-    # Read second measurement
-    cpu_line=$(command grep '^cpu ' /proc/stat)
-    read -ra cpu_values <<< "${cpu_line#cpu }"
-    
-    idle_curr=${cpu_values[3]}
-    total_curr=0
-    for val in "${cpu_values[@]}"; do
-        total_curr=$((total_curr + val))
-    done
+    line=$(grep '^cpu ' /proc/stat)
+    read -ra vals <<< "${line#cpu }"
+    idle2=${vals[3]}; total2=0
+    for v in "${vals[@]}"; do total2=$((total2 + v)); done
 
-    # Calculate difference
-    diff_idle=$((idle_curr - idle_prev))
-    diff_total=$((total_curr - total_prev))
-
-    # Calculate CPU usage percentage
-    if [[ $diff_total -gt 0 ]]; then
-        cpu_usage=$(( (1000 * (diff_total - diff_idle) / diff_total + 5) / 10 ))
-    else
-        cpu_usage=0
-    fi
-
-    printf '%d' "$cpu_usage"
+    local di=$((idle2 - idle1)) dt=$((total2 - total1))
+    [[ $dt -gt 0 ]] && printf '%d' "$(( (1000 * (dt - di) / dt + 5) / 10 ))" || printf '0'
 }
 
-# Get CPU usage on macOS using iostat (no sleep needed, instant reading)
+# macOS: iostat or ps fallback
 get_cpu_macos() {
-    local cpu_usage
-    
-    # Use iostat which provides instant CPU utilization
-    # Last line contains current stats (no historical average)
-    cpu_usage=$(iostat -c "$POWERKIT_IOSTAT_COUNT" 2>/dev/null | tail -1 | awk -v base="$POWERKIT_IOSTAT_BASELINE" -v field="$POWERKIT_IOSTAT_CPU_FIELD" '{print base-$field}' | awk '{printf "%.0f", $1}')
-    
-    # Fallback to ps if iostat not available
-    if [[ -z "$cpu_usage" || "$cpu_usage" == "100" ]]; then
-        local num_cores
-        num_cores=$(sysctl -n hw.ncpu 2>/dev/null || echo 1)
-        
-        # Use more efficient ps with reduced process scanning
-        cpu_usage=$(command ps -axo %cpu | command awk -v cores="$num_cores" -v limit="$POWERKIT_PERF_CPU_PROCESS_LIMIT" '
-            NR>1 && NR<=limit {sum+=$1}  # Only scan first N processes for performance
-            END {
-                avg = sum / cores
-                if (avg > 100) avg = 100
-                printf "%.0f", avg
-            }
-        ')
+    local cpu=$(iostat -c "$POWERKIT_IOSTAT_COUNT" 2>/dev/null | tail -1 | \
+        awk -v b="$POWERKIT_IOSTAT_BASELINE" -v f="$POWERKIT_IOSTAT_CPU_FIELD" '{printf "%.0f", b-$f}')
+
+    if [[ -z "$cpu" || "$cpu" == "100" ]]; then
+        local cores=$(sysctl -n hw.ncpu 2>/dev/null || echo 1)
+        cpu=$(ps -axo %cpu | awk -v c="$cores" -v l="$POWERKIT_PERF_CPU_PROCESS_LIMIT" \
+            'NR>1 && NR<=l {s+=$1} END {a=s/c; if(a>100)a=100; printf "%.0f", a}')
     fi
-    
-    printf '%s' "${cpu_usage:-0}"
+    printf '%s' "${cpu:-0}"
 }
 
-# =============================================================================
-# Plugin Interface Implementation
-# =============================================================================
-
-# Function to inform the plugin type to the renderer
-plugin_get_type() {
-    printf 'static'
-}
-
-# This function is called by plugin_helpers.sh to get display decisions
-# Output format: "show:accent:accent_icon:icon"
-#
-# Configuration options:
-#   @powerkit_plugin_cpu_display_condition    - Condition: le, lt, ge, gt, eq, always
-# REMOVED: plugin_get_display_info() - Now using centralized theme-controlled system
-
-# =============================================================================
-# Main Plugin Logic
-# =============================================================================
+plugin_get_type() { printf 'static'; }
 
 load_plugin() {
-    # Check cache first
-    local cached_value
-    if cached_value=$(cache_get "$CACHE_KEY" "$CACHE_TTL"); then
-        printf '%s' "$cached_value"
+    local cached
+    if cached=$(cache_get "$CACHE_KEY" "$CACHE_TTL"); then
+        printf '%s' "$cached"
         return
     fi
 
-    local result
-    # Use cached OS detection from utils.sh
-    if is_linux; then
-        result=$(get_cpu_linux)
-    elif is_macos; then
-        result=$(get_cpu_macos)
-    else
-        result="N/A"
-    fi
+    local r
+    is_linux && r=$(get_cpu_linux) || { is_macos && r=$(get_cpu_macos) || r="N/A"; }
+    [[ "$r" != "N/A" ]] && r="${r}%"
 
-    # Add percentage symbol
-    if [[ "$result" != "N/A" ]]; then
-        result="${result}%"
-    fi
-
-    # Update cache
-    cache_set "$CACHE_KEY" "$result"
-    
-    printf '%s' "$result"
+    cache_set "$CACHE_KEY" "$r"
+    printf '%s' "$r"
 }
 
-# Only run if executed directly (not sourced)
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    load_plugin
-fi
+[[ "${BASH_SOURCE[0]}" == "${0}" ]] && load_plugin || true

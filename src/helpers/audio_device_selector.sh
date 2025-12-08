@@ -72,7 +72,7 @@ select_input_device() {
         if [[ "$audio_system" == "linux" ]]; then
             menu_args+=("$item" "" "run-shell \"pactl set-default-source '$name' && tmux display-message '🎤 Input: $clean_desc'\"")
         else
-            menu_args+=("$item" "" "run-shell \"SwitchAudioSource -s '$name' -t input && tmux display-message '🎤 Input: $clean_desc'\"")
+            menu_args+=("$item" "" "run-shell \"SwitchAudioSource -s '$name' -t input >/dev/null 2>&1 && tmux display-message '🎤 Input: $clean_desc'\"")
         fi
     done
     
@@ -143,7 +143,7 @@ select_output_device() {
         if [[ "$audio_system" == "linux" ]]; then
             menu_args+=("$item" "" "run-shell \"pactl set-default-sink '$name' && tmux display-message '🔊 Output: $clean_desc'\"")
         else
-            menu_args+=("$item" "" "run-shell \"SwitchAudioSource -s '$name' -t output && tmux display-message '🔊 Output: $clean_desc'\"")
+            menu_args+=("$item" "" "run-shell \"SwitchAudioSource -s '$name' -t output >/dev/null 2>&1 && tmux display-message '🔊 Output: $clean_desc'\"")
         fi
     done
     

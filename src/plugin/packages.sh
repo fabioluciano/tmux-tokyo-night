@@ -1,343 +1,122 @@
 #!/usr/bin/env bash
-# =============================================================================
-# Plugin: packages
-# Description: Display number of outdated packages (unified package manager plugin)
-# 
-# Automatically detects and uses the system's package manager:
-#   - brew (macOS/Linux): Homebrew
-#   - yay (Arch Linux): AUR helper
-#   - apt (Debian/Ubuntu): APT package manager
-#   - dnf (Fedora/RHEL): DNF package manager
-#   - pacman (Arch Linux): Pacman package manager
-#
-# This plugin replaces: homebrew, yay
-# =============================================================================
+# Plugin: packages - Display number of outdated packages (brew, yay, apt, dnf, pacman)
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-# shellcheck source=src/plugin_bootstrap.sh
 . "$ROOT_DIR/../plugin_bootstrap.sh"
 
-# =============================================================================
-# Plugin Configuration
-# =============================================================================
-
-# Initialize cache (DRY - sets CACHE_KEY and CACHE_TTL automatically)
 plugin_init "packages"
 LOCK_DIR="${CACHE_DIR:-$HOME/.cache/tmux-tokyo-night}/packages_updating.lock"
 
-# Plugin-specific settings
-# Preferred backend: auto, brew, yay, apt, dnf, pacman
-plugin_packages_backend=$(get_tmux_option "@powerkit_plugin_packages_backend" "$POWERKIT_PLUGIN_PACKAGES_BACKEND")
+plugin_get_type() { printf 'static'; }
 
-# Additional options for specific backends
-plugin_packages_brew_options=$(get_tmux_option "@powerkit_plugin_packages_brew_options" "$POWERKIT_PLUGIN_PACKAGES_BREW_OPTIONS")
-
-# =============================================================================
-# Backend Detection
-# =============================================================================
-
-# Cache detected backend (avoid repeated command -v calls)
 _DETECTED_PACKAGE_MANAGER=""
 
-# Detect best available package manager
 detect_backend() {
-    # Return cached result if already detected
-    [[ -n "$_DETECTED_PACKAGE_MANAGER" ]] && echo "$_DETECTED_PACKAGE_MANAGER" && return
+    [[ -n "$_DETECTED_PACKAGE_MANAGER" ]] && { echo "$_DETECTED_PACKAGE_MANAGER"; return; }
     
-    case "$plugin_packages_backend" in
-        brew)
-            command -v brew &>/dev/null && _DETECTED_PACKAGE_MANAGER="brew" && echo "brew" && return
-            ;;
-        yay)
-            command -v yay &>/dev/null && _DETECTED_PACKAGE_MANAGER="yay" && echo "yay" && return
-            ;;
-        apt)
-            command -v apt &>/dev/null && _DETECTED_PACKAGE_MANAGER="apt" && echo "apt" && return
-            ;;
-        dnf)
-            command -v dnf &>/dev/null && _DETECTED_PACKAGE_MANAGER="dnf" && echo "dnf" && return
-            ;;
-        pacman)
-            command -v pacman &>/dev/null && _DETECTED_PACKAGE_MANAGER="pacman" && echo "pacman" && return
-            ;;
+    local backend
+    backend=$(get_cached_option "@powerkit_plugin_packages_backend" "$POWERKIT_PLUGIN_PACKAGES_BACKEND")
+    
+    case "$backend" in
+        brew|yay|apt|dnf|pacman)
+            command -v "$backend" &>/dev/null && _DETECTED_PACKAGE_MANAGER="$backend" && echo "$backend" && return ;;
         auto|*)
-            # Auto-detect based on system
-            command -v brew &>/dev/null && _DETECTED_PACKAGE_MANAGER="brew" && echo "brew" && return
-            command -v yay &>/dev/null && _DETECTED_PACKAGE_MANAGER="yay" && echo "yay" && return
-            command -v dnf &>/dev/null && _DETECTED_PACKAGE_MANAGER="dnf" && echo "dnf" && return
-            command -v apt &>/dev/null && _DETECTED_PACKAGE_MANAGER="apt" && echo "apt" && return
-            command -v pacman &>/dev/null && _DETECTED_PACKAGE_MANAGER="pacman" && echo "pacman" && return
-            ;;
+            for pm in brew yay dnf apt pacman; do
+                command -v "$pm" &>/dev/null && _DETECTED_PACKAGE_MANAGER="$pm" && echo "$pm" && return
+            done ;;
     esac
-    
     echo ""
 }
 
-# =============================================================================
-# Helper Functions
-# =============================================================================
-
-# Check if background update is running
 is_updating() {
-    if [[ -d "$LOCK_DIR" ]]; then
-        local lock_age current_time dir_mtime
-        current_time=$(date +%s)
-        
-        if is_macos; then
-            dir_mtime=$(stat -f %m "$LOCK_DIR" 2>/dev/null || echo 0)
-        else
-            dir_mtime=$(stat -c %Y "$LOCK_DIR" 2>/dev/null || echo 0)
-        fi
-        
-        lock_age=$((current_time - dir_mtime))
-        
-        if [[ $lock_age -lt 300 ]]; then
-            return 0
-        else
-            # Stale lock, remove it
-            rmdir "$LOCK_DIR" 2>/dev/null
-        fi
-    fi
+    [[ ! -d "$LOCK_DIR" ]] && return 1
+    local lock_age current_time dir_mtime
+    current_time=$(date +%s)
+    is_macos && dir_mtime=$(stat -f %m "$LOCK_DIR" 2>/dev/null || echo 0) || dir_mtime=$(stat -c %Y "$LOCK_DIR" 2>/dev/null || echo 0)
+    lock_age=$((current_time - dir_mtime))
+    [[ $lock_age -lt 300 ]] && return 0
+    rmdir "$LOCK_DIR" 2>/dev/null
     return 1
 }
 
-# =============================================================================
-# Backend Implementations
-# =============================================================================
-
-# -----------------------------------------------------------------------------
-# Homebrew backend (macOS/Linux)
-# -----------------------------------------------------------------------------
-count_packages_brew() {
-    local cached count
-    
-    # Try cache first
+count_with_background_update() {
+    local cmd="$1"
+    local cached
     cached=$(cache_get "$CACHE_KEY" "$CACHE_TTL" 2>/dev/null)
     
-    # If cache valid or update running, return cached value
-    if [[ -n "$cached" ]] || is_updating; then
-        printf '%s' "${cached:-0}"
-        return 0
-    fi
+    { [[ -n "$cached" ]] || is_updating; } && { printf '%s' "${cached:-0}"; return 0; }
+    mkdir "$LOCK_DIR" 2>/dev/null || { printf '%s' "${cached:-0}"; return 0; }
     
-    # Try to create lock atomically (mkdir is atomic)
-    if ! mkdir "$LOCK_DIR" 2>/dev/null; then
-        # Someone else got the lock, return cached
-        printf '%s' "${cached:-0}"
-        return 0
-    fi
-    
-    # We got the lock, start background update
-    (
-        # Count outdated packages (single command)
-        local outdated
-        outdated=$(command brew outdated "$plugin_packages_brew_options" 2>/dev/null || echo "")
-        
-        if [[ -z "$outdated" ]]; then
-            count=0
-        else
-            count=$(printf '%s' "$outdated" | command grep -c .)
-        fi
-        
-        # Save to cache
-        cache_set "$CACHE_KEY" "$count"
-        
-        rmdir "$LOCK_DIR" 2>/dev/null
-    ) &>/dev/null &
-    
-    # Return old cached value or 0 while updating
+    ( eval "$cmd"; rmdir "$LOCK_DIR" 2>/dev/null ) &>/dev/null &
     printf '%s' "${cached:-0}"
 }
 
-# -----------------------------------------------------------------------------
-# Yay backend (Arch Linux AUR)
-# -----------------------------------------------------------------------------
+count_packages_brew() {
+    local brew_opts
+    brew_opts=$(get_cached_option "@powerkit_plugin_packages_brew_options" "$POWERKIT_PLUGIN_PACKAGES_BREW_OPTIONS")
+    count_with_background_update "
+        local outdated count
+        outdated=\$(command brew outdated $brew_opts 2>/dev/null || echo '')
+        [[ -z \"\$outdated\" ]] && count=0 || count=\$(printf '%s' \"\$outdated\" | grep -c .)
+        cache_set '$CACHE_KEY' \"\$count\"
+    "
+}
+
 count_packages_yay() {
     local cached count outdated
-    
-    # Try cache first
     cached=$(cache_get "$CACHE_KEY" "$CACHE_TTL" 2>/dev/null)
+    [[ -n "$cached" ]] && { printf '%s' "$cached"; return 0; }
     
-    # If cache valid, return cached value
-    if [[ -n "$cached" ]]; then
-        printf '%s' "$cached"
-        return 0
-    fi
-    
-    # Get outdated packages
     outdated=$(command yay -Qu 2>/dev/null || echo "")
-    
-    if [[ -z "$outdated" ]]; then
-        count=0
-    else
-        # Use wc -l which is faster than grep -c for line counting
-        count=$(printf '%s' "$outdated" | command wc -l)
-    fi
-    
-    # Cache result
+    [[ -z "$outdated" ]] && count=0 || count=$(printf '%s' "$outdated" | wc -l)
     cache_set "$CACHE_KEY" "$count"
     printf '%s' "$count"
 }
 
-# -----------------------------------------------------------------------------
-# APT backend (Debian/Ubuntu)
-# -----------------------------------------------------------------------------
 count_packages_apt() {
-    local cached count
-    
-    # Try cache first
-    cached=$(cache_get "$CACHE_KEY" "$CACHE_TTL" 2>/dev/null)
-    
-    # If cache valid or update running, return cached value
-    if [[ -n "$cached" ]] || is_updating; then
-        printf '%s' "${cached:-0}"
-        return 0
-    fi
-    
-    # Try to create lock atomically (mkdir is atomic)
-    if ! mkdir "$LOCK_DIR" 2>/dev/null; then
-        # Someone else got the lock, return cached
-        printf '%s' "${cached:-0}"
-        return 0
-    fi
-    
-    # We got the lock, start background update
-    (
-        # Update package list, then count upgradable (more reliable than checking without update)
+    count_with_background_update "
         command apt update &>/dev/null
-        count=$(command apt list --upgradable 2>/dev/null | command grep -c upgradable)
-        
-        cache_set "$CACHE_KEY" "$count"
-        rmdir "$LOCK_DIR" 2>/dev/null
-    ) &>/dev/null &
-    
-    # Return old cached value or 0 while updating
-    printf '%s' "${cached:-0}"
+        local count=\$(command apt list --upgradable 2>/dev/null | grep -c upgradable)
+        cache_set '$CACHE_KEY' \"\$count\"
+    "
 }
 
-# -----------------------------------------------------------------------------
-# DNF backend (Fedora/RHEL)
-# -----------------------------------------------------------------------------
 count_packages_dnf() {
-    local cached count
-    
-    # Try cache first
-    cached=$(cache_get "$CACHE_KEY" "$CACHE_TTL" 2>/dev/null)
-    
-    # If cache valid or update running, return cached value
-    if [[ -n "$cached" ]] || is_updating; then
-        printf '%s' "${cached:-0}"
-        return 0
-    fi
-    
-    # Try to create lock atomically (mkdir is atomic)
-    if ! mkdir "$LOCK_DIR" 2>/dev/null; then
-        # Someone else got the lock, return cached
-        printf '%s' "${cached:-0}"
-        return 0
-    fi
-    
-    # We got the lock, start background update
-    (
-        # Check for updates
-        count=$(command dnf check-update -q 2>/dev/null | command grep -c .)
-        
-        # dnf check-update lists packages, count lines
-        if [[ "$count" -gt 0 ]]; then
-            # Subtract header lines (usually 2-3 lines)
-            count=$((count > 3 ? count - 3 : 0))
-        fi
-        
-        cache_set "$CACHE_KEY" "$count"
-        rmdir "$LOCK_DIR" 2>/dev/null
-    ) &>/dev/null &
-    
-    # Return old cached value or 0 while updating
-    printf '%s' "${cached:-0}"
+    count_with_background_update "
+        local count=\$(command dnf check-update -q 2>/dev/null | grep -c .)
+        [[ \$count -gt 3 ]] && count=\$((count - 3)) || count=0
+        cache_set '$CACHE_KEY' \"\$count\"
+    "
 }
 
-# -----------------------------------------------------------------------------
-# Pacman backend (Arch Linux)
-# -----------------------------------------------------------------------------
 count_packages_pacman() {
     local cached count
-    
-    # Try cache first
     cached=$(cache_get "$CACHE_KEY" "$CACHE_TTL" 2>/dev/null)
+    [[ -n "$cached" ]] && { printf '%s' "$cached"; return 0; }
     
-    # If cache valid, return cached value
-    if [[ -n "$cached" ]]; then
-        printf '%s' "$cached"
-        return 0
-    fi
-    
-    # Check for updates (use wc -l instead of grep -c)
-    count=$(command pacman -Qu 2>/dev/null | command wc -l)
-    
-    # Cache result
+    count=$(command pacman -Qu 2>/dev/null | wc -l)
     cache_set "$CACHE_KEY" "$count"
     printf '%s' "$count"
 }
-
-# =============================================================================
-# Output Formatting
-# =============================================================================
 
 format_output() {
     local count="$1"
-    
-    # Return empty if no updates (plugin will be hidden)
-    if [[ "$count" -eq 0 ]]; then
-        return 0
-    elif [[ "$count" -eq 1 ]]; then
-        printf '1 update'
-    else
-        printf '%s updates' "$count"
-    fi
+    [[ "$count" -eq 0 ]] && return 0
+    [[ "$count" -eq 1 ]] && printf '1 update' || printf '%s updates' "$count"
 }
-
-# =============================================================================
-# Plugin Interface Implementation
-# =============================================================================
 
 plugin_get_display_info() {
-    local content="$1"
+    local content="${1:-}"
     local show="1"
-    local accent=""
-    local accent_icon=""
-    local icon=""
-    
-    # Hide if no updates
-    if [[ -z "$content" || "$content" == "0" || "$content" == "0 updates" ]]; then
-        show="0"
-    fi
-    
-    build_display_info "$show" "$accent" "$accent_icon" "$icon"
+    [[ -z "$content" || "$content" == "0" || "$content" == "0 updates" ]] && show="0"
+    build_display_info "$show" "" "" ""
 }
-
-# =============================================================================
-# Plugin Interface Implementation
-# =============================================================================
-
-# Function to inform the plugin type to the renderer
-plugin_get_type() {
-    printf 'static'
-}
-
-# =============================================================================
-# Main Plugin Logic
-# =============================================================================
 
 load_plugin() {
-    # Detect backend
     local backend
     backend=$(detect_backend)
-    
-    # No backend available
     [[ -z "$backend" ]] && return 0
     
-    # Try cache first (except for fast backends like yay/pacman)
     if [[ "$backend" != "yay" && "$backend" != "pacman" ]]; then
         local cached_value
         if cached_value=$(cache_get "$CACHE_KEY" "$CACHE_TTL" 2>/dev/null); then
@@ -346,36 +125,17 @@ load_plugin() {
         fi
     fi
     
-    # Get count from appropriate backend
     local count=0
     case "$backend" in
-        brew)
-            count=$(count_packages_brew)
-            ;;
-        yay)
-            count=$(count_packages_yay)
-            ;;
-        apt)
-            count=$(count_packages_apt)
-            ;;
-        dnf)
-            count=$(count_packages_dnf)
-            ;;
-        pacman)
-            count=$(count_packages_pacman)
-            ;;
+        brew)   count=$(count_packages_brew) ;;
+        yay)    count=$(count_packages_yay) ;;
+        apt)    count=$(count_packages_apt) ;;
+        dnf)    count=$(count_packages_dnf) ;;
+        pacman) count=$(count_packages_pacman) ;;
     esac
     
-    # Cache the count only for backends that don't cache themselves (yay, pacman)
-    if [[ "$backend" == "yay" || "$backend" == "pacman" ]]; then
-        cache_set "$CACHE_KEY" "$count"
-    fi
-    
-    # Format and output
+    [[ "$backend" == "yay" || "$backend" == "pacman" ]] && cache_set "$CACHE_KEY" "$count"
     format_output "$count"
 }
 
-# Only run if executed directly (not sourced)
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    load_plugin
-fi
+[[ "${BASH_SOURCE[0]}" == "${0}" ]] && load_plugin || true

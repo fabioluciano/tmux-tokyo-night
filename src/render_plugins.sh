@@ -186,7 +186,7 @@ for ((i=0; i<total; i++)); do
     if [[ $i -eq $((total-1)) ]]; then
         output+="#[fg=${TEXT_COLOR},bg=${accent}] ${content}"
     else
-        output+="#[fg=${TEXT_COLOR},bg=${accent}] ${content}#[none]"
+        output+="#[fg=${TEXT_COLOR},bg=${accent}] ${content} #[none]"
         [[ "$TRANSPARENT" == "true" ]] && output+="#[fg=${accent},bg=default]${RIGHT_SEPARATOR_INVERSE}#[bg=default]"
     fi
     

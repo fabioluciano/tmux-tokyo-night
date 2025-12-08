@@ -1,272 +1,103 @@
 #!/usr/bin/env bash
-# =============================================================================
-# Plugin: microphone
-# Description: Display microphone activity status (active/inactive)
-# Platform: Linux only - macOS is not supported due to privacy limitations
-# Dependencies: Linux ALSA/PulseAudio
-# =============================================================================
-#
-# Configuration options:
-#   @powerkit_plugin_microphone_icon                 - Microphone icon (default: 󰍬)
-#   @powerkit_plugin_microphone_muted_icon           - Muted microphone icon (default: 󰍭)
-#   @powerkit_plugin_microphone_accent_color         - Accent color (default: blue7)
-#   @powerkit_plugin_microphone_accent_color_icon    - Icon accent color (default: blue0)
-#   @powerkit_plugin_microphone_cache_ttl            - Cache time in seconds (default: 1)
-#
-# Example configurations:
-#   # Custom icons
-#   set -g @powerkit_plugin_microphone_icon ""
-#   set -g @powerkit_plugin_microphone_muted_icon ""
-#   
-#   # Custom cache time
-#   set -g @powerkit_plugin_microphone_cache_ttl "2"
-#
-# =============================================================================
+# Plugin: microphone - Display microphone activity status (active/inactive)
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$ROOT_DIR/../plugin_bootstrap.sh"
 
-# shellcheck source=src/plugin_bootstrap.sh
-source "$ROOT_DIR/../plugin_bootstrap.sh"
-
-# =============================================================================
-# Plugin Configuration
-# =============================================================================
-
-# Initialize cache (DRY - sets CACHE_KEY and CACHE_TTL automatically)
 plugin_init "microphone"
 
-# =============================================================================
-# Platform Availability Check
-# =============================================================================
+plugin_get_type() { printf 'conditional'; }
 
-# Check if microphone plugin is available on this platform
-# Returns: 0 if available, 1 if not
 microphone_is_available() {
-    # Not supported on macOS due to privacy limitations
     is_macos && return 1
-    
-    # On Linux, check if we have PulseAudio/PipeWire
-    if is_linux; then
-        command -v pactl >/dev/null 2>&1 && return 0
-        command -v amixer >/dev/null 2>&1 && return 0
-    fi
-    
+    is_linux && { command -v pactl >/dev/null 2>&1 || command -v amixer >/dev/null 2>&1; } && return 0
     return 1
 }
 
-# Microphone Control Functions
-
-# Toggle microphone mute state
 toggle_microphone_mute() {
-    if is_linux; then
-        if command -v pactl >/dev/null 2>&1; then
-                # Get default source
-                local default_source
-                default_source=$(pactl get-default-source 2>/dev/null)
-                
-                if [[ -n "$default_source" ]]; then
-                    # Toggle mute state
-                    if pactl set-source-mute "$default_source" toggle 2>/dev/null; then
-                        # Clear cache to force status update
-                        local cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/tmux-tokyo-night"
-                        rm -f "${cache_dir}/microphone.cache" 2>/dev/null
-                        
-                        # Get new state for notification
-                        local is_muted
-                        if pactl get-source-mute "$default_source" 2>/dev/null | grep -q "yes"; then
-                            is_muted="muted"
-                        else
-                            is_muted="unmuted"
-                        fi
-                        
-                        # Show notification
-                        tmux display-message "Microphone $is_muted" 2>/dev/null || true
-                        
-                        # Refresh tmux status bar
-                        tmux refresh-client -S 2>/dev/null || true
-                    else
-                        tmux display-message "Failed to toggle microphone" 2>/dev/null || true
-                    fi
-                else
-                    tmux display-message "No microphone found" 2>/dev/null || true
-                fi
-            else
-                tmux display-message "pactl not found - PulseAudio required" 2>/dev/null || true
-            fi
-    elif is_macos; then
-        tmux display-message "Microphone mute toggle not supported on macOS" 2>/dev/null || true
-    else
+    if ! is_linux; then
         tmux display-message "Microphone mute toggle not supported on this platform" 2>/dev/null || true
+        return
+    fi
+    
+    if ! command -v pactl >/dev/null 2>&1; then
+        tmux display-message "pactl not found - PulseAudio required" 2>/dev/null || true
+        return
+    fi
+    
+    local default_source
+    default_source=$(pactl get-default-source 2>/dev/null)
+    
+    if [[ -z "$default_source" ]]; then
+        tmux display-message "No microphone found" 2>/dev/null || true
+        return
+    fi
+    
+    if pactl set-source-mute "$default_source" toggle 2>/dev/null; then
+        rm -f "${XDG_CACHE_HOME:-$HOME/.cache}/tmux-tokyo-night/microphone.cache" 2>/dev/null
+        local is_muted="unmuted"
+        pactl get-source-mute "$default_source" 2>/dev/null | grep -q "yes" && is_muted="muted"
+        tmux display-message "Microphone $is_muted" 2>/dev/null || true
+        tmux refresh-client -S 2>/dev/null || true
+    else
+        tmux display-message "Failed to toggle microphone" 2>/dev/null || true
     fi
 }
 
-# Setup keybindings for microphone mute toggle
 setup_keybindings() {
     local mute_key
-    
-    # Get mute key binding
     mute_key=$(get_tmux_option "@powerkit_plugin_microphone_mute_key" "$POWERKIT_PLUGIN_MICROPHONE_MUTE_KEY")
     
-    # Only setup keybinding if key is defined
-    if [[ -n "$mute_key" ]]; then
-        # Use simple OS detection instead of get_os function
-        local os_name
-        os_name=$(uname -s)
-        
-        case "$os_name" in
-            "Linux")
-                if command -v pactl >/dev/null 2>&1; then
-                    # Setup mute toggle keybinding - use absolute paths to avoid issues
-                    local plugin_path="$ROOT_DIR/microphone.sh"
-                    local defaults_path="$ROOT_DIR/../defaults.sh"
-                    local utils_path="$ROOT_DIR/../utils.sh"
-                    
-                    tmux bind-key "$mute_key" run-shell "source '$defaults_path' && source '$utils_path' && source '$plugin_path' && toggle_microphone_mute" 2>/dev/null || true
-                fi
-                ;;
-            "Darwin")
-                # Could be extended in the future with macOS support
-                ;;
-        esac
-    fi
-}
-
-# Plugin Interface Implementation
-
-# Function to inform the plugin type to the renderer
-plugin_get_type() {
-    printf 'conditional'
-}
-
-# Plugin settings
-PLUGIN_ICON="$POWERKIT_PLUGIN_MICROPHONE_ICON"
-PLUGIN_MUTED_ICON="$POWERKIT_PLUGIN_MICROPHONE_MUTED_ICON"
-# shellcheck disable=SC2034
-PLUGIN_ACCENT_COLOR="$POWERKIT_PLUGIN_MICROPHONE_ACCENT_COLOR"
-# shellcheck disable=SC2034
-PLUGIN_ACCENT_COLOR_ICON="$POWERKIT_PLUGIN_MICROPHONE_ACCENT_COLOR_ICON"
-PLUGIN_CACHE_TTL="$POWERKIT_PLUGIN_MICROPHONE_CACHE_TTL"
-
-# =============================================================================
-# Microphone Detection - macOS
-# =============================================================================
-
-detect_microphone_usage_macos() {
-    # Method 1: Check for processes that have active audio input sessions
-    # This uses lsof to check for processes accessing the built-in microphone
-    if command -v lsof >/dev/null 2>&1; then
-        # Check for processes using audio input devices
-        local mic_users
-        mic_users=$(lsof 2>/dev/null | grep -E "Built-in Microph|coreaudiod.*Input" | grep -cv coreaudiod)
-        if [[ "${mic_users:-0}" -gt 0 ]]; then
-            echo "active"
-            return
-        fi
-    fi
+    [[ -z "$mute_key" ]] && return
     
-    # Method 2: Check if any process is actively recording audio
-    # Use pgrep to find audio-related processes
-    local high_cpu_audio_procs
-    high_cpu_audio_procs=$(pgrep -c 'firefox|chrome|safari|zoom|teams|discord|obs' 2>/dev/null || echo 0)
-    if [[ "${high_cpu_audio_procs:-0}" -gt 0 ]]; then
-        # Double check these processes are actually using audio
-        local audio_active_procs
-        audio_active_procs=$(pgrep -c 'firefox|chrome|safari' 2>/dev/null || echo 0)
-        if [[ "${audio_active_procs:-0}" -gt 0 ]]; then
-            echo "active"
-            return
-        fi
+    if is_linux && command -v pactl >/dev/null 2>&1; then
+        local plugin_path="$ROOT_DIR/microphone.sh"
+        tmux bind-key "$mute_key" run-shell "source '$ROOT_DIR/../defaults.sh' && source '$ROOT_DIR/../utils.sh' && source '$plugin_path' && toggle_microphone_mute" 2>/dev/null || true
     fi
-    
-    # Method 3: Simple fallback - disable for now to test basic functionality
-    # For now, just return inactive unless we detect clear usage
-    echo "inactive"
 }
-
-# =============================================================================
-# Microphone Detection - Linux
-# =============================================================================
 
 detect_microphone_mute_status_linux() {
-    # Check PulseAudio/PipeWire for mute status
     if command -v pactl >/dev/null 2>&1; then
-        # Get the default source (microphone) and check if it's muted
         local default_source mute_status
         default_source=$(pactl get-default-source 2>/dev/null)
-        if [[ -n "$default_source" ]]; then
+        [[ -n "$default_source" ]] && {
             mute_status=$(pactl get-source-mute "$default_source" 2>/dev/null | grep -o "yes\|no")
-            if [[ "$mute_status" == "yes" ]]; then
-                echo "muted"
-                return
-            fi
-        fi
+            [[ "$mute_status" == "yes" ]] && { echo "muted"; return; }
+        }
     fi
     
-    # Check ALSA mixer for mute status
     if command -v amixer >/dev/null 2>&1; then
-        local capture_mute
-        capture_mute=$(amixer get Capture 2>/dev/null | grep -o "\[off\]" | head -1)
-        if [[ -n "$capture_mute" ]]; then
-            echo "muted"
-            return
-        fi
+        amixer get Capture 2>/dev/null | grep -q "\[off\]" && { echo "muted"; return; }
     fi
     
     echo "unmuted"
 }
 
 detect_microphone_usage_linux() {
-    # Method 1: Check PulseAudio/PipeWire for active recording sessions
     if command -v pactl >/dev/null 2>&1; then
-        # Check for active source outputs (recording applications)
-        if pactl list short source-outputs 2>/dev/null | grep -q .; then
-            echo "active"
-            return
-        fi
+        pactl list short source-outputs 2>/dev/null | grep -q . && { echo "active"; return; }
     fi
     
-    # Method 2: Check for actual recording processes (not system audio daemons)
     if command -v lsof >/dev/null 2>&1; then
-        # Look for processes actively writing to capture devices, excluding system daemons
         local active_capture
         active_capture=$(lsof /dev/snd/* 2>/dev/null | grep -E "pcmC[0-9]+D[0-9]+c" | grep -cvE "(pipewire|wireplumb|pulseaudio)")
-        if [[ "${active_capture:-0}" -gt 0 ]]; then
-            echo "active"
-            return
-        fi
+        [[ "${active_capture:-0}" -gt 0 ]] && { echo "active"; return; }
     fi
     
-    # Method 3: Check common microphone applications (excluding system audio services)
     local mic_processes=("zoom" "teams" "discord" "skype" "obs" "audacity" "arecord" "ffmpeg" "vlc")
     for proc in "${mic_processes[@]}"; do
-        if pgrep -x "$proc" >/dev/null 2>&1; then
-            echo "active"
-            return
-        fi
+        pgrep -x "$proc" >/dev/null 2>&1 && { echo "active"; return; }
     done
     
     echo "inactive"
 }
 
-# =============================================================================
-# Microphone Detection - Cross-Platform Entry Point
-# =============================================================================
-
 detect_microphone_mute_status() {
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        # macOS: Use osascript to check microphone mute status
-        if command -v osascript >/dev/null 2>&1; then
-            local mute_status
-            mute_status=$(osascript -e "input volume of (get volume settings)" 2>/dev/null | grep -o "0\|[1-9][0-9]*")
-            if [[ "$mute_status" == "0" ]]; then
-                echo "muted"
-            else
-                echo "unmuted"
-            fi
-        else
-            echo "unmuted"
-        fi
-    elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    if is_macos; then
+        local mute_status
+        mute_status=$(osascript -e "input volume of (get volume settings)" 2>/dev/null | grep -o "0\|[1-9][0-9]*")
+        [[ "$mute_status" == "0" ]] && echo "muted" || echo "unmuted"
+    elif is_linux; then
         detect_microphone_mute_status_linux
     else
         echo "unmuted"
@@ -274,97 +105,55 @@ detect_microphone_mute_status() {
 }
 
 detect_microphone_usage() {
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        # macOS: Microphone detection disabled due to privacy protections
-        # The system's orange indicator cannot be reliably detected via shell scripts
-        echo "inactive"
-    elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-        detect_microphone_usage_linux
-    else
-        echo "inactive"
-    fi
+    is_macos && { echo "inactive"; return; }
+    is_linux && { detect_microphone_usage_linux; return; }
+    echo "inactive"
 }
-
-# =============================================================================
-# Cache Management
-# =============================================================================
 
 get_cached_or_fetch() {
     local cached_value
     if cached_value=$(cache_get "$CACHE_KEY" "$CACHE_TTL"); then
         echo "$cached_value"
     else
-        local usage_result mute_result
-        usage_result=$(detect_microphone_usage)
-        mute_result=$(detect_microphone_mute_status)
-        local combined_result="${usage_result}:${mute_result}"
+        local combined_result
+        combined_result="$(detect_microphone_usage):$(detect_microphone_mute_status)"
         cache_set "$CACHE_KEY" "$combined_result"
         echo "$combined_result"
     fi
 }
 
-# =============================================================================
-# Plugin Display Info for Render System
-# =============================================================================
-
-# This function is called by plugin_helpers.sh to get display decisions
-# Output format: "show:accent:accent_icon:icon"
 plugin_get_display_info() {
-    local _content="$1"
+    local _content="${1:-}"
     
-    # Check platform availability first
-    if ! microphone_is_available; then
-        echo "0:::"
-        return 0
-    fi
+    microphone_is_available || { echo "0:::"; return 0; }
     
     local status_result usage_status mute_status
     status_result=$(get_cached_or_fetch)
     usage_status="${status_result%:*}"
     mute_status="${status_result#*:}"
     
-    # Show when microphone is active
     if [[ "$usage_status" == "active" ]]; then
         if [[ "$mute_status" == "muted" ]]; then
-            # Muted microphone - red background, muted icon
             echo "1:$POWERKIT_PLUGIN_MICROPHONE_MUTED_ACCENT_COLOR:$POWERKIT_PLUGIN_MICROPHONE_MUTED_ACCENT_COLOR_ICON:$POWERKIT_PLUGIN_MUTED_ICON"
         else
-            # Active microphone - green background, normal icon
             echo "1:$POWERKIT_PLUGIN_MICROPHONE_ACTIVE_ACCENT_COLOR:$POWERKIT_PLUGIN_MICROPHONE_ACTIVE_ACCENT_COLOR_ICON:$POWERKIT_PLUGIN_ICON"
         fi
     else
-        # Don't show when microphone is inactive
         echo "0:::"
     fi
 }
 
-# =============================================================================
-# Main Plugin Entry Points
-# =============================================================================
-
 load_plugin() {
-    # Check platform availability first
-    if ! microphone_is_available; then
-        return 0
-    fi
+    microphone_is_available || return 0
     
     local status_result usage_status mute_status
     status_result=$(get_cached_or_fetch)
     usage_status="${status_result%:*}"
     mute_status="${status_result#*:}"
     
-    # Show different text based on microphone state
     if [[ "$usage_status" == "active" ]]; then
-        if [[ "$mute_status" == "muted" ]]; then
-            printf 'MUTED'
-        else
-            printf 'ON'
-        fi
+        [[ "$mute_status" == "muted" ]] && printf 'MUTED' || printf 'ON'
     fi
-    # When inactive, return nothing (plugin not shown)
 }
 
-# Only run if executed directly (not sourced)
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    load_plugin
-fi
+[[ "${BASH_SOURCE[0]}" == "${0}" ]] && load_plugin || true
