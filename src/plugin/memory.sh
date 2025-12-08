@@ -43,7 +43,7 @@ get_memory_linux() {
     if [[ "$format" == "usage" ]]; then
         printf '%s/%s' "$(bytes_to_human $((mem_used * POWERKIT_BYTE_KB)))" "$(bytes_to_human $((mem_total * POWERKIT_BYTE_KB)))"
     else
-        printf '%d%%' "$percent"
+        printf '%3d%%' "$percent"
     fi
 }
 
@@ -75,7 +75,7 @@ get_memory_macos() {
     if [[ "$format" == "usage" ]]; then
         printf '%s/%s' "$(bytes_to_human "$mem_used")" "$(bytes_to_human "$mem_total")"
     else
-        printf '%d%%' "$percent"
+        printf '%3d%%' "$percent"
     fi
 }
 

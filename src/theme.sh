@@ -41,9 +41,9 @@ create_window_index_segment() {
     local text_color=$(get_powerkit_color 'text')
     
     if [[ "$window_state" == "active" ]]; then
-        echo "#[${index_colors},fg=${text_color},bold] #I"
+        echo "#[${index_colors},fg=${text_color},bold]#I"
     else
-        echo "#[${index_colors},fg=${text_color}] #I"
+        echo "#[${index_colors},fg=${text_color}]#I"
     fi
 }
 

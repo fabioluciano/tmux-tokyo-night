@@ -124,5 +124,5 @@ get_os_icon() {
         icon=$'\uf11c'
     fi
     
-    printf '%s' "$icon"
+    printf ' %s' "$icon"
 }

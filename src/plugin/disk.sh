@@ -24,7 +24,7 @@ get_disk_info() {
                     else if (free >= MB) printf "%.0fM", free/MB
                     else printf "%.0fK", free/KB
                 }
-                else printf "%s%%", $5
+                else printf "%3d%%", $5
             } else print "N/A"
         }'
 }

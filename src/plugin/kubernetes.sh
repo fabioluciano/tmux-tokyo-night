@@ -33,10 +33,52 @@ get_namespace_for_context() {
     ' "$kubeconfig" 2>/dev/null
 }
 
+# Check if kubernetes cluster is reachable
+check_k8s_connectivity() {
+    local timeout
+    timeout=$(get_tmux_option "@powerkit_plugin_kubernetes_connectivity_timeout" "$POWERKIT_PLUGIN_KUBERNETES_CONNECTIVITY_TIMEOUT")
+    
+    # Try to connect to the cluster with timeout
+    if command -v kubectl >/dev/null 2>&1; then
+        kubectl cluster-info --request-timeout="${timeout}s" &>/dev/null
+        return $?
+    fi
+    return 1
+}
+
+# Get cached connectivity status
+get_cached_connectivity() {
+    local conn_cache_key="${CACHE_KEY}_connectivity"
+    local conn_ttl
+    conn_ttl=$(get_tmux_option "@powerkit_plugin_kubernetes_connectivity_cache_ttl" "$POWERKIT_PLUGIN_KUBERNETES_CONNECTIVITY_CACHE_TTL")
+    
+    local cached
+    if cached=$(cache_get "$conn_cache_key" "$conn_ttl"); then
+        [[ "$cached" == "1" ]] && return 0 || return 1
+    fi
+    
+    if check_k8s_connectivity; then
+        cache_set "$conn_cache_key" "1"
+        return 0
+    else
+        cache_set "$conn_cache_key" "0"
+        return 1
+    fi
+}
+
 get_k8s_info() {
     local context
     context=$(get_current_context) || return 1
     [[ -z "$context" ]] && return 1
+    
+    # Check display mode
+    local display_mode
+    display_mode=$(get_tmux_option "@powerkit_plugin_kubernetes_display_mode" "$POWERKIT_PLUGIN_KUBERNETES_DISPLAY_MODE")
+    
+    # If display_mode is "connected", check connectivity
+    if [[ "$display_mode" == "connected" ]]; then
+        get_cached_connectivity || return 1
+    fi
     
     # Shorten context name (remove user@ and cluster: prefixes)
     local display="${context##*@}"

@@ -49,7 +49,7 @@ get_plugin_defaults() {
     
     local accent_var="POWERKIT_PLUGIN_${upper}_ACCENT_COLOR"
     local accent_icon_var="POWERKIT_PLUGIN_${upper}_ACCENT_COLOR_ICON"
-    local icon_var="POWERKIT_PLUGIN_${upper}_ICON"
+    local icon_var="POWERKIT_PLUGIN_red${upper}_ICON"
     
     printf '%s:%s:%s' "${!accent_var:-secondary}" "${!accent_icon_var:-active}" "${!icon_var:-}"
 }
@@ -88,6 +88,16 @@ clean_content() {
     local c="$1"
     [[ "$c" =~ ^[a-z]+: ]] && c="${c#*:}"
     printf '%s' "${c#MODIFIED:}"
+}
+
+# Pad icon to fixed width with space before and after
+pad_icon() {
+    printf '%-1s ' "$1"
+}
+
+# Pad separator to fixed width
+pad_separator() {
+    printf '%-1s' "$1"
 }
 
 # =============================================================================
@@ -161,33 +171,37 @@ total=${#NAMES[@]}
 output=""
 prev_accent=""
 
+# Pre-compute padded separators
+RIGHT_SEP=$(pad_separator "$RIGHT_SEPARATOR")
+RIGHT_SEP_INV=$(pad_separator "$RIGHT_SEPARATOR_INVERSE")
+
 for ((i=0; i<total; i++)); do
     content="${CONTENTS[$i]}"
     accent="${ACCENTS[$i]}"
     accent_icon="${ACCENT_ICONS[$i]}"
-    icon="${ICONS[$i]}"
+    icon=$(pad_icon "${ICONS[$i]}")
     
     # Separators
     if [[ $i -eq 0 ]]; then
         if [[ "$TRANSPARENT" == "true" ]]; then
-            sep_start="#[fg=${accent_icon},bg=default]${RIGHT_SEPARATOR}#[none]"
+            sep_start="#[fg=${accent_icon},bg=default]${RIGHT_SEP}#[none]"
         else
-            sep_start="#[fg=${STATUS_BG},bg=${accent_icon}]${RIGHT_SEPARATOR}#[none]"
+            sep_start="#[fg=${STATUS_BG},bg=${accent_icon}]${RIGHT_SEP}#[none]"
         fi
     else
-        sep_start="#[fg=${prev_accent},bg=${accent_icon}]${RIGHT_SEPARATOR}#[none]"
+        sep_start="#[fg=${prev_accent},bg=${accent_icon}]${RIGHT_SEP}#[none]"
     fi
     
-    sep_mid="#[fg=${accent_icon},bg=${accent}]${RIGHT_SEPARATOR}#[none]"
+    sep_mid="#[fg=${accent_icon},bg=${accent}]${RIGHT_SEP}#[none]"
     
-    # Build output - icon with space padding on both sides
-    output+="${sep_start}#[fg=${TEXT_COLOR},bg=${accent_icon},bold] ${icon} ${sep_mid}"
+    # Build output - icon with fixed width padding
+    output+="${sep_start}#[fg=${TEXT_COLOR},bg=${accent_icon},bold]${icon}${sep_mid}"
     
     if [[ $i -eq $((total-1)) ]]; then
-        output+="#[fg=${TEXT_COLOR},bg=${accent}] ${content}"
+        output+="#[fg=${TEXT_COLOR},bg=${accent}] ${content} "
     else
         output+="#[fg=${TEXT_COLOR},bg=${accent}] ${content} #[none]"
-        [[ "$TRANSPARENT" == "true" ]] && output+="#[fg=${accent},bg=default]${RIGHT_SEPARATOR_INVERSE}#[bg=default]"
+        [[ "$TRANSPARENT" == "true" ]] && output+="#[fg=${accent},bg=default]${RIGHT_SEP_INV}#[bg=default]"
     fi
     
     prev_accent="$accent"

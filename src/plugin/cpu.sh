@@ -50,7 +50,7 @@ load_plugin() {
 
     local r
     is_linux && r=$(get_cpu_linux) || { is_macos && r=$(get_cpu_macos) || r="N/A"; }
-    [[ "$r" != "N/A" ]] && r="${r}%"
+    [[ "$r" != "N/A" ]] && r=$(printf '%3d%%' "$r")
 
     cache_set "$CACHE_KEY" "$r"
     printf '%s' "$r"
