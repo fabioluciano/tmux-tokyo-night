@@ -77,9 +77,11 @@ plugin_get_display_info() {
 
 setup_keybindings() {
     [[ "$_show" == "off" ]] && return
-    local script="$ROOT_DIR/../helpers/audio_device_selector.sh"
-    [[ -n "$_input_key" ]] && tmux bind-key "$_input_key" run-shell "'$script' input"
-    [[ -n "$_output_key" ]] && tmux bind-key "$_output_key" run-shell "'$script' output"
+    # Build absolute path from ROOT_DIR
+    local base_dir="${ROOT_DIR%/plugin}"
+    local script="${base_dir}/helpers/audio_device_selector.sh"
+    [[ -n "$_input_key" ]] && tmux bind-key "$_input_key" run-shell "bash '$script' input"
+    [[ -n "$_output_key" ]] && tmux bind-key "$_output_key" run-shell "bash '$script' output"
 }
 
 load_plugin() {

@@ -36,10 +36,10 @@ select_input_device() {
     local -a menu_args=()
     for i in "${!menu_items[@]}"; do
         local item="${menu_items[$i]}" name="${device_names[$i]}" clean_desc="${menu_items[$i]#* }"
-        [[ "$audio_system" == "linux" ]] && menu_args+=("$item" "" "run-shell \"pactl set-default-source '$name' && tmux display-message '🎤 Input: $clean_desc'\"") || \
-            menu_args+=("$item" "" "run-shell \"SwitchAudioSource -s '$name' -t input >/dev/null 2>&1 && tmux display-message '🎤 Input: $clean_desc'\"")
+        [[ "$audio_system" == "linux" ]] && menu_args+=("$item" "" "run-shell \"pactl set-default-source '$name' && tmux display-message '  Input: $clean_desc'\"") || \
+            menu_args+=("$item" "" "run-shell \"SwitchAudioSource -s '$name' -t input >/dev/null 2>&1 && tmux display-message '  Input: $clean_desc'\"")
     done
-    tmux display-menu -T "🎤 Select Input Device" -x C -y C "${menu_args[@]}"
+    tmux display-menu -T "  Select Input Device" -x C -y C "${menu_args[@]}"
 }
 
 select_output_device() {
@@ -74,10 +74,10 @@ select_output_device() {
     local -a menu_args=()
     for i in "${!menu_items[@]}"; do
         local item="${menu_items[$i]}" name="${device_names[$i]}" clean_desc="${menu_items[$i]#* }"
-        [[ "$audio_system" == "linux" ]] && menu_args+=("$item" "" "run-shell \"pactl set-default-sink '$name' && tmux display-message '🔊 Output: $clean_desc'\"") || \
-            menu_args+=("$item" "" "run-shell \"SwitchAudioSource -s '$name' -t output >/dev/null 2>&1 && tmux display-message '🔊 Output: $clean_desc'\"")
+        [[ "$audio_system" == "linux" ]] && menu_args+=("$item" "" "run-shell \"pactl set-default-sink '$name' && tmux display-message '   Output: $clean_desc'\"") || \
+            menu_args+=("$item" "" "run-shell \"SwitchAudioSource -s '$name' -t output >/dev/null 2>&1 && tmux display-message '   Output: $clean_desc'\"")
     done
-    tmux display-menu -T "🔊 Select Output Device" -x C -y C "${menu_args[@]}"
+    tmux display-menu -T "   Select Output Device" -x C -y C "${menu_args[@]}"
 }
 
 case "${1:-}" in

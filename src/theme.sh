@@ -521,9 +521,38 @@ initialize_powerkit() {
 }
 
 # =============================================================================
+# HELPER KEYBINDINGS
+# Register keybindings for interactive helpers
+# =============================================================================
+
+register_helper_keybindings() {
+    local helpers_dir="$CURRENT_DIR/helpers"
+    
+    # Options viewer (prefix + O)
+    local options_key=$(get_tmux_option "@powerkit_options_key" "$POWERKIT_DEFAULT_OPTIONS_KEY")
+    local options_width=$(get_tmux_option "@powerkit_options_width" "$POWERKIT_DEFAULT_OPTIONS_WIDTH")
+    local options_height=$(get_tmux_option "@powerkit_options_height" "$POWERKIT_DEFAULT_OPTIONS_HEIGHT")
+    [[ -n "$options_key" ]] && tmux bind-key "$options_key" display-popup -E -w "$options_width" -h "$options_height" \
+        "bash '$helpers_dir/options_viewer.sh'"
+    
+    # Keybindings viewer (prefix + B)
+    local keybindings_key=$(get_tmux_option "@powerkit_keybindings_key" "$POWERKIT_DEFAULT_KEYBINDINGS_KEY")
+    local keybindings_width=$(get_tmux_option "@powerkit_keybindings_width" "$POWERKIT_DEFAULT_KEYBINDINGS_WIDTH")
+    local keybindings_height=$(get_tmux_option "@powerkit_keybindings_height" "$POWERKIT_DEFAULT_KEYBINDINGS_HEIGHT")
+    [[ -n "$keybindings_key" ]] && tmux bind-key "$keybindings_key" display-popup -E -w "$keybindings_width" -h "$keybindings_height" \
+        "bash '$helpers_dir/keybindings_viewer.sh'"
+}
+
+# =============================================================================
 # EXECUTE INITIALIZATION 
 # =============================================================================
 
 # Initialize the complete PowerKit system
 initialize_powerkit
+
+# Register helper keybindings
+register_helper_keybindings
+
+# Register cache clear keybinding
+setup_cache_keybinding
 

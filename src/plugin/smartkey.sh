@@ -19,28 +19,37 @@ check_pinentry() {
     pgrep -f "pinentry" &>/dev/null
 }
 
-# Check for active GPG operations (not gpg-agent)
-check_gpg_active() {
-    pgrep -f "gpg[2]?\s" 2>/dev/null | while read -r pid; do
-        ps -p "$pid" -o comm= 2>/dev/null | grep -qv "gpg-agent" && return 0
+# Check for active GPG operations (waiting for user)
+# Uses gpg-connect-agent with short timeout - if it hangs, something is waiting
+check_gpg_waiting() {
+    command -v gpg-connect-agent &>/dev/null || return 1
+    # If agent is blocked waiting for touch, SCD commands will hang
+    # Use 0.5s timeout - if it times out, agent is busy waiting
+    ! timeout 0.5 gpg-connect-agent "SCD GETINFO version" /bye &>/dev/null 2>&1
+}
+
+# Check for ssh-agent operations waiting (ssh-sk provider)
+check_ssh_waiting() {
+    # Check for ssh processes in uninterruptible sleep (waiting for key)
+    local ssh_pids
+    ssh_pids=$(pgrep -f "^ssh " 2>/dev/null) || return 1
+    for pid in $ssh_pids; do
+        local state
+        state=$(ps -p "$pid" -o state= 2>/dev/null)
+        # U = uninterruptible wait (often IO/device wait)
+        [[ "$state" == *"U"* ]] && return 0
     done
     return 1
 }
 
-# Check scdaemon CPU activity (smart card daemon)
-check_scdaemon_active() {
-    local pid cpu
+# Check scdaemon state (smart card daemon)
+check_scdaemon_busy() {
+    local pid
     pid=$(pgrep -f "scdaemon" | head -1) || return 1
-    cpu=$(ps -p "$pid" -o %cpu= 2>/dev/null | tr -d ' ' | cut -d. -f1)
-    [[ -n "$cpu" && "$cpu" -gt 0 ]] 2>/dev/null
-}
-
-# Check pcscd CPU activity (PC/SC daemon)
-check_pcscd_active() {
-    local pid cpu
-    pid=$(pgrep -f "pcscd" | head -1) || return 1
-    cpu=$(ps -p "$pid" -o %cpu= 2>/dev/null | tr -d ' ' | cut -d. -f1)
-    [[ -n "$cpu" && "$cpu" -gt 3 ]] 2>/dev/null
+    # Check if scdaemon has open connections (indicates active operation)
+    local conns
+    conns=$(lsof -p "$pid" 2>/dev/null | grep -c "unix" || echo 0)
+    [[ "$conns" -gt 2 ]] 2>/dev/null
 }
 
 # =============================================================================
@@ -48,11 +57,11 @@ check_pcscd_active() {
 # =============================================================================
 
 is_waiting_for_touch() {
-    # Priority: pinentry > gpg active > scdaemon > pcscd
+    # Priority: pinentry > gpg waiting > ssh waiting > scdaemon busy
     check_pinentry && return 0
-    check_gpg_active && return 0
-    check_scdaemon_active && return 0
-    check_pcscd_active && return 0
+    check_gpg_waiting && return 0
+    check_ssh_waiting && return 0
+    check_scdaemon_busy && return 0
     return 1
 }
 

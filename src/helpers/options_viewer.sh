@@ -101,7 +101,9 @@ display_options() {
     local -A grouped_options=()
     while IFS= read -r option; do
         [[ -z "$option" ]] && continue
-        local temp="${option#@powerkit_plugin_}" plugin_name="${temp%%_*}"
+        local temp plugin_name
+        temp="${option#@powerkit_plugin_}"
+        plugin_name="${temp%%_*}"
         grouped_options["$plugin_name"]+="$option "
     done < <(discover_plugin_options)
     

@@ -81,7 +81,7 @@ cache_clear_all() {
 }
 
 # Setup cache clear keybinding
-setup_keybindings() {
+setup_cache_keybinding() {
     local clear_key
     clear_key=$(get_tmux_option "@powerkit_cache_clear_key" "${POWERKIT_PLUGIN_CACHE_CLEAR_KEY:-Q}")
     
