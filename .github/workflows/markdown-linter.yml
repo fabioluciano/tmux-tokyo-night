@@ -30,6 +30,8 @@ jobs:
           globs: |
             README.md
             CLAUDE.md
+            Migration-Guide.md
+            src/themes/**/*.md
 
   lint-wiki:
     name: Lint Wiki Markdown

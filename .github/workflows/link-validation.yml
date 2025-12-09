@@ -25,14 +25,18 @@ jobs:
         with:
           submodules: false
 
-      - name: Check Links in README
+      - name: Check Links in Main Docs
         uses: gaurav-nelson/github-action-markdown-link-check@v1
         with:
           use-quiet-mode: 'yes'
           use-verbose-mode: 'yes'
           config-file: '.github/workflows/link-check-config.json'
           folder-path: '.'
-          file-path: './README.md'
+          file-path: |
+            ./README.md
+            ./CLAUDE.md
+            ./Migration-Guide.md
+            ./src/themes/**/*.md
 
 
 

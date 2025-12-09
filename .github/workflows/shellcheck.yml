@@ -21,3 +21,8 @@ jobs:
         with:
           check_together: "yes"
           ignore_paths: wiki
+          # Inclui temas e scripts refatorados
+          paths: |
+            src/plugin/*.sh
+            src/themes/**/*.sh
+            src/*.sh

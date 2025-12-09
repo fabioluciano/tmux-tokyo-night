@@ -24,6 +24,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git submodule update --remote --merge wiki
+          # Atualiza documentação para tmux-powerkit
+          git add wiki
           
       - name: Check for changes
         id: check_changes
