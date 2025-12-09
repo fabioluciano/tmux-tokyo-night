@@ -33,7 +33,7 @@ declare -A THEME_COLORS=(
   
   # Status Colors (PowerKit Standard)
   [success]="#9ece6a"              # Success state (green)
-  [warning]="#e0af68"              # Warning state (yellow)
+  [warning]="#c49a5a"              # Warning state (yellow)
   [error]="#f7768e"                # Error state (red)
   [info]="#7dcfff"                 # Informational state (cyan)
   
@@ -45,8 +45,8 @@ declare -A THEME_COLORS=(
   
   # Additional Variants
   [success-subtle]="#73daca"       # Subtle success
-  [warning-strong]="#ff9e64"       # Strong warning (orange)
-  [error-strong]="#db4b4b"         # Strong error
+  [warning-strong]="#e0af68"       # Strong warning (orange)
+  [error-strong]="#de5971"         # Strong error
   [info-subtle]="#2ac3de"          # Subtle info
   
   # System Colors

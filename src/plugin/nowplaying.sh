@@ -14,12 +14,27 @@ _not_playing=$(get_tmux_option "@powerkit_plugin_nowplaying_not_playing" "$POWER
 _backend=$(get_tmux_option "@powerkit_plugin_nowplaying_backend" "$POWERKIT_PLUGIN_NOWPLAYING_BACKEND")
 _ignore=$(get_tmux_option "@powerkit_plugin_nowplaying_ignore_players" "$POWERKIT_PLUGIN_NOWPLAYING_IGNORE_PLAYERS")
 
+# Escape special characters for bash string replacement
+# The & character in replacement string means "matched pattern"
+escape_replacement() {
+    local str="$1"
+    str="${str//\\/\\\\}"  # Escape backslashes first
+    str="${str//&/\\&}"    # Escape ampersands
+    printf '%s' "$str"
+}
+
 # Format output with artist/track/album
 format_output() {
     local artist="$1" track="$2" album="$3"
-    local out="${_format//%artist%/$artist}"
-    out="${out//%track%/$track}"
-    out="${out//%album%/$album}"
+    # Escape special chars to prevent bash substitution issues
+    local safe_artist safe_track safe_album
+    safe_artist=$(escape_replacement "$artist")
+    safe_track=$(escape_replacement "$track")
+    safe_album=$(escape_replacement "$album")
+    
+    local out="${_format//%artist%/$safe_artist}"
+    out="${out//%track%/$safe_track}"
+    out="${out//%album%/$safe_album}"
     [[ "$_max_len" -gt 0 && ${#out} -gt $_max_len ]] && out="${out:0:$((_max_len - 1))}…"
     printf '%s' "$out"
 }

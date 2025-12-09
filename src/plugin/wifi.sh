@@ -175,7 +175,7 @@ load_plugin() {
     fi
     
     local ssid="${wifi_info%%:*}" signal="${wifi_info##*:}"
-    local show_ssid show_ip show_signal display_text result
+    local show_ssid show_ip show_signal display_text="" result
     show_ssid=$(get_cached_option "@powerkit_plugin_wifi_show_ssid" "$POWERKIT_PLUGIN_WIFI_SHOW_SSID")
     show_ip=$(get_cached_option "@powerkit_plugin_wifi_show_ip" "$POWERKIT_PLUGIN_WIFI_SHOW_IP")
     show_signal=$(get_cached_option "@powerkit_plugin_wifi_show_signal" "$POWERKIT_PLUGIN_WIFI_SHOW_SIGNAL")

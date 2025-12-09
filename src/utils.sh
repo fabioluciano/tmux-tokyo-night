@@ -39,38 +39,29 @@ declare -A POWERKIT_THEME_COLORS
 
 # Load theme and populate POWERKIT_THEME_COLORS
 load_powerkit_theme() {
-    local theme_family="" theme_variant="" theme_dir="" theme_file=""
+    local theme="" theme_variant="" theme_dir="" theme_file=""
     
-    # Check @powerkit_theme first (simple format)
-    local powerkit_theme
-    powerkit_theme=$(get_tmux_option "@powerkit_theme" "")
+    # Get theme name
+    theme=$(get_tmux_option "@powerkit_theme" "$POWERKIT_DEFAULT_THEME")
+    theme_variant=$(get_tmux_option "@powerkit_theme_variant" "")
     
-    if [[ -n "$powerkit_theme" ]]; then
-        theme_family="$powerkit_theme"
-        theme_dir="$CURRENT_DIR/themes/${theme_family}"
-        
-        # Auto-detect first variant
+    # Auto-detect variant if not specified
+    if [[ -z "$theme_variant" ]]; then
+        theme_dir="$CURRENT_DIR/themes/${theme}"
         if [[ -d "$theme_dir" ]]; then
             theme_variant=$(ls "$theme_dir"/*.sh 2>/dev/null | head -1 | xargs basename -s .sh 2>/dev/null || echo "")
         fi
     fi
     
-    # Fallback to explicit family/variant
-    [[ -z "$theme_family" ]] && theme_family=$(get_tmux_option "@powerkit_theme_family" "$POWERKIT_DEFAULT_THEME_FAMILY")
-    [[ -z "$theme_variant" ]] && theme_variant=$(get_tmux_option "@powerkit_theme_variant" "$POWERKIT_DEFAULT_THEME_VARIANT")
-    
-    # Auto-detect variant if still empty
-    if [[ -z "$theme_variant" ]]; then
-        theme_dir="$CURRENT_DIR/themes/${theme_family}"
-        [[ -d "$theme_dir" ]] && theme_variant=$(ls "$theme_dir"/*.sh 2>/dev/null | head -1 | xargs basename -s .sh 2>/dev/null || echo "")
-    fi
+    # Fallback to defaults
+    [[ -z "$theme_variant" ]] && theme_variant="$POWERKIT_DEFAULT_THEME_VARIANT"
     
     # Final fallback
-    [[ -z "$theme_family" ]] && theme_family="tokyo-night"
+    [[ -z "$theme" ]] && theme="tokyo-night"
     [[ -z "$theme_variant" ]] && theme_variant="night"
     
     # Load theme file
-    theme_file="$CURRENT_DIR/themes/${theme_family}/${theme_variant}.sh"
+    theme_file="$CURRENT_DIR/themes/${theme}/${theme_variant}.sh"
     if [[ -f "$theme_file" ]]; then
         . "$theme_file"
         # Copy THEME_COLORS to POWERKIT_THEME_COLORS

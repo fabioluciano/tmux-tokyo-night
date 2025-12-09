@@ -49,17 +49,20 @@ get_bt_macos() {
 # Linux: bluetoothctl or hcitool
 get_bt_linux() {
     if command -v bluetoothctl &>/dev/null; then
-        local pwr=$(bluetoothctl show 2>/dev/null | awk '/Powered:/ {print $2}')
+        local pwr
+        pwr=$(timeout 2 bluetoothctl show 2>/dev/null | awk '/Powered:/ {print $2}') || return 1
+        [[ -z "$pwr" ]] && return 1
         [[ "$pwr" != "yes" ]] && { echo "off:"; return; }
-        local devs=$(bluetoothctl devices Connected 2>/dev/null | cut -d' ' -f3- | tr '\n' '|' | sed 's/|$//')
+        local devs=""
+        devs=$(timeout 2 bluetoothctl devices Connected 2>/dev/null | cut -d' ' -f3- | tr '\n' '|' | sed 's/|$//') || devs=""
         if [[ -z "$devs" ]]; then
             local mac name
             while read -r _ mac _; do
                 [[ -z "$mac" ]] && continue
-                bluetoothctl info "$mac" 2>/dev/null | grep -q "Connected: yes" || continue
-                name=$(bluetoothctl info "$mac" 2>/dev/null | awk '/Name:/ {$1=""; print substr($0,2)}')
+                timeout 2 bluetoothctl info "$mac" 2>/dev/null | grep -q "Connected: yes" || continue
+                name=$(timeout 2 bluetoothctl info "$mac" 2>/dev/null | awk '/Name:/ {$1=""; print substr($0,2)}')
                 [[ -n "$name" ]] && devs+="${devs:+|}$name"
-            done <<< "$(bluetoothctl devices 2>/dev/null)"
+            done <<< "$(timeout 2 bluetoothctl devices 2>/dev/null)"
         fi
         [[ -n "$devs" ]] && echo "connected:$devs" || echo "on:"
         return

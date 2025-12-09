@@ -13,10 +13,20 @@ CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=src/plugin_bootstrap.sh
 . "${CURRENT_DIR}/plugin_bootstrap.sh"
 
-# Load theme
-THEME_FAMILY=$(get_tmux_option "@powerkit_theme_family" "$POWERKIT_DEFAULT_THEME_FAMILY")
-THEME_VARIANT=$(get_tmux_option "@powerkit_theme_variant" "$POWERKIT_DEFAULT_THEME_VARIANT")
-THEME_FILE="${CURRENT_DIR}/themes/${THEME_FAMILY}/${THEME_VARIANT}.sh"
+# Load theme - use @powerkit_theme and @powerkit_theme_variant
+THEME_NAME=$(get_tmux_option "@powerkit_theme" "$POWERKIT_DEFAULT_THEME")
+THEME_VARIANT=$(get_tmux_option "@powerkit_theme_variant" "")
+
+# Auto-detect variant if not specified
+if [[ -z "$THEME_VARIANT" ]]; then
+    THEME_DIR="${CURRENT_DIR}/themes/${THEME_NAME}"
+    if [[ -d "$THEME_DIR" ]]; then
+        THEME_VARIANT=$(ls "$THEME_DIR"/*.sh 2>/dev/null | head -1 | xargs basename -s .sh 2>/dev/null || echo "")
+    fi
+fi
+[[ -z "$THEME_VARIANT" ]] && THEME_VARIANT="$POWERKIT_DEFAULT_THEME_VARIANT"
+
+THEME_FILE="${CURRENT_DIR}/themes/${THEME_NAME}/${THEME_VARIANT}.sh"
 [[ -f "$THEME_FILE" ]] && . "$THEME_FILE"
 
 # =============================================================================
@@ -90,14 +100,14 @@ clean_content() {
     printf '%s' "${c#MODIFIED:}"
 }
 
-# Pad icon to fixed width with space before and after
+# Icon without extra padding (spacing controlled in template)
 pad_icon() {
-    printf '%-1s ' "$1"
+    printf '%s' "$1"
 }
 
-# Pad separator to fixed width
+# Separator without extra padding
 pad_separator() {
-    printf '%-1s' "$1"
+    printf '%s' "$1"
 }
 
 # =============================================================================
@@ -194,8 +204,8 @@ for ((i=0; i<total; i++)); do
     
     sep_mid="#[fg=${accent_icon},bg=${accent}]${RIGHT_SEP}#[none]"
     
-    # Build output - icon with fixed width padding
-    output+="${sep_start}#[fg=${TEXT_COLOR},bg=${accent_icon},bold]${icon}${sep_mid}"
+    # Build output - consistent spacing: " ICON SEP TEXT "
+    output+="${sep_start}#[fg=${TEXT_COLOR},bg=${accent_icon},bold] ${icon} ${sep_mid}"
     
     if [[ $i -eq $((total-1)) ]]; then
         output+="#[fg=${TEXT_COLOR},bg=${accent}] ${content} "

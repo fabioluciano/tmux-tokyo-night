@@ -1,56 +1,57 @@
 #!/usr/bin/env bash
-# Tokyo Night Pastel - Semantic Color Mapping
-# Populate the global THEME_COLORS array
+# Tokyo Night Pastel Theme - PowerKit Semantic Color Mapping
+# This file maps Tokyo Night Pastel colors to universal PowerKit semantic names
+# that can be used across different themes consistently.
 
+# Populate the global THEME_COLORS array for PowerKit compatibility
 declare -A THEME_COLORS=(
     # Core System Colors
+    [transparent]="NONE"
     [none]="NONE"
     
-    # Background Colors (Pastel variant - softer and lighter)
+    # Background Colors
     [background]="#2a2b3d"           # Main background (pastel base)
     [background-alt]="#252631"       # Alternative/darker background
-    [background-darker]="#252631"    # Darker background variant
-    ["surface"]="#3b3f5c"              # Surface/card background
-    ["overlay"]="#4d5270"              # Overlay/modal background
+    [surface]="#3b3f5c"              # Surface/card background
+    [overlay]="#4d5270"              # Overlay/modal background
     
-    # Text Colors (softer, more pastel)
-    ["text"]="#dce3ff"                 # Primary text (lighter, softer white)
-    ["text-secondary"]="#a3a8c7"       # Secondary text (muted lavender)
-    ["text-muted"]="#8a8fb5"           # Muted/comment text
-    ["text-disabled"]="#6d7187"        # Disabled text
+    # Text Colors  
+    [text]="#ffffff"                 # Primary text (pure white for contrast)
+    [text-muted]="#8a8fb5"           # Muted/comment text (soft gray-lavender)
+    [text-disabled]="#6d7187"        # Disabled text (muted gray)
     
     # Border Colors
-    ["border"]="#4d5270"               # Default border
-    ["border-light"]="#8a91ad"         # Light border
-    ["border-strong"]="#9ba3c4"        # Strong border
+    [border]="#4d5270"               # Default border
+    [border-subtle]="#8a91ad"        # Subtle border (lighter)
+    [border-strong]="#9ba3c4"        # Strong border (more visible)
     
-    # Semantic Colors (Primary Actions)
-    ["primary"]="#a4c5ff"              # Primary blue (soft pastel blue)
-    ["primary-darker"]="#6d85c4"       # Darker primary
-    ["primary-lighter"]="#b8edff"      # Lighter primary (sky blue)
-    ["accent"]="#d4c5ff"               # Accent purple (soft lavender)
-    ["secondary"]="#687aa3"            # Secondary blue-gray
+    # Semantic Colors (PowerKit Standard)
+    [accent]="#d4c5ff"               # Main accent color (lavender pastel)
+    [primary]="#b8a3e8"              # Primary brand color (purple pastel)
+    [secondary]="#687aa3"            # Secondary color (blue-gray pastel)
     
-    # Status Colors
-    [success]="#c7e8a8"              # Success green (mint pastel)
-    [success-subtle]="#a8e8db"       # Subtle success (aqua pastel)
-    [warning]="#f0d1a3"              # Warning yellow (cream pastel)
-    [warning-strong]="#ffbfa0"       # Strong warning (peach pastel)
-    [error]="#ff6b85"                # Error red (rose pastel)
-    [error-strong]="#ff8fa3"         # Strong error (coral pastel)
-    [info]="#ade5ff"                 # Info cyan (baby blue pastel)
-    [info-subtle]="#7ddcf0"          # Subtle info (turquoise pastel)
+    # Status Colors (PowerKit Standard)
+    [success]="#c7e8a8"              # Success state (mint green pastel)
+    [warning]="#e0c49a"              # Warning state (beige pastel)
+    [error]="#ff6b85"                # Error state (rose pastel)
+    [info]="#ade5ff"                 # Informational state (baby blue pastel)
     
     # Interactive States
-    [hover]="#313342"                # Hover state
-    [active]="#6d85c4"               # Active state (primary-darker)
-    [focus]="#a4c5ff"                # Focus state (primary)
-    [disabled]="#8a8fb5"             # Disabled state
+    [hover]="#313342"                # Hover state (subtle dark)
+    [active]="#99afd9"               # Active state (medium blue)
+    [focus]="#a4c5ff"                # Focus state (sky blue pastel)
+    [disabled]="#8a8fb5"             # Disabled state (muted)
     
-    # Special Purpose
-    [emphasis]="#ffffff"             # Maximum emphasis/white
-    [subtle]="#8a91ad"               # Subtle emphasis
-    [muted]="#8a8fb5"                # Muted/de-emphasized
+    # Additional Variants
+    [success-subtle]="#a8e8db"       # Subtle success (aqua pastel)
+    [warning-strong]="#f0d1a3"       # Strong warning (cream pastel)
+    [error-strong]="#ff8fa3"         # Strong error (coral pastel)
+    [info-subtle]="#7ddcf0"          # Subtle info (turquoise pastel)
+    
+    # System Colors
+    [white]="#ffffff"                # Pure white
+    [black]="#000000"                # Pure black
 )
 
+# Export for PowerKit compatibility
 export THEME_COLORS

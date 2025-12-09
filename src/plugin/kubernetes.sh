@@ -102,7 +102,7 @@ get_k8s_info() {
 # =============================================================================
 
 setup_keybindings() {
-    local ctx_key ns_key ctx_w ctx_h ns_w ns_h cache_dir
+    local ctx_key ns_key ctx_w ctx_h ns_w ns_h cache_dir conn_timeout
     
     ctx_key=$(get_tmux_option "@powerkit_plugin_kubernetes_context_selector_key" "$POWERKIT_PLUGIN_KUBERNETES_CONTEXT_SELECTOR_KEY")
     ctx_w=$(get_tmux_option "@powerkit_plugin_kubernetes_context_selector_width" "$POWERKIT_PLUGIN_KUBERNETES_CONTEXT_SELECTOR_WIDTH")
@@ -112,13 +112,17 @@ setup_keybindings() {
     ns_w=$(get_tmux_option "@powerkit_plugin_kubernetes_namespace_selector_width" "$POWERKIT_PLUGIN_KUBERNETES_NAMESPACE_SELECTOR_WIDTH")
     ns_h=$(get_tmux_option "@powerkit_plugin_kubernetes_namespace_selector_height" "$POWERKIT_PLUGIN_KUBERNETES_NAMESPACE_SELECTOR_HEIGHT")
     
+    conn_timeout=$(get_tmux_option "@powerkit_plugin_kubernetes_connectivity_timeout" "$POWERKIT_PLUGIN_KUBERNETES_CONNECTIVITY_TIMEOUT")
+    
     cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/tmux-tokyo-night"
     
+    # Context selector - can switch context even if current cluster is down
     [[ -n "$ctx_key" ]] && tmux bind-key "$ctx_key" display-popup -E -w "$ctx_w" -h "$ctx_h" \
-        'selected=$(kubectl config get-contexts -o name | fzf --header="Select Kubernetes Context" --reverse) && [ -n "$selected" ] && kubectl config use-context "$selected" && rm -f '"'${cache_dir}/kubernetes.cache'"' && tmux refresh-client -S'
+        'selected=$(kubectl config get-contexts -o name | fzf --header="Select Kubernetes Context" --reverse) && [ -n "$selected" ] && kubectl config use-context "$selected" && rm -f '"'${cache_dir}/kubernetes.cache'"' '"'${cache_dir}/kubernetes_connectivity.cache'"' && tmux refresh-client -S'
     
+    # Namespace selector - requires cluster connectivity (can't list namespaces if cluster is down)
     [[ -n "$ns_key" ]] && tmux bind-key "$ns_key" display-popup -E -w "$ns_w" -h "$ns_h" \
-        'selected=$(kubectl get namespaces -o name | sed "s/namespace\///" | fzf --header="Select Namespace" --reverse) && [ -n "$selected" ] && kubectl config set-context --current --namespace="$selected" && rm -f '"'${cache_dir}/kubernetes.cache'"' && tmux refresh-client -S'
+        'if ! kubectl cluster-info --request-timeout='"${conn_timeout}"'s &>/dev/null; then echo "❌ Cluster not reachable. Press any key to close."; read -n1; exit 1; fi; selected=$(kubectl get namespaces -o name | sed "s/namespace\///" | fzf --header="Select Namespace" --reverse) && [ -n "$selected" ] && kubectl config set-context --current --namespace="$selected" && rm -f '"'${cache_dir}/kubernetes.cache'"' && tmux refresh-client -S'
 }
 
 # =============================================================================

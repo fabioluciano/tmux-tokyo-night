@@ -76,8 +76,8 @@ plugin_get_display_info() {
 }
 
 setup_keybindings() {
-    [[ "$_show" == "off" ]] && return
-    # Build absolute path from ROOT_DIR
+    # Keybindings are always set up, even when show="off"
+    # This allows users to use the device selector without displaying in status bar
     local base_dir="${ROOT_DIR%/plugin}"
     local script="${base_dir}/helpers/audio_device_selector.sh"
     [[ -n "$_input_key" ]] && tmux bind-key "$_input_key" run-shell "bash '$script' input"

@@ -29,7 +29,8 @@ get_window_index_colors() {
         local bg_color=$(get_powerkit_color "$bg_color_option")
         echo "bg=$bg_color"
     else
-        local bg_color=$(get_powerkit_color 'border-strong')
+        local bg_color_option=$(get_tmux_option "@powerkit_inactive_window_number_bg" "$POWERKIT_DEFAULT_INACTIVE_WINDOW_NUMBER_BG")
+        local bg_color=$(get_powerkit_color "$bg_color_option")
         echo "bg=$bg_color"
     fi
 }
