@@ -41,7 +41,7 @@ is_charging() {
         acpi -b 2>/dev/null | grep -qiE "^Battery.*: Charging"
     elif cmd upower; then
         local bat=$(upower -e 2>/dev/null | grep -E 'battery|DisplayDevice' | tail -1)
-        [[ -n "$bat" ]] && upower -i "$bat" 2>/dev/null | grep -qiE "state:\s*charging"
+        [[ -n "$bat" ]] && upower -i "$bat" 2>/dev/null | grep -qiE "state:\s*(charging|fully-charged)"
     elif cmd termux-battery-status; then
         termux-battery-status 2>/dev/null | jq -r '.status' 2>/dev/null | grep -qi "^charging$"
     else
@@ -140,6 +140,14 @@ load_plugin() {
 
     local pct=$(get_percentage)
     [[ -z "$pct" ]] && return 0
+
+    # Nova opção: ocultar se 100% e carregando
+    local hide_full_charging=$(get_tmux_option "@powerkit_plugin_battery_hide_when_full_and_charging" "false")
+    if [[ "$hide_full_charging" == "true" && "$pct" == "100" ]]; then
+        if is_charging; then
+            return 0
+        fi
+    fi
 
     local mode=$(get_tmux_option "@powerkit_plugin_battery_display_mode" "$POWERKIT_PLUGIN_BATTERY_DISPLAY_MODE")
     local result
