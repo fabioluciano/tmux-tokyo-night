@@ -1,3 +1,4 @@
 [submodule "wiki"]
 	path = wiki
 	url = git@github.com:fabioluciano/tmux-tokyo-night.wiki.git
+	branch = master
