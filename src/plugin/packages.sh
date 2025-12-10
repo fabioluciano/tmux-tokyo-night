@@ -11,6 +11,26 @@ plugin_get_type() { printf 'static'; }
 
 _DETECTED_PACKAGE_MANAGER=""
 
+# Log files that change when packages are upgraded (for cache invalidation)
+declare -A _PKG_LOG_FILES=(
+    [pacman]="/var/log/pacman.log"
+    [yay]="/var/log/pacman.log"
+    [apt]="/var/log/dpkg.log"
+    [dnf]="/var/log/dnf.log"
+)
+
+# Invalidate cache if packages were upgraded (log newer than cache)
+_invalidate_if_upgraded() {
+    local log_file="${_PKG_LOG_FILES[$1]:-}"
+    local cache_file="${CACHE_DIR}/${CACHE_KEY}.cache"
+    
+    # brew: use Cellar dir mtime
+    [[ "$1" == "brew" ]] && log_file="$(command brew --prefix 2>/dev/null)/Cellar"
+    
+    [[ ! -e "$log_file" || ! -f "$cache_file" ]] && return
+    [[ "$log_file" -nt "$cache_file" ]] && cache_invalidate "$CACHE_KEY"
+}
+
 detect_backend() {
     [[ -n "$_DETECTED_PACKAGE_MANAGER" ]] && { echo "$_DETECTED_PACKAGE_MANAGER"; return; }
     
@@ -116,6 +136,8 @@ load_plugin() {
     local backend
     backend=$(detect_backend)
     [[ -z "$backend" ]] && return 0
+    
+    _invalidate_if_upgraded "$backend"
     
     if [[ "$backend" != "yay" && "$backend" != "pacman" ]]; then
         local cached_value
