@@ -178,7 +178,7 @@ create_window_separator() {
 
 # Create final separator (end of window list to status bar)
 create_final_separator() {
-    local separator_char=$(get_separator_char)
+    local separator_char=$(get_tmux_option "@powerkit_right_separator_rounded" "$POWERKIT_DEFAULT_RIGHT_SEPARATOR_ROUNDED")
     local status_bg=$(get_powerkit_color 'surface')
     
     # Get window content background colors for last window detection

@@ -39,6 +39,7 @@ PLUGINS_CONFIG="${1:-}"
 
 RIGHT_SEPARATOR=$(get_tmux_option "@powerkit_right_separator" "$POWERKIT_DEFAULT_RIGHT_SEPARATOR")
 RIGHT_SEPARATOR_INVERSE=$(get_tmux_option "@powerkit_right_separator_inverse" "$POWERKIT_DEFAULT_RIGHT_SEPARATOR_INVERSE")
+LEFT_SEPARATOR_ROUNDED=$(get_tmux_option "@powerkit_left_separator_rounded" "$POWERKIT_DEFAULT_LEFT_SEPARATOR_ROUNDED")
 
 # =============================================================================
 # Helpers
@@ -188,11 +189,8 @@ for ((i=0; i<total; i++)); do
     
     # Separators
     if [[ $i -eq 0 ]]; then
-        if [[ "$TRANSPARENT" == "true" ]]; then
-            sep_start="#[fg=${accent_icon},bg=default]${RIGHT_SEP}#[none]"
-        else
-            sep_start="#[fg=${STATUS_BG},bg=${accent_icon}]${RIGHT_SEP}#[none]"
-        fi
+        # First plugin: use left rounded separator
+        sep_start="#[fg=${accent_icon},bg=${STATUS_BG}]${LEFT_SEPARATOR_ROUNDED}#[none]"
     else
         sep_start="#[fg=${prev_accent},bg=${accent_icon}]${RIGHT_SEP}#[none]"
     fi
@@ -206,7 +204,6 @@ for ((i=0; i<total; i++)); do
         output+="#[fg=${TEXT_COLOR},bg=${accent}] ${content} "
     else
         output+="#[fg=${TEXT_COLOR},bg=${accent}] ${content} #[none]"
-        [[ "$TRANSPARENT" == "true" ]] && output+="#[fg=${accent},bg=default]${RIGHT_SEP_INV}#[bg=default]"
     fi
     
     prev_accent="$accent"
