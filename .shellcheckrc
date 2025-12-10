@@ -1,0 +1,30 @@
+# ShellCheck configuration for tmux-powerkit
+# https://github.com/koalaman/shellcheck/wiki/Directive
+
+# Disable "Not following" warnings for sourced files (we know they exist)
+disable=SC1091
+disable=SC1090
+
+# Disable "Declare and assign separately" - stylistic choice for this project
+disable=SC2155
+
+# Disable "Command appears to be unreachable" - functions are called indirectly
+disable=SC2317
+
+# Disable "Use find instead of ls" - ls is used intentionally for simple cases
+disable=SC2012
+
+# Disable single quotes warning for awk patterns - intentional
+disable=SC2016
+
+# Disable "A && B || C is not if-then-else" - intentional pattern in this project
+disable=SC2015
+
+# Disable "Useless echo" - used for clarity in some functions
+disable=SC2005
+
+# Disable "See if you can use ${var//search/replace}" - sed is used intentionally
+disable=SC2001
+
+# Disable possible misspelling warnings - variables are correct
+disable=SC2153

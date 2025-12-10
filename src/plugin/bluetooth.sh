@@ -1,395 +1,153 @@
 #!/usr/bin/env bash
-# =============================================================================
-# Plugin: bluetooth
-# Description: Display Bluetooth status and connected devices
-# Dependencies: None (uses native OS commands)
-# =============================================================================
-#
-# Configuration options:
-#   @theme_plugin_bluetooth_icon              - Icon when on (default: 󰂯)
-#   @theme_plugin_bluetooth_icon_off          - Icon when off (default: 󰂲)
-#   @theme_plugin_bluetooth_icon_connected    - Icon when device connected (default: 󰂱)
-#   @theme_plugin_bluetooth_accent_color      - Default accent color
-#   @theme_plugin_bluetooth_accent_color_icon - Default icon accent color
-#   @theme_plugin_bluetooth_show_device       - Show connected device name (default: true)
-#   @theme_plugin_bluetooth_show_battery      - Show battery level if available (default: true)
-#   @theme_plugin_bluetooth_format            - Display format: first, count, all (default: all)
-#   @theme_plugin_bluetooth_max_length        - Max device name length (default: 15)
-#   @theme_plugin_bluetooth_cache_ttl         - Cache time in seconds (default: 10)
-# =============================================================================
+# Plugin: bluetooth - Display Bluetooth status and connected devices
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$ROOT_DIR/../plugin_bootstrap.sh"
 
-# shellcheck source=src/defaults.sh
-. "$ROOT_DIR/../defaults.sh"
-# shellcheck source=src/utils.sh
-. "$ROOT_DIR/../utils.sh"
-# shellcheck source=src/cache.sh
-. "$ROOT_DIR/../cache.sh"
-# shellcheck source=src/plugin_interface.sh
-. "$ROOT_DIR/../plugin_interface.sh"
+plugin_init "bluetooth"
 
-# =============================================================================
-# Plugin Configuration
-# =============================================================================
+# Configuration
+_show_device=$(get_tmux_option "@powerkit_plugin_bluetooth_show_device" "$POWERKIT_PLUGIN_BLUETOOTH_SHOW_DEVICE")
+_show_battery=$(get_tmux_option "@powerkit_plugin_bluetooth_show_battery" "$POWERKIT_PLUGIN_BLUETOOTH_SHOW_BATTERY")
+_format=$(get_tmux_option "@powerkit_plugin_bluetooth_format" "$POWERKIT_PLUGIN_BLUETOOTH_FORMAT")
+_max_len=$(get_tmux_option "@powerkit_plugin_bluetooth_max_length" "$POWERKIT_PLUGIN_BLUETOOTH_MAX_LENGTH")
 
-# shellcheck disable=SC2034
-plugin_bluetooth_icon=$(get_tmux_option "@theme_plugin_bluetooth_icon" "$PLUGIN_BLUETOOTH_ICON")
-# shellcheck disable=SC2034
-plugin_bluetooth_accent_color=$(get_tmux_option "@theme_plugin_bluetooth_accent_color" "$PLUGIN_BLUETOOTH_ACCENT_COLOR")
-# shellcheck disable=SC2034
-plugin_bluetooth_accent_color_icon=$(get_tmux_option "@theme_plugin_bluetooth_accent_color_icon" "$PLUGIN_BLUETOOTH_ACCENT_COLOR_ICON")
-
-# Cache settings
-BLUETOOTH_CACHE_TTL=$(get_tmux_option "@theme_plugin_bluetooth_cache_ttl" "$PLUGIN_BLUETOOTH_CACHE_TTL")
-BLUETOOTH_CACHE_KEY="bluetooth"
-
-# =============================================================================
-# Bluetooth Detection Functions
-# =============================================================================
-
-# Get Bluetooth status and connected devices on macOS
-# Returns: "status:device1@battery1|device2@battery2|..." or "status:"
-# Battery is included after @ if available, empty otherwise
-get_bluetooth_macos() {
-    # Try blueutil first (fastest, if available)
+# macOS: blueutil or system_profiler
+get_bt_macos() {
     if command -v blueutil &>/dev/null; then
-        if [[ "$(blueutil -p)" == "0" ]]; then
-            printf 'off:'
-            return 0
-        fi
-        
-        # Try to get battery info using blueutil --connected with -info flag
-        # Note: This requires blueutil version that supports battery reporting
-        local connected_devices=""
-        local devices
-        devices=$(blueutil --connected 2>/dev/null)
-        
-        if [[ -n "$devices" ]]; then
-            while IFS= read -r line; do
-                # Parse: address: 40-ed-98-1d-47-a8, connected (master, -53 dBm), name: "RETRO NANO", recent access date: 2024-11-30
-                if [[ "$line" =~ name:\ \"([^\"]+)\" ]]; then
-                    local device_name="${BASH_REMATCH[1]}"
-                    local battery=""
-                    
-                    # Extract MAC address from the line
-                    if [[ "$line" =~ address:\ ([0-9a-f-]+) ]]; then
-                        local mac_addr="${BASH_REMATCH[1]}"
-                        # Try to get battery info (may not be supported by all blueutil versions)
-                        battery=$(blueutil --info "$mac_addr" 2>/dev/null | grep -i "battery" | grep -oE '[0-9]+%' | tr -d '%' | head -1)
-                    fi
-                    
-                    if [[ -n "$connected_devices" ]]; then
-                        connected_devices="${connected_devices}|"
-                    fi
-                    connected_devices="${connected_devices}${device_name}@${battery}"
-                fi
-            done <<< "$devices"
-            
-            if [[ -n "$connected_devices" ]]; then
-                printf 'connected:%s' "$connected_devices"
-                return 0
-            fi
-        fi
-    fi
-    
-    # Use system_profiler to check status and connected devices
-    if command -v system_profiler &>/dev/null; then
-        local info
-        info=$(system_profiler SPBluetoothDataType 2>/dev/null)
-        
-        [[ -z "$info" ]] && return 1
-        
-        # Check if Bluetooth is on by looking for "State: On"
-        if ! echo "$info" | grep -q "State: On"; then
-            printf 'off:'
-            return 0
-        fi
-        
-        # Look for a "Connected:" section that appears BEFORE "Not Connected:"
-        # If only "Not Connected:" exists, no devices are connected
-        local has_connected_section
-        has_connected_section=$(echo "$info" | grep -E "^[[:space:]]+Connected:$" | head -1)
-        
-        if [[ -n "$has_connected_section" ]]; then
-            # Extract ALL device names and their battery levels from the Connected section
-            local connected_devices
-            connected_devices=$(echo "$info" | awk '
-                /^[[:space:]]+Connected:$/ { in_connected=1; next }
-                /^[[:space:]]+Not Connected:$/ { exit }
-                in_connected && /^[[:space:]]+[^[:space:]].*:$/ && !/Address:|Vendor|Product|Firmware|Minor|Serial|Case|Chipset|State|Discoverable|Transport|Supported|Battery|RSSI|Services/ { 
-                    if (current_device != "") {
-                        print current_device "@" battery
-                    }
-                    gsub(/^[[:space:]]+|:$/, "")
-                    current_device = $0
-                    battery = ""
-                }
-                in_connected && /Battery Level:/ {
-                    # Get battery percentage - prefer main battery, then left/right average
-                    match($0, /[0-9]+%/)
-                    if (RSTART > 0) {
-                        pct = substr($0, RSTART, RLENGTH-1)
-                        if (battery == "" || !/Left|Right|Case/) {
-                            battery = pct
-                        }
-                    }
-                }
-                END {
-                    if (current_device != "") {
-                        print current_device "@" battery
-                    }
-                }
-            ' | tr '\n' '|' | sed 's/|$//')
-            
-            if [[ -n "$connected_devices" ]]; then
-                printf 'connected:%s' "$connected_devices"
-                return 0
-            fi
-        fi
-        
-        # No connected devices
-        printf 'on:'
-        return 0
-    fi
-    
-    return 1
-}
-
-# Get Bluetooth status on Linux using bluetoothctl
-get_bluetooth_linux_bluetoothctl() {
-    command -v bluetoothctl &>/dev/null || return 1
-    
-    # Check if Bluetooth is powered on
-    local powered
-    powered=$(bluetoothctl show 2>/dev/null | grep -i "Powered:" | awk '{print $2}')
-    
-    if [[ "$powered" != "yes" ]]; then
-        printf 'off:'
-        return 0
-    fi
-    
-    # Get ALL connected devices (not just first one)
-    local connected_devices
-    connected_devices=$(bluetoothctl devices Connected 2>/dev/null | cut -d' ' -f3-)
-    
-    # Fallback: check each paired device for connection
-    if [[ -z "$connected_devices" ]]; then
-        local all_devices device_mac info device_name
-        all_devices=$(bluetoothctl devices 2>/dev/null)
-        
+        [[ "$(blueutil -p)" == "0" ]] && { echo "off:"; return; }
+        local devs="" line name mac bat
         while IFS= read -r line; do
-            device_mac=$(echo "$line" | awk '{print $2}')
-            if [[ -n "$device_mac" ]]; then
-                info=$(bluetoothctl info "$device_mac" 2>/dev/null)
-                if echo "$info" | grep -q "Connected: yes"; then
-                    device_name=$(echo "$info" | grep "Name:" | cut -d' ' -f2-)
-                    if [[ -n "$device_name" ]]; then
-                        if [[ -z "$connected_devices" ]]; then
-                            connected_devices="$device_name"
-                        else
-                            connected_devices="${connected_devices}|${device_name}"
-                        fi
-                    fi
-                fi
-            fi
-        done <<< "$all_devices"
-    else
-        # Convert newlines to pipes for multiple devices
-        connected_devices=$(echo "$connected_devices" | tr '\n' '|' | sed 's/|$//')
+            [[ "$line" =~ name:\ \"([^\"]+)\" ]] && name="${BASH_REMATCH[1]}" || continue
+            [[ "$line" =~ address:\ ([0-9a-f-]+) ]] && mac="${BASH_REMATCH[1]}"
+            bat=$(blueutil --info "$mac" 2>/dev/null | grep -i battery | grep -oE '[0-9]+%' | tr -d '%' | head -1)
+            [[ -n "$devs" ]] && devs+="|"
+            devs+="${name}@${bat}"
+        done <<< "$(blueutil --connected 2>/dev/null)"
+        [[ -n "$devs" ]] && echo "connected:$devs" || echo "on:"
+        return
     fi
-    
-    if [[ -n "$connected_devices" ]]; then
-        printf 'connected:%s' "$connected_devices"
-    else
-        printf 'on:'
-    fi
+
+    command -v system_profiler &>/dev/null || return 1
+    local info=$(system_profiler SPBluetoothDataType 2>/dev/null)
+    [[ -z "$info" ]] && return 1
+    echo "$info" | grep -q "State: On" || { echo "off:"; return; }
+
+    local devs=$(echo "$info" | awk '
+        /^[[:space:]]+Connected:$/ { in_con=1; next }
+        /^[[:space:]]+Not Connected:$/ { exit }
+        in_con && /^[[:space:]]+[^[:space:]].*:$/ && !/Address:|Vendor|Product|Firmware|Minor|Serial|Case|Chipset|State|Discoverable|Transport|Supported|Battery|RSSI|Services/ {
+            if (dev != "") print dev "@" bat
+            gsub(/^[[:space:]]+|:$/, ""); dev=$0; bat=""
+        }
+        in_con && /Battery Level:/ { match($0, /[0-9]+%/); if (RSTART) bat=substr($0, RSTART, RLENGTH-1) }
+        END { if (dev != "") print dev "@" bat }
+    ' | tr '\n' '|' | sed 's/|$//')
+    [[ -n "$devs" ]] && echo "connected:$devs" || echo "on:"
 }
 
-# Get Bluetooth status on Linux using hcitool
-get_bluetooth_linux_hcitool() {
-    command -v hcitool &>/dev/null || return 1
-    
-    # Check if any Bluetooth adapter exists
-    if ! hcitool dev 2>/dev/null | grep -q "hci"; then
-        printf 'off:'
-        return 0
-    fi
-    
-    # Get connected devices
-    local connected
-    connected=$(hcitool con 2>/dev/null | grep -v "Connections:" | head -1 | awk '{print $3}')
-    
-    if [[ -n "$connected" ]]; then
-        # Try to get device name
-        local name
-        name=$(hcitool name "$connected" 2>/dev/null)
-        if [[ -n "$name" ]]; then
-            printf 'connected:%s' "$name"
-        else
-            printf 'connected:Device'
+# Linux: bluetoothctl or hcitool
+get_bt_linux() {
+    if command -v bluetoothctl &>/dev/null; then
+        local pwr
+        pwr=$(timeout 2 bluetoothctl show 2>/dev/null | awk '/Powered:/ {print $2}') || return 1
+        [[ -z "$pwr" ]] && return 1
+        [[ "$pwr" != "yes" ]] && { echo "off:"; return; }
+        local devs=""
+        devs=$(timeout 2 bluetoothctl devices Connected 2>/dev/null | cut -d' ' -f3- | tr '\n' '|' | sed 's/|$//') || devs=""
+        if [[ -z "$devs" ]]; then
+            local mac name
+            while read -r _ mac _; do
+                [[ -z "$mac" ]] && continue
+                timeout 2 bluetoothctl info "$mac" 2>/dev/null | grep -q "Connected: yes" || continue
+                name=$(timeout 2 bluetoothctl info "$mac" 2>/dev/null | awk '/Name:/ {$1=""; print substr($0,2)}')
+                [[ -n "$name" ]] && devs+="${devs:+|}$name"
+            done <<< "$(timeout 2 bluetoothctl devices 2>/dev/null)"
         fi
+        [[ -n "$devs" ]] && echo "connected:$devs" || echo "on:"
+        return
+    fi
+
+    command -v hcitool &>/dev/null || return 1
+    hcitool dev 2>/dev/null | grep -q "hci" || { echo "off:"; return; }
+    local mac=$(hcitool con 2>/dev/null | grep -v "Connections:" | head -1 | awk '{print $3}')
+    if [[ -n "$mac" ]]; then
+        local name=$(hcitool name "$mac" 2>/dev/null)
+        echo "connected:${name:-Device}"
     else
-        printf 'on:'
+        echo "on:"
     fi
 }
 
-# Main function to get Bluetooth info
-get_bluetooth_info() {
-    if is_macos; then
-        get_bluetooth_macos
-    elif is_linux; then
-        get_bluetooth_linux_bluetoothctl || get_bluetooth_linux_hcitool
-    fi
-}
+get_bt_info() { is_macos && get_bt_macos || get_bt_linux; }
 
-# =============================================================================
-# Plugin Interface Implementation
-# =============================================================================
-
-# Function to inform the plugin type to the renderer
-plugin_get_type() {
-    printf 'conditional'
-}
+plugin_get_type() { printf 'conditional'; }
 
 plugin_get_display_info() {
-    local content="$1"
-    local show="1"
-    local accent=""
-    local accent_icon=""
-    local icon=""
-    
-    # Parse status from content
-    local status="${content%%:*}"
-    
+    local status="${1%%:*}"
+    local accent="" accent_icon="" icon=""
     case "$status" in
         off)
-            icon=$(get_cached_option "@theme_plugin_bluetooth_icon_off" "$PLUGIN_BLUETOOTH_ICON_OFF")
-            accent=$(get_cached_option "@theme_plugin_bluetooth_off_accent_color" "")
-            accent_icon=$(get_cached_option "@theme_plugin_bluetooth_off_accent_color_icon" "")
+            icon=$(get_cached_option "@powerkit_plugin_bluetooth_icon_off" "$POWERKIT_PLUGIN_BLUETOOTH_ICON_OFF")
+            accent=$(get_cached_option "@powerkit_plugin_bluetooth_off_accent_color" "$POWERKIT_PLUGIN_BLUETOOTH_OFF_ACCENT_COLOR")
+            accent_icon=$(get_cached_option "@powerkit_plugin_bluetooth_off_accent_color_icon" "$POWERKIT_PLUGIN_BLUETOOTH_OFF_ACCENT_COLOR_ICON")
             ;;
         connected)
-            icon=$(get_cached_option "@theme_plugin_bluetooth_icon_connected" "$PLUGIN_BLUETOOTH_ICON_CONNECTED")
-            accent=$(get_cached_option "@theme_plugin_bluetooth_connected_accent_color" "")
-            accent_icon=$(get_cached_option "@theme_plugin_bluetooth_connected_accent_color_icon" "")
+            icon=$(get_cached_option "@powerkit_plugin_bluetooth_icon_connected" "$POWERKIT_PLUGIN_BLUETOOTH_ICON_CONNECTED")
+            accent=$(get_cached_option "@powerkit_plugin_bluetooth_connected_accent_color" "$POWERKIT_PLUGIN_BLUETOOTH_CONNECTED_ACCENT_COLOR")
+            accent_icon=$(get_cached_option "@powerkit_plugin_bluetooth_connected_accent_color_icon" "$POWERKIT_PLUGIN_BLUETOOTH_CONNECTED_ACCENT_COLOR_ICON")
             ;;
         on)
-            # Default icon, no color override
+            accent=$(get_cached_option "@powerkit_plugin_bluetooth_accent_color" "$POWERKIT_PLUGIN_BLUETOOTH_ACCENT_COLOR")
+            accent_icon=$(get_cached_option "@powerkit_plugin_bluetooth_accent_color_icon" "$POWERKIT_PLUGIN_BLUETOOTH_ACCENT_COLOR_ICON")
             ;;
     esac
-    
-    build_display_info "$show" "$accent" "$accent_icon" "$icon"
+    build_display_info "1" "$accent" "$accent_icon" "$icon"
 }
 
-# =============================================================================
-# Main Plugin Logic
-# =============================================================================
+fmt_device() {
+    local e="$1" name="${1%%@*}" bat="${1#*@}"
+    [[ "$_show_battery" == "true" && -n "$bat" && "$bat" != "$name" ]] && echo "$name ($bat%)" || echo "$name"
+}
 
 load_plugin() {
-    # Check cache first
-    local cached_value
-    if cached_value=$(cache_get "$BLUETOOTH_CACHE_KEY" "$BLUETOOTH_CACHE_TTL"); then
-        printf '%s' "$cached_value"
+    local cached
+    if cached=$(cache_get "$CACHE_KEY" "$CACHE_TTL"); then
+        printf '%s' "$cached"
         return 0
     fi
-    
-    local bt_info
-    bt_info=$(get_bluetooth_info)
-    
-    if [[ -z "$bt_info" ]]; then
-        return 0
-    fi
-    
-    # Parse info (format: "status:device1@battery1|device2@battery2|...")
-    local status devices_str
-    status="${bt_info%%:*}"
-    devices_str="${bt_info#*:}"
-    
-    local result
-    local show_device show_battery format max_length
-    show_device=$(get_tmux_option "@theme_plugin_bluetooth_show_device" "$PLUGIN_BLUETOOTH_SHOW_DEVICE")
-    show_battery=$(get_tmux_option "@theme_plugin_bluetooth_show_battery" "$PLUGIN_BLUETOOTH_SHOW_BATTERY")
-    format=$(get_tmux_option "@theme_plugin_bluetooth_format" "$PLUGIN_BLUETOOTH_FORMAT")
-    max_length=$(get_tmux_option "@theme_plugin_bluetooth_max_length" "$PLUGIN_BLUETOOTH_MAX_LENGTH")
-    
+
+    local info=$(get_bt_info)
+    [[ -z "$info" ]] && return 0
+
+    local status="${info%%:*}" devs="${info#*:}" result=""
     case "$status" in
-        off)
-            # Don't show anything when Bluetooth is off (conditional plugin)
-            return 0
-            ;;
+        off) return 0 ;;
+        on) result="on:ON" ;;
         connected)
-            if [[ "$show_device" == "true" ]] && [[ -n "$devices_str" ]]; then
-                local display_text
-                
-                # Count devices (pipe-separated)
-                local device_count
-                device_count=$(echo "$devices_str" | tr '|' '\n' | wc -l | tr -d ' ')
-                
-                # Helper function to format device with battery
-                format_device() {
-                    local entry="$1"
-                    local name="${entry%%@*}"
-                    local battery="${entry#*@}"
-                    
-                    if [[ "$show_battery" == "true" ]] && [[ -n "$battery" ]] && [[ "$battery" != "$name" ]]; then
-                        printf '%s (%s%%)' "$name" "$battery"
-                    else
-                        printf '%s' "$name"
-                    fi
-                }
-                
-                case "$format" in
-                    count)
-                        # Show count: "2 devices" or "1 device"
-                        if [[ "$device_count" -eq 1 ]]; then
-                            display_text="1 device"
-                        else
-                            display_text="${device_count} devices"
-                        fi
-                        ;;
+            if [[ "$_show_device" == "true" && -n "$devs" ]]; then
+                local txt="" cnt=$(echo "$devs" | tr '|' '\n' | wc -l | tr -d ' ')
+                case "$_format" in
+                    count) [[ $cnt -eq 1 ]] && txt="1 device" || txt="$cnt devices" ;;
                     all)
-                        # Show all devices separated by comma
-                        local formatted_devices=""
                         local IFS='|'
-                        for entry in $devices_str; do
-                            local formatted
-                            formatted=$(format_device "$entry")
-                            if [[ -n "$formatted_devices" ]]; then
-                                formatted_devices="${formatted_devices}, ${formatted}"
-                            else
-                                formatted_devices="$formatted"
-                            fi
+                        for e in $devs; do
+                            [[ -n "$txt" ]] && txt+=", "
+                            txt+=$(fmt_device "$e")
                         done
-                        display_text="$formatted_devices"
                         ;;
-                    first|*)
-                        # Show first device only (default)
-                        local first_entry="${devices_str%%|*}"
-                        display_text=$(format_device "$first_entry")
-                        ;;
+                    first|*) txt=$(fmt_device "${devs%%|*}") ;;
                 esac
-                
-                # Truncate if too long
-                if [[ ${#display_text} -gt $max_length ]]; then
-                    display_text="${display_text:0:$((max_length-1))}…"
-                fi
-                result="connected:$display_text"
+                [[ ${#txt} -gt $_max_len ]] && txt="${txt:0:$((_max_len-1))}…"
+                result="connected:$txt"
             else
                 result="connected:Connected"
             fi
             ;;
-        on)
-            result="on:ON"
-            ;;
     esac
-    
-    cache_set "$BLUETOOTH_CACHE_KEY" "$result"
+
+    cache_set "$CACHE_KEY" "$result"
     printf '%s' "$result"
 }
 
-# Only run if executed directly (not sourced)
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    # Output only the display part (after the colon)
-    output=$(load_plugin)
-    printf '%s' "${output#*:}"
-fi
+[[ "${BASH_SOURCE[0]}" == "${0}" ]] && { out=$(load_plugin); printf '%s' "${out#*:}"; } || true

@@ -1,231 +1,215 @@
 #!/usr/bin/env bash
+set -euo pipefail
+
 # =============================================================================
-# Unified Plugin Renderer
-# Renders all plugins in a single pass to ensure consistent separator handling.
-#
-# This script queries each plugin for its display behavior using the
-# plugin_get_display_info() function if available.
-#
-# Usage: render_plugins.sh <plugins_config>
-# Where plugins_config is a semicolon-separated list of plugin configs:
-#   "name:accent:accent_icon:icon:type;name2:accent2:accent_icon2:icon2:type;..."
-#
-# Types: static, conditional, datetime
-#
-# Environment variables:
-#   RENDER_WHITE - White/foreground color
-#   RENDER_BG_HIGHLIGHT - Background highlight color
-#   RENDER_TRANSPARENT - "true" or "false"
-#   RENDER_PALETTE - Serialized palette for color lookups
+# Unified Plugin Renderer (KISS/DRY)
+# Usage: render_plugins.sh "name:accent:accent_icon:icon:type;..."
+# Types: static, conditional
 # =============================================================================
 
-CURRENT_DIR="$(cd "$(dirname "$0")" && pwd)"
+CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# shellcheck source=src/utils.sh
-. "$CURRENT_DIR/utils.sh"
-# shellcheck source=src/separators.sh
-. "$CURRENT_DIR/separators.sh"
+# Bootstrap (loads defaults, utils, cache, plugin_helpers)
+# shellcheck source=src/plugin_bootstrap.sh
+. "${CURRENT_DIR}/plugin_bootstrap.sh"
 
-# Source defaults to get separator values
-# shellcheck source=src/defaults.sh
-. "$CURRENT_DIR/defaults.sh"
+# Load theme - use @powerkit_theme and @powerkit_theme_variant
+THEME_NAME=$(get_tmux_option "@powerkit_theme" "$POWERKIT_DEFAULT_THEME")
+THEME_VARIANT=$(get_tmux_option "@powerkit_theme_variant" "")
+
+# Auto-detect variant if not specified
+if [[ -z "$THEME_VARIANT" ]]; then
+    THEME_DIR="${CURRENT_DIR}/themes/${THEME_NAME}"
+    if [[ -d "$THEME_DIR" ]]; then
+        THEME_VARIANT=$(ls "$THEME_DIR"/*.sh 2>/dev/null | head -1 | xargs basename -s .sh 2>/dev/null || echo "")
+    fi
+fi
+[[ -z "$THEME_VARIANT" ]] && THEME_VARIANT="$POWERKIT_DEFAULT_THEME_VARIANT"
+
+THEME_FILE="${CURRENT_DIR}/themes/${THEME_NAME}/${THEME_VARIANT}.sh"
+[[ -f "$THEME_FILE" ]] && . "$THEME_FILE"
 
 # =============================================================================
 # Configuration
 # =============================================================================
-WHITE_COLOR="${RENDER_WHITE:-#ffffff}"
-BG_HIGHLIGHT="${RENDER_BG_HIGHLIGHT:-#292e42}"
+TEXT_COLOR="${RENDER_TEXT_COLOR:-#ffffff}"
+STATUS_BG="${RENDER_STATUS_BG:-${POWERKIT_FALLBACK_STATUS_BG:-#1a1b26}}"
 TRANSPARENT="${RENDER_TRANSPARENT:-false}"
-PALETTE_SERIALIZED="${RENDER_PALETTE:-}"
 PLUGINS_CONFIG="${1:-}"
 
-# Read separator directly from tmux with proper defaults
-RIGHT_SEPARATOR=$(get_tmux_option "@theme_right_separator" "$THEME_DEFAULT_RIGHT_SEPARATOR")
-RIGHT_SEPARATOR_INVERSE=$(get_tmux_option "@theme_right_separator_inverse" "$THEME_DEFAULT_RIGHT_SEPARATOR_INVERSE")
+RIGHT_SEPARATOR=$(get_tmux_option "@powerkit_right_separator" "$POWERKIT_DEFAULT_RIGHT_SEPARATOR")
+RIGHT_SEPARATOR_INVERSE=$(get_tmux_option "@powerkit_right_separator_inverse" "$POWERKIT_DEFAULT_RIGHT_SEPARATOR_INVERSE")
 
 # =============================================================================
-# Palette Helper
+# Helpers
 # =============================================================================
-# Parse palette once into associative array for fast lookups
-declare -A _PALETTE_MAP
-_parse_palette() {
-    [[ -z "$PALETTE_SERIALIZED" ]] && return
-    local IFS=';'
-    local entry
-    for entry in $PALETTE_SERIALIZED; do
-        [[ -z "$entry" ]] && continue
-        local key="${entry%%=*}"
-        local value="${entry#*=}"
-        _PALETTE_MAP["$key"]="$value"
-    done
-}
-_parse_palette
 
-get_palette_color() {
-    local color_name="$1"
-    printf '%s' "${_PALETTE_MAP[$color_name]:-$color_name}"
+# Resolve color name to hex (from theme or pass-through)
+get_color() {
+    local name="$1"
+    [[ -z "$name" ]] && return
+    printf '%s' "${THEME_COLORS[$name]:-$name}"
 }
 
-# =============================================================================
-# Plugin Display Info Query - Optimized
-# =============================================================================
+# Get plugin defaults from defaults.sh
+get_plugin_defaults() {
+    local name="$1"
+    local upper="${name^^}"
+    upper="${upper//-/_}"
+    
+    local accent_var="POWERKIT_PLUGIN_${upper}_ACCENT_COLOR"
+    local accent_icon_var="POWERKIT_PLUGIN_${upper}_ACCENT_COLOR_ICON"
+    local icon_var="POWERKIT_PLUGIN_red${upper}_ICON"
+    
+    printf '%s:%s:%s' "${!accent_var:-secondary}" "${!accent_icon_var:-active}" "${!icon_var:-}"
+}
 
-# Cache for plugin display functions - avoids re-sourcing plugins
-declare -A _PLUGIN_HAS_DISPLAY_INFO=()
-
-# Query a plugin for its display info
-# If the plugin defines plugin_get_display_info(), call it
-# Otherwise return default values (show=1, no color/icon overrides)
-#
-# Output format: "show:accent:accent_icon:icon"
-#
-# Optimization: Source plugin once and cache whether it has the function
-query_plugin_display_info() {
-    local plugin_name="$1"
-    local plugin_script="$2"
-    local content="$3"
+# Apply threshold colors if defined
+apply_thresholds() {
+    local name="$1" content="$2" accent="$3" accent_icon="$4"
+    local upper="${name^^}"
+    upper="${upper//-/_}"
     
-    # Check cache first
-    local cache_key="$plugin_name"
+    local num
+    num=$(echo "$content" | grep -oE '[0-9]+' | head -1)
+    [[ -z "$num" ]] && { printf '%s:%s' "$accent" "$accent_icon"; return; }
     
-    if [[ -z "${_PLUGIN_HAS_DISPLAY_INFO[$cache_key]+isset}" ]]; then
-        # First time - source and check
-        # shellcheck source=/dev/null
-        . "$plugin_script" 2>/dev/null
-        
-        if declare -f plugin_get_display_info &>/dev/null; then
-            _PLUGIN_HAS_DISPLAY_INFO[$cache_key]="1"
-        else
-            _PLUGIN_HAS_DISPLAY_INFO[$cache_key]="0"
-        fi
-    elif [[ "${_PLUGIN_HAS_DISPLAY_INFO[$cache_key]}" == "1" ]]; then
-        # Re-source only if plugin has display info function
-        # shellcheck source=/dev/null
-        . "$plugin_script" 2>/dev/null
-    fi
+    local warn_var="POWERKIT_PLUGIN_${upper}_WARNING_THRESHOLD"
+    local crit_var="POWERKIT_PLUGIN_${upper}_CRITICAL_THRESHOLD"
+    local warn="${!warn_var:-}" crit="${!crit_var:-}"
     
-    # Call display info function if available
-    if [[ "${_PLUGIN_HAS_DISPLAY_INFO[$cache_key]}" == "1" ]]; then
-        plugin_get_display_info "$content"
+    [[ -z "$warn" || -z "$crit" ]] && { printf '%s:%s' "$accent" "$accent_icon"; return; }
+    
+    if [[ "$num" -ge "$crit" ]]; then
+        local ca="POWERKIT_PLUGIN_${upper}_CRITICAL_ACCENT_COLOR"
+        local ci="POWERKIT_PLUGIN_${upper}_CRITICAL_ACCENT_COLOR_ICON"
+        printf '%s:%s' "${!ca:-$accent}" "${!ci:-$accent_icon}"
+    elif [[ "$num" -ge "$warn" ]]; then
+        local wa="POWERKIT_PLUGIN_${upper}_WARNING_ACCENT_COLOR"
+        local wi="POWERKIT_PLUGIN_${upper}_WARNING_ACCENT_COLOR_ICON"
+        printf '%s:%s' "${!wa:-$accent}" "${!wi:-$accent_icon}"
     else
-        # Default: show, no overrides
-        printf '1:::'
+        printf '%s:%s' "$accent" "$accent_icon"
     fi
 }
 
+# Clean content (remove status prefixes)
+clean_content() {
+    local c="$1"
+    [[ "$c" =~ ^[a-z]+: ]] && c="${c#*:}"
+    printf '%s' "${c#MODIFIED:}"
+}
+
+# Icon without extra padding (spacing controlled in template)
+add_pad() {
+    printf '%s' "$1"
+}
+
 # =============================================================================
-# Main Logic
+# Main
 # =============================================================================
 
-# Arrays to store plugins that will be rendered
-declare -a PLUGIN_NAMES=()
-declare -a PLUGIN_CONTENTS=()
-declare -a PLUGIN_ACCENTS=()
-declare -a PLUGIN_ACCENT_ICONS=()
-declare -a PLUGIN_ICONS=()
+declare -a NAMES=() CONTENTS=() ACCENTS=() ACCENT_ICONS=() ICONS=()
 
-# Parse plugins config and execute each
-IFS=';' read -ra PLUGIN_CONFIGS <<< "$PLUGINS_CONFIG"
+IFS=';' read -ra CONFIGS <<< "$PLUGINS_CONFIG"
 
-for config in "${PLUGIN_CONFIGS[@]}"; do
+for config in "${CONFIGS[@]}"; do
     [[ -z "$config" ]] && continue
     
-    # Parse config: name:accent:accent_icon:icon:type
-    IFS=':' read -r name accent accent_icon icon plugin_type <<< "$config"
+    IFS=':' read -r name cfg_accent cfg_accent_icon cfg_icon plugin_type <<< "$config"
     
     plugin_script="${CURRENT_DIR}/plugin/${name}.sh"
     [[ ! -f "$plugin_script" ]] && continue
     
+    # Clean previous plugin
+    unset -f load_plugin plugin_get_display_info 2>/dev/null || true
+    
+    # Source plugin (bootstrap cached via guards)
     # shellcheck source=/dev/null
-
-    # Execute plugin to get content - plugins handle their own environment
-    content=$(bash "$plugin_script" 2>/dev/null) || content=""
+    . "$plugin_script" 2>/dev/null || continue
     
-    # Handle special types first
-    case "$plugin_type" in
-        conditional)
-            # Conditional plugins: only render if has content
-            [[ -z "$content" ]] && continue
-            ;;
-        datetime)
-            # datetime returns strftime format string - execute date to get actual value
-            content=$(date +"$content" 2>/dev/null) || content=""
-            ;;
-    esac
+    # Get content
+    content=""
+    declare -f load_plugin &>/dev/null && content=$(load_plugin 2>/dev/null) || true
     
-    # Query the plugin for display info (show/hide, color overrides)
-    display_info=$(query_plugin_display_info "$name" "$plugin_script" "$content")
+    # Skip conditional without content
+    [[ "$plugin_type" == "conditional" && -z "$content" ]] && continue
     
-    # Parse display info: "show:accent:accent_icon:icon"
-    IFS=':' read -r should_show override_accent override_accent_icon override_icon <<< "$display_info"
-    
-    # Check if plugin wants to hide
-    [[ "$should_show" == "0" ]] && continue
-    
-    # Apply color overrides if provided
-    if [[ -n "$override_accent" ]]; then
-        accent=$(get_palette_color "$override_accent")
-    fi
-    if [[ -n "$override_accent_icon" ]]; then
-        accent_icon=$(get_palette_color "$override_accent_icon")
-    fi
-    if [[ -n "$override_icon" ]]; then
-        icon="$override_icon"
+    # Get defaults if not in config
+    if [[ -z "$cfg_accent" || -z "$cfg_accent_icon" ]]; then
+        IFS=':' read -r def_accent def_accent_icon def_icon <<< "$(get_plugin_defaults "$name")"
+        [[ -z "$cfg_accent" ]] && cfg_accent="$def_accent"
+        [[ -z "$cfg_accent_icon" ]] && cfg_accent_icon="$def_accent_icon"
+        [[ -z "$cfg_icon" ]] && cfg_icon="$def_icon"
     fi
     
-    # Clean MODIFIED: prefix from content for display (but keep for display_info detection)
-    display_content="${content#MODIFIED:}"
+    # Check plugin's custom display info
+    if declare -f plugin_get_display_info &>/dev/null; then
+        IFS=':' read -r show ov_accent ov_accent_icon ov_icon <<< "$(plugin_get_display_info "${content,,}")"
+        [[ "$show" == "0" ]] && continue
+        [[ -n "$ov_accent" ]] && cfg_accent="$ov_accent"
+        [[ -n "$ov_accent_icon" ]] && cfg_accent_icon="$ov_accent_icon"
+        [[ -n "$ov_icon" ]] && cfg_icon="$ov_icon"
+    fi
     
-    # Add to render list
-    PLUGIN_NAMES+=("$name")
-    PLUGIN_CONTENTS+=("$display_content")
-    PLUGIN_ACCENTS+=("$accent")
-    PLUGIN_ACCENT_ICONS+=("$accent_icon")
-    PLUGIN_ICONS+=("$icon")
+    # Apply thresholds
+    IFS=':' read -r cfg_accent cfg_accent_icon <<< "$(apply_thresholds "$name" "$content" "$cfg_accent" "$cfg_accent_icon")"
+    
+    # Resolve to hex
+    cfg_accent=$(get_color "$cfg_accent")
+    cfg_accent_icon=$(get_color "$cfg_accent_icon")
+    
+    NAMES+=("$name")
+    CONTENTS+=("$(clean_content "$content")")
+    ACCENTS+=("$cfg_accent")
+    ACCENT_ICONS+=("$cfg_accent_icon")
+    ICONS+=("$cfg_icon")
 done
 
 # =============================================================================
-# Render Output - Optimized
+# Render
 # =============================================================================
 
-total=${#PLUGIN_NAMES[@]}
+total=${#NAMES[@]}
 [[ $total -eq 0 ]] && exit 0
 
 output=""
+prev_accent=""
+
+# Pre-compute padded separators
+RIGHT_SEP=$(add_pad "$RIGHT_SEPARATOR")
+RIGHT_SEP_INV=$(add_pad "$RIGHT_SEPARATOR_INVERSE")
 
 for ((i=0; i<total; i++)); do
-    name="${PLUGIN_NAMES[$i]}"
-    content="${PLUGIN_CONTENTS[$i]}"
-    accent="${PLUGIN_ACCENTS[$i]}"
-    accent_icon="${PLUGIN_ACCENT_ICONS[$i]}"
-    icon="${PLUGIN_ICONS[$i]}"
+    content="${CONTENTS[$i]}"
+    accent="${ACCENTS[$i]}"
+    accent_icon="${ACCENT_ICONS[$i]}"
+    icon=$(add_pad "${ICONS[$i]}")
     
-    is_last=$([[ $i -eq $((total - 1)) ]] && echo "1" || echo "0")
-    
-    # Build separators inline (avoiding function call overhead)
-    if [[ "$TRANSPARENT" == "true" ]]; then
-        sep_icon_start="#[fg=${accent_icon},bg=default]${RIGHT_SEPARATOR}#[none]"
-    else
-        sep_icon_start="#[fg=${accent_icon},bg=${BG_HIGHLIGHT}]${RIGHT_SEPARATOR}#[none]"
-    fi
-    
-    sep_icon_end="#[fg=${accent},bg=${accent_icon}]${RIGHT_SEPARATOR}#[none]"
-    
-    # Build icon section inline
-    icon_output="${sep_icon_start}#[fg=${WHITE_COLOR},bg=${accent_icon}]${icon} ${sep_icon_end}"
-    
-    # Build content section - for last plugin, just end cleanly with no separator
-    if [[ "$is_last" == "1" ]]; then
-        output+="${icon_output}#[fg=${WHITE_COLOR},bg=${accent}] ${content} "
-    else
-        content_output="#[fg=${WHITE_COLOR},bg=${accent}]${content} #[none]"
+    # Separators
+    if [[ $i -eq 0 ]]; then
         if [[ "$TRANSPARENT" == "true" ]]; then
-            sep_end="#[fg=${accent},bg=default]${RIGHT_SEPARATOR_INVERSE}#[bg=default]"
+            sep_start="#[fg=${accent_icon},bg=default]${RIGHT_SEP}#[none]"
         else
-            sep_end="#[fg=${BG_HIGHLIGHT},bg=${accent}]${RIGHT_SEPARATOR}#[bg=${BG_HIGHLIGHT}]"
+            sep_start="#[fg=${STATUS_BG},bg=${accent_icon}]${RIGHT_SEP}#[none]"
         fi
-        output+="${icon_output}${content_output}${sep_end}"
+    else
+        sep_start="#[fg=${prev_accent},bg=${accent_icon}]${RIGHT_SEP}#[none]"
     fi
+    
+    sep_mid="#[fg=${accent_icon},bg=${accent}]${RIGHT_SEP}#[none]"
+    
+    # Build output - consistent spacing: " ICON SEP TEXT "
+    output+="${sep_start}#[fg=${TEXT_COLOR},bg=${accent_icon},bold]${icon} ${sep_mid}"
+    
+    if [[ $i -eq $((total-1)) ]]; then
+        output+="#[fg=${TEXT_COLOR},bg=${accent}] ${content} "
+    else
+        output+="#[fg=${TEXT_COLOR},bg=${accent}] ${content} #[none]"
+        [[ "$TRANSPARENT" == "true" ]] && output+="#[fg=${accent},bg=default]${RIGHT_SEP_INV}#[bg=default]"
+    fi
+    
+    prev_accent="$accent"
 done
 
 printf '%s' "$output"

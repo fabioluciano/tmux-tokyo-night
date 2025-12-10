@@ -1,341 +1,165 @@
 #!/usr/bin/env bash
-# =============================================================================
-# Plugin: battery
-# Description: Display battery percentage or time remaining with dynamic colors
-# Dependencies: pmset (macOS), acpi/upower (Linux), or termux-battery-status
-# =============================================================================
-# Battery querying code adapted from https://github.com/tmux-plugins/tmux-battery
-# Copyright (C) 2014 Bruno Sutic - MIT License
-#
-# Configuration options:
-#   @theme_plugin_battery_icon                 - Default icon (default: 󰁹)
-#   @theme_plugin_battery_icon_charging        - Icon when charging (default: 󰂄)
-#   @theme_plugin_battery_icon_low             - Icon when battery is low (default: 󰂃)
-#   @theme_plugin_battery_accent_color         - Default accent color
-#   @theme_plugin_battery_accent_color_icon    - Default icon accent color
-#   @theme_plugin_battery_display_mode         - "percentage" or "time" (default: percentage)
-#   @theme_plugin_battery_cache_ttl            - Cache time in seconds (default: 30)
-#
-# Threshold/Display options:
-#   @theme_plugin_battery_display_threshold    - Show only when condition is met
-#   @theme_plugin_battery_display_condition    - Condition: le, lt, ge, gt, eq, always
-#   @theme_plugin_battery_low_threshold        - Threshold for low state (default: 30)
-#   @theme_plugin_battery_low_accent_color     - Color when low (default: red)
-#   @theme_plugin_battery_low_accent_color_icon - Icon color when low (default: red1)
-#
-# Example configurations:
-#   # Show battery only when below 50%
-#   set -g @theme_plugin_battery_display_threshold "50"
-#   set -g @theme_plugin_battery_display_condition "le"
-#
-#   # Change colors when battery is below 20%
-#   set -g @theme_plugin_battery_low_threshold "20"
-#   set -g @theme_plugin_battery_low_accent_color "red"
-# =============================================================================
+# Plugin: battery - Display battery percentage/time with dynamic colors
+# Platforms: macOS (pmset), Linux (acpi/upower), WSL, Termux, BSD (apm)
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$ROOT_DIR/../plugin_bootstrap.sh"
 
-# shellcheck source=src/defaults.sh
-. "$ROOT_DIR/../defaults.sh"
-# shellcheck source=src/utils.sh
-. "$ROOT_DIR/../utils.sh"
-# shellcheck source=src/cache.sh
-. "$ROOT_DIR/../cache.sh"
-# shellcheck source=src/plugin_interface.sh
-. "$ROOT_DIR/../plugin_interface.sh"
+plugin_init "battery"
 
-# =============================================================================
-# Plugin Configuration
-# =============================================================================
+# Platform detection
+is_wsl() { [[ -f /proc/version ]] && grep -qiE "microsoft|wsl" /proc/version 2>/dev/null; }
+cmd() { command -v "$1" &>/dev/null; }
 
-# shellcheck disable=SC2034
-plugin_battery_icon=$(get_tmux_option "@theme_plugin_battery_icon" "$PLUGIN_BATTERY_ICON")
-# shellcheck disable=SC2034
-plugin_battery_accent_color=$(get_tmux_option "@theme_plugin_battery_accent_color" "$PLUGIN_BATTERY_ACCENT_COLOR")
-# shellcheck disable=SC2034
-plugin_battery_accent_color_icon=$(get_tmux_option "@theme_plugin_battery_accent_color_icon" "$PLUGIN_BATTERY_ACCENT_COLOR_ICON")
-
-# Cache TTL in seconds (default: 30 seconds)
-BATTERY_CACHE_TTL=$(get_tmux_option "@theme_plugin_battery_cache_ttl" "$PLUGIN_BATTERY_CACHE_TTL")
-BATTERY_CACHE_KEY="battery"
-
-# =============================================================================
-# Platform Detection
-# =============================================================================
-
-is_wsl() {
-    [[ -f /proc/version ]] && grep -qiE "microsoft|wsl" /proc/version 2>/dev/null
-}
-
-command_exists() {
-    command -v "$1" &>/dev/null
-}
-
-# =============================================================================
-# Battery Detection Functions
-# =============================================================================
-
-battery_get_percentage() {
-    local percentage=""
-    
+# Get battery percentage
+get_percentage() {
     if is_wsl; then
-        local battery_file
-        battery_file=$(find /sys/class/power_supply/*/capacity 2>/dev/null | head -n1)
-        [[ -n "$battery_file" ]] && percentage=$(<"$battery_file" 2>/dev/null)
-    elif is_macos && command_exists "pmset"; then
-        percentage=$(pmset -g batt 2>/dev/null | awk '/[0-9]+%/ {gsub(/[%;]/, "", $3); print $3; exit}')
-    elif is_linux && command_exists "acpi"; then
-        percentage=$(acpi -b 2>/dev/null | awk -F'[,%]' '/Battery/ {gsub(/ /, "", $2); print $2; exit}')
-    elif is_linux && command_exists "upower"; then
-        local battery
-        battery=$(upower -e 2>/dev/null | grep -E 'battery|DisplayDevice' | tail -n1)
-        if [[ -n "$battery" ]]; then
-            percentage=$(upower -i "$battery" 2>/dev/null | awk '/percentage:/ {gsub(/%/, ""); print $2}')
-            if [[ -z "$percentage" ]]; then
-                local energy energy_full
-                energy=$(upower -i "$battery" | awk '/energy:/ {print $2}')
-                energy_full=$(upower -i "$battery" | awk '/energy-full:/ {print $2}')
-                if [[ -n "$energy" && -n "$energy_full" ]]; then
-                    percentage=$(awk "BEGIN {printf \"%d\", ($energy/$energy_full)*100}")
-                fi
-            fi
-        fi
-    elif command_exists "termux-battery-status"; then
-        percentage=$(termux-battery-status 2>/dev/null | jq -r '.percentage' 2>/dev/null)
-    elif command_exists "apm"; then
-        percentage=$(apm -l 2>/dev/null | tr -d '%')
+        local f=$(find /sys/class/power_supply/*/capacity 2>/dev/null | head -1)
+        [[ -n "$f" ]] && cat "$f" 2>/dev/null
+    elif is_macos && cmd pmset; then
+        pmset -g batt 2>/dev/null | awk '/[0-9]+%/ {gsub(/[%;]/, "", $3); print $3; exit}'
+    elif cmd acpi; then
+        acpi -b 2>/dev/null | awk -F'[,%]' '/Battery/ {gsub(/ /, "", $2); print $2; exit}'
+    elif cmd upower; then
+        local bat=$(upower -e 2>/dev/null | grep -E 'battery|DisplayDevice' | tail -1)
+        [[ -n "$bat" ]] && upower -i "$bat" 2>/dev/null | awk '/percentage:/ {gsub(/%/, ""); print $2}'
+    elif cmd termux-battery-status; then
+        { termux-battery-status | jq -r '.percentage'; } 2>/dev/null
+    elif cmd apm; then
+        apm -l 2>/dev/null | tr -d '%'
     fi
-    
-    [[ -n "$percentage" ]] && printf '%s' "$percentage"
 }
 
-battery_is_charging() {
+# Check if charging
+is_charging() {
     if is_wsl; then
-        local status_file
-        status_file=$(command find /sys/class/power_supply/*/status 2>/dev/null | head -n1)
-        [[ -n "$status_file" ]] && grep -qi "^charging$" "$status_file" 2>/dev/null && return 0
-    elif command_exists "pmset"; then
-        pmset -g batt 2>/dev/null | grep -q "AC Power" && return 0
-        return 1
-    elif command_exists "acpi"; then
-        acpi -b 2>/dev/null | grep -qiE "^Battery.*: Charging" && return 0
-    elif command_exists "upower"; then
-        local battery
-        battery=$(upower -e 2>/dev/null | grep -E 'battery|DisplayDevice' | tail -n1)
-        [[ -n "$battery" ]] && upower -i "$battery" 2>/dev/null | grep -qiE "state:\s*charging" && return 0
-    elif command_exists "termux-battery-status"; then
-        termux-battery-status 2>/dev/null | jq -r '.status' 2>/dev/null | grep -qi "^charging$" && return 0
-    fi
-    return 1
-}
-
-battery_is_available() {
-    # Check if we're in WSL
-    if is_wsl; then
-        local battery_file
-        battery_file=$(command find /sys/class/power_supply/*/capacity 2>/dev/null | head -n1)
-        [[ -n "$battery_file" ]] && return 0
-        return 1
-    fi
-    
-    # Check macOS with pmset
-    if command_exists "pmset"; then
-        pmset -g batt 2>/dev/null | grep -q "InternalBattery" && return 0
-        return 1
-    fi
-    
-    # Check Linux with acpi
-    if command_exists "acpi"; then
-        acpi -b 2>/dev/null | grep -q "Battery" && return 0
-        return 1
-    fi
-    
-    # Check Linux with upower - improved detection
-    if command_exists "upower"; then
-        local batteries
-        batteries=$(upower -e 2>/dev/null | grep -v DisplayDevice | grep -E 'BAT|battery')
-        if [[ -n "$batteries" ]]; then
-            # Check if any battery has valid information
-            while IFS= read -r battery; do
-                if upower -i "$battery" 2>/dev/null | grep -q "power supply.*yes"; then
-                    return 0
-                fi
-            done <<< "$batteries"
-        fi
-        
-        # Also check DisplayDevice but ensure it's a real battery
-        local display_device
-        display_device=$(upower -e 2>/dev/null | grep DisplayDevice)
-        if [[ -n "$display_device" ]]; then
-            local upower_info
-            upower_info=$(upower -i "$display_device" 2>/dev/null)
-            # Check if it has power supply and is not missing
-            if echo "$upower_info" | grep -q "power supply.*yes" && \
-               ! echo "$upower_info" | grep -q "battery-missing"; then
-                return 0
-            fi
-        fi
-        return 1
-    fi
-    
-    # Check Termux
-    if command_exists "termux-battery-status"; then
-        termux-battery-status 2>/dev/null >/dev/null && return 0
-        return 1
-    fi
-    
-    # Check BSD systems
-    if command_exists "apm"; then
-        apm -l 2>/dev/null >/dev/null && return 0
-        return 1
-    fi
-    
-    # No battery detection method available or no battery found
-    return 1
-}
-
-battery_get_time_remaining() {
-    local time_remaining=""
-    
-    if is_wsl; then
-        time_remaining=""
-    elif command_exists "pmset"; then
-        local pmset_output
-        pmset_output=$(pmset -g batt 2>/dev/null)
-        if echo "$pmset_output" | grep -q "(no estimate)"; then
-            time_remaining="..."
-        else
-            time_remaining=$(echo "$pmset_output" | grep -oE '[0-9]+:[0-9]+' | head -1)
-        fi
-    elif command_exists "acpi"; then
-        time_remaining=$(acpi -b 2>/dev/null | grep -oE '[0-9]+:[0-9]+:[0-9]+' | head -1 | cut -d: -f1-2)
-    elif command_exists "upower"; then
-        local battery
-        battery=$(upower -e 2>/dev/null | grep -E 'battery|DisplayDevice' | tail -n1)
-        if [[ -n "$battery" ]]; then
-            local seconds unit
-            seconds=$(upower -i "$battery" 2>/dev/null | grep -E "time to (empty|full)" | awk '{print $4}')
-            unit=$(upower -i "$battery" 2>/dev/null | grep -E "time to (empty|full)" | awk '{print $5}')
-            if [[ -n "$seconds" ]]; then
-                case "$unit" in
-                    hours) time_remaining="${seconds}h" ;;
-                    minutes) time_remaining="${seconds}m" ;;
-                    *) time_remaining="$seconds" ;;
-                esac
-            fi
-        fi
-    fi
-    
-    printf '%s' "$time_remaining"
-}
-
-battery_format_output() {
-    local percentage="$1"
-    local display_mode="$2"
-    
-    # Remove any existing % symbol from percentage
-    percentage="${percentage%\%}"
-    
-    if [[ "$display_mode" == "time" ]]; then
-        local time_remaining
-        time_remaining=$(battery_get_time_remaining)
-        if [[ -n "$time_remaining" ]]; then
-            printf '%s' "$time_remaining"
-        else
-            printf '%s%%' "$percentage"
-        fi
+        local f=$(find /sys/class/power_supply/*/status 2>/dev/null | head -1)
+        [[ -n "$f" ]] && grep -qi "^charging$" "$f" 2>/dev/null
+    elif cmd pmset; then
+        pmset -g batt 2>/dev/null | grep -q "AC Power"
+    elif cmd acpi; then
+        acpi -b 2>/dev/null | grep -qiE "^Battery.*: Charging"
+    elif cmd upower; then
+        local bat=$(upower -e 2>/dev/null | grep -E 'battery|DisplayDevice' | tail -1)
+        [[ -n "$bat" ]] && upower -i "$bat" 2>/dev/null | grep -qiE "state:\s*(charging|fully-charged)"
+    elif cmd termux-battery-status; then
+        { termux-battery-status | jq -r '.status' | grep -qi "^charging$"; } 2>/dev/null
     else
-        printf '%s%%' "$percentage"
+        return 1
     fi
 }
 
-# =============================================================================
-# Plugin Interface Implementation
-# =============================================================================
-
-# Function to inform the plugin type to the renderer
-plugin_get_type() {
-    printf 'conditional'
+# Check if battery exists
+has_battery() {
+    if is_wsl; then
+        [[ -n "$(find /sys/class/power_supply/*/capacity 2>/dev/null | head -1)" ]]
+    elif cmd pmset; then
+        pmset -g batt 2>/dev/null | grep -q "InternalBattery"
+    elif cmd acpi; then
+        acpi -b 2>/dev/null | grep -q "Battery"
+    elif cmd upower; then
+        local bat=$(upower -e 2>/dev/null | grep -E 'BAT|battery' | grep -v DisplayDevice | head -1)
+        [[ -n "$bat" ]] && upower -i "$bat" 2>/dev/null | grep -q "power supply.*yes"
+    elif cmd termux-battery-status; then
+        termux-battery-status &>/dev/null
+    elif cmd apm; then
+        apm -l &>/dev/null
+    else
+        return 1
+    fi
 }
 
-# This function is called by render_plugins.sh to get display decisions
-# Output format: "show:accent:accent_icon:icon"
+# Get time remaining
+get_time() {
+    if cmd pmset; then
+        local out=$(pmset -g batt 2>/dev/null)
+        if echo "$out" | grep -q "(no estimate)"; then
+            echo "..."
+        else
+            echo "$out" | grep -oE '[0-9]+:[0-9]+' | head -1
+        fi
+    elif cmd acpi; then
+        acpi -b 2>/dev/null | grep -oE '[0-9]+:[0-9]+:[0-9]+' | head -1 | cut -d: -f1-2
+    elif cmd upower; then
+        local bat=$(upower -e 2>/dev/null | grep -E 'battery|DisplayDevice' | tail -1)
+        if [[ -n "$bat" ]]; then
+            local sec=$(upower -i "$bat" 2>/dev/null | grep -E "time to (empty|full)" | awk '{print $4}')
+            local unit=$(upower -i "$bat" 2>/dev/null | grep -E "time to (empty|full)" | awk '{print $5}')
+            case "$unit" in
+                hours) echo "${sec}h" ;;
+                minutes) echo "${sec}m" ;;
+                *) echo "$sec" ;;
+            esac
+        fi
+    fi
+}
+
+plugin_get_type() { printf 'conditional'; }
+
 plugin_get_display_info() {
     local content="$1"
-    local show="1"
-    local accent=""
-    local accent_icon=""
-    local icon=""
-    
-    # Extract numeric value from content
-    local value
-    value=$(extract_numeric "$content")
-    
-    # Check display condition (hide based on threshold)
-    # Use get_cached_option for performance in render loop
-    local display_condition display_threshold
-    display_condition=$(get_cached_option "@theme_plugin_battery_display_condition" "always")
-    display_threshold=$(get_cached_option "@theme_plugin_battery_display_threshold" "")
-    
-    if [[ "$display_condition" != "always" ]] && [[ -n "$display_threshold" ]]; then
-        if ! evaluate_condition "$value" "$display_condition" "$display_threshold"; then
-            show="0"
-        fi
-    fi
-    
-    # Check if charging - use charging icon, skip low threshold colors
-    if battery_is_charging; then
-        icon=$(get_cached_option "@theme_plugin_battery_icon_charging" "$PLUGIN_BATTERY_ICON_CHARGING")
+    local show="1" accent="" accent_icon="" icon=""
+    local value=$(extract_numeric "$content")
+
+    # Display condition check
+    local cond=$(get_cached_option "@powerkit_plugin_battery_display_condition" "always")
+    local thresh=$(get_cached_option "@powerkit_plugin_battery_display_threshold" "")
+    [[ "$cond" != "always" && -n "$thresh" ]] && ! evaluate_condition "$value" "$cond" "$thresh" && show="0"
+
+    # Default colors
+    accent=$(get_cached_option "@powerkit_plugin_battery_accent_color" "$POWERKIT_PLUGIN_BATTERY_ACCENT_COLOR")
+    accent_icon=$(get_cached_option "@powerkit_plugin_battery_accent_color_icon" "$POWERKIT_PLUGIN_BATTERY_ACCENT_COLOR_ICON")
+
+    if is_charging; then
+        icon=$(get_cached_option "@powerkit_plugin_battery_icon_charging" "$POWERKIT_PLUGIN_BATTERY_ICON_CHARGING")
     else
-        # Check thresholds for color and icon changes (check low first, then warning)
-        local low_threshold warning_threshold
-        low_threshold=$(get_cached_option "@theme_plugin_battery_low_threshold" "$PLUGIN_BATTERY_LOW_THRESHOLD")
-        warning_threshold=$(get_cached_option "@theme_plugin_battery_warning_threshold" "$PLUGIN_BATTERY_WARNING_THRESHOLD")
-        
-        if [[ -n "$value" ]] && [[ "$value" -le "$low_threshold" ]]; then
-            # Critical low (30% or less) - red colors
-            accent=$(get_cached_option "@theme_plugin_battery_low_accent_color" "$PLUGIN_BATTERY_LOW_ACCENT_COLOR")
-            accent_icon=$(get_cached_option "@theme_plugin_battery_low_accent_color_icon" "$PLUGIN_BATTERY_LOW_ACCENT_COLOR_ICON")
-            icon=$(get_cached_option "@theme_plugin_battery_icon_low" "$PLUGIN_BATTERY_ICON_LOW")
-        elif [[ -n "$value" ]] && [[ "$value" -le "$warning_threshold" ]]; then
-            # Warning level (50% or less) - yellow colors
-            accent=$(get_cached_option "@theme_plugin_battery_warning_accent_color" "$PLUGIN_BATTERY_WARNING_ACCENT_COLOR")
-            accent_icon=$(get_cached_option "@theme_plugin_battery_warning_accent_color_icon" "$PLUGIN_BATTERY_WARNING_ACCENT_COLOR_ICON")
+        local low_t=$(get_cached_option "@powerkit_plugin_battery_low_threshold" "$POWERKIT_PLUGIN_BATTERY_LOW_THRESHOLD")
+        local warn_t=$(get_cached_option "@powerkit_plugin_battery_warning_threshold" "$POWERKIT_PLUGIN_BATTERY_WARNING_THRESHOLD")
+
+        if [[ -n "$value" && "$value" -le "$low_t" ]]; then
+            accent=$(get_cached_option "@powerkit_plugin_battery_low_accent_color" "$POWERKIT_PLUGIN_BATTERY_LOW_ACCENT_COLOR")
+            accent_icon=$(get_cached_option "@powerkit_plugin_battery_low_accent_color_icon" "$POWERKIT_PLUGIN_BATTERY_LOW_ACCENT_COLOR_ICON")
+            icon=$(get_cached_option "@powerkit_plugin_battery_icon_low" "$POWERKIT_PLUGIN_BATTERY_ICON_LOW")
+        elif [[ -n "$value" && "$value" -le "$warn_t" ]]; then
+            accent=$(get_cached_option "@powerkit_plugin_battery_warning_accent_color" "$POWERKIT_PLUGIN_BATTERY_WARNING_ACCENT_COLOR")
+            accent_icon=$(get_cached_option "@powerkit_plugin_battery_warning_accent_color_icon" "$POWERKIT_PLUGIN_BATTERY_WARNING_ACCENT_COLOR_ICON")
         fi
     fi
-    
+
     build_display_info "$show" "$accent" "$accent_icon" "$icon"
 }
 
-# =============================================================================
-# Main Plugin Logic
-# =============================================================================
-
 load_plugin() {
-    if ! battery_is_available; then
+    has_battery || return 0
+
+    local cached
+    if cached=$(cache_get "$CACHE_KEY" "$CACHE_TTL"); then
+        printf '%s' "$cached"
         return 0
     fi
 
-    local display_mode
-    display_mode=$(get_tmux_option "@theme_plugin_battery_display_mode" "$PLUGIN_BATTERY_DISPLAY_MODE")
+    local pct=$(get_percentage)
+    [[ -z "$pct" ]] && return 0
 
-    local cached_value
-    if cached_value=$(cache_get "$BATTERY_CACHE_KEY" "$BATTERY_CACHE_TTL"); then
-        printf '%s' "$cached_value"
-        return 0
+    # Nova opção: ocultar se 100% e carregando
+    local hide_full_charging=$(get_tmux_option "@powerkit_plugin_battery_hide_when_full_and_charging" "false")
+    if [[ "$hide_full_charging" == "true" && "$pct" == "100" ]]; then
+        if is_charging; then
+            return 0
+        fi
     fi
 
-    local percentage
-    percentage=$(battery_get_percentage)
-    
+    local mode=$(get_tmux_option "@powerkit_plugin_battery_display_mode" "$POWERKIT_PLUGIN_BATTERY_DISPLAY_MODE")
     local result
-    result=$(battery_format_output "$percentage" "$display_mode")
+    if [[ "$mode" == "time" ]]; then
+        local t=$(get_time)
+        result="${t:-${pct}%}"
+    else
+        result="${pct}%"
+    fi
 
-    cache_set "$BATTERY_CACHE_KEY" "$result"
+    cache_set "$CACHE_KEY" "$result"
     printf '%s' "$result"
 }
 
-# Only run if executed directly (not sourced)
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    load_plugin
-fi
+[[ "${BASH_SOURCE[0]}" == "${0}" ]] && load_plugin || true

@@ -1,4 +1,4 @@
-name: Plugin Tests
+name: PowerKit Plugin Tests
 
 on:
   push:
@@ -9,6 +9,9 @@ on:
       - 'src/render_plugins.sh'
       - 'src/utils.sh'
       - 'src/cache.sh'
+      - 'src/themes/**'
+      - 'src/defaults.sh'
+      - 'src/theme.sh'
       - '.github/workflows/plugin-tests.yml'
   pull_request:
     paths:
@@ -20,7 +23,7 @@ on:
 
 jobs:
   test-plugins:
-    name: Test Plugins
+    name: Test PowerKit Plugins
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -57,6 +60,14 @@ jobs:
             echo "Testing syntax: $plugin"
             bash -n "$plugin"
           done
+          for theme in src/themes/**/*.sh; do
+            echo "Testing theme syntax: $theme"
+            bash -n "$theme"
+          done
+          for util in src/*.sh; do
+            echo "Testing util syntax: $util"
+            bash -n "$util"
+          done
 
       - name: Test plugin rendering (dry run)
         shell: bash
@@ -67,7 +78,6 @@ jobs:
           # Source utilities
           source src/utils.sh
           source src/cache.sh
-          source src/separators.sh
           
           # Test each plugin can be sourced and loaded
           for plugin in src/plugin/*.sh; do

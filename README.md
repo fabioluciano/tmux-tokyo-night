@@ -1,26 +1,30 @@
-# 🌃 Tokyo Night for tmux
+# ⚡ PowerKit for tmux
 
-A clean, dark tmux theme inspired by the [Tokyo Night](https://github.com/enkia/tokyo-night-vscode-theme) color scheme. Features a modular plugin system with 25+ built-in plugins for displaying system information, development tools, security monitoring, and media status.
+A powerful, modular tmux status bar framework with 26+ built-in plugins for displaying system information, development tools, security monitoring, and media status. Ships with beautiful themes including Tokyo Night and Kiribyte.
 
-![Tokyo Night Theme](./assets/tokyo-night-bar.png)
-![Tokyo Night Theme](./assets/tokyo-night-theme.png)
+> **📢 Note:** This project was formerly known as `tmux-tokyo-night`. See [Migration Guide](../../wiki/Migration-Guide) for upgrade instructions.
+
+![PowerKit Theme](./assets/tokyo-night-bar.png)
+![PowerKit Theme](./assets/tokyo-night-theme.png)
 
 ## ✨ Features
 
-- 🎨 **Four color variations** - Night, Storm, Moon, and Day
-- 🔌 **25+ built-in plugins** - System monitoring, development tools, security keys, media players
-- ⚡ **Performance optimized** - Intelligent caching system
-- 🎯 **Fully customizable** - Colors, icons, formats, and separators
+- 🎨 **Multiple themes** - Tokyo Night (night, storm, moon, day) and Kiribyte (dark)
+- 🔌 **26+ built-in plugins** - System monitoring, development tools, security keys, media players
+- ⚡ **Performance optimized** - Intelligent caching with configurable TTL
+- 🎯 **Fully customizable** - Semantic colors, icons, formats, and separators
 - 🖥️ **Cross-platform** - macOS, Linux, and BSD support
-- ⌨️ **Interactive features** - Popup helpers and selectors
+- ⌨️ **Interactive features** - Popup helpers, device selectors, and context switchers
+- 🔧 **DRY configuration** - Semantic color system with consistent defaults
 
 ## 📚 Documentation
 
 - **[Installation](../../wiki/Installation)** - Setup with TPM or manual installation
 - **[Quick Start](../../wiki/Quick-Start)** - Get up and running in minutes
-- **[Theme Variations](../../wiki/Theme-Variations)** - Explore Night, Storm, Moon, and Day
+- **[Migration Guide](../../wiki/Migration-Guide)** - Upgrade from tmux-tokyo-night
+- **[Theme Variations](../../wiki/Theme-Variations)** - Explore available themes
 - **[Global Configuration](../../wiki/Global-Configuration)** - Configure status bar layout and separators
-- **[Plugin System](../../wiki/Plugin-System-Overview)** - Complete reference for all 25+ plugins
+- **[Plugin System](../../wiki/Plugin-System-Overview)** - Complete reference for all 26+ plugins
 - **[Interactive Keybindings](../../wiki/Interactive-Keybindings)** - Popup helpers and selectors
 - **[Custom Colors & Theming](../../wiki/Custom-Colors-Theming)** - Advanced customization
 - **[Performance & Caching](../../wiki/Performance-Caching)** - Optimize for your workflow
@@ -33,7 +37,7 @@ A clean, dark tmux theme inspired by the [Tokyo Night](https://github.com/enkia/
 Add to your `~/.tmux.conf`:
 
 ```bash
-set -g @plugin 'fabioluciano/tmux-tokyo-night'
+set -g @plugin 'fabioluciano/tmux-powerkit'
 ```
 
 Press `prefix + I` to install with [TPM](https://github.com/tmux-plugins/tpm).
@@ -41,29 +45,41 @@ Press `prefix + I` to install with [TPM](https://github.com/tmux-plugins/tpm).
 ### Basic Configuration
 
 ```bash
-# Choose theme variation
-set -g @theme_variation 'night'
+# Choose theme and variant
+set -g @powerkit_theme 'tokyo-night'
+set -g @powerkit_theme_variant 'night'
 
 # Enable plugins
-set -g @theme_plugins 'datetime,weather,battery,cpu,memory'
+set -g @powerkit_plugins 'datetime,weather,battery,cpu,memory'
 
 # Auto-detect OS icon
-set -g @theme_session_icon 'auto'
+set -g @powerkit_session_icon 'auto'
 ```
 
 See **[Quick Start Guide](../../wiki/Quick-Start)** for more examples.
 
-## 🎨 Theme Variations
+## 🎨 Available Themes
 
-| Variation | Description |
-|-----------|-------------|
+### Tokyo Night
+
+| Variant | Description |
+|---------|-------------|
 | `night` | Deep dark theme (default) |
-| `storm` | Lighter dark theme |
-| `moon` | Balanced medium theme |
-| `day` | Light theme |
+
+### Kiribyte
+
+| Variant | Description |
+|---------|-------------|
+| `dark` | Pastel dark theme with soft colors |
 
 ```bash
-set -g @theme_variation 'night'
+# Tokyo Night (default)
+set -g @powerkit_theme 'tokyo-night'
+set -g @powerkit_theme_variant 'night'
+
+# Kiribyte
+set -g @powerkit_theme 'kiribyte'
+set -g @powerkit_theme_variant 'dark'
 ```
 
 Learn more: **[Theme Variations](../../wiki/Theme-Variations)**
@@ -74,7 +90,7 @@ Learn more: **[Theme Variations](../../wiki/Theme-Variations)**
 |------------|---------|
 | `prefix + ?` | **Options viewer** - Browse all theme settings |
 | `prefix + B` | **Keybindings viewer** - View all keybindings |
-| `prefix + I` | **Audio input selector** - Switch microphone devices |
+| `prefix + J` | **Audio input selector** - Switch microphone devices |
 | `prefix + O` | **Audio output selector** - Switch speaker/headphone devices |
 | `prefix + m` | **Microphone mute toggle** - Toggle microphone mute state |
 | `prefix + K` | **Kubernetes context selector** - Switch contexts |
@@ -87,7 +103,7 @@ Learn more: **[Interactive Keybindings](../../wiki/Interactive-Keybindings)**
 
 ## 🔌 Available Plugins
 
-The theme includes 25+ built-in plugins organized by category:
+The theme includes 26+ built-in plugins organized by category:
 
 ### 📅 Time & Date
 
@@ -99,7 +115,7 @@ The theme includes 25+ built-in plugins organized by category:
 - **[memory](../../wiki/Memory)** - RAM usage with format options
 - **[disk](../../wiki/Disk)** - Disk space with threshold warnings
 - **[loadavg](../../wiki/LoadAvg)** - System load average monitoring
-- **[temperature](../../wiki/Temperature)** - CPU temperature <br> <sub>(Linux only; partial support on WSL/macOS, see docs)</sub>
+- **[temperature](../../wiki/Temperature)** - CPU temperature <br> <sub>(Linux only; partial support on WSL/macOS)</sub>
 - **[uptime](../../wiki/Uptime)** - System uptime display
 - **[brightness](../../wiki/Brightness)** - Screen brightness level
 
@@ -107,28 +123,28 @@ The theme includes 25+ built-in plugins organized by category:
 
 - **[network](../../wiki/Network)** - Bandwidth monitoring
 - **[wifi](../../wiki/WiFi)** - WiFi status with signal strength
-- **[vpn](../../wiki/VPN)** - VPN connection with multiple providers (FortiClient, WireGuard, Tailscale, OpenVPN, NetworkManager)
+- **[vpn](../../wiki/VPN)** - VPN connection with multiple providers
 - **[external_ip](../../wiki/External_IP)** - Public IP address display
-- **[bluetooth](../../wiki/Bluetooth)** - Bluetooth devices with battery (supports multiple connected devices)
+- **[bluetooth](../../wiki/Bluetooth)** - Bluetooth devices with battery
 - **[weather](../../wiki/Weather)** - Weather with custom formats
 
 ### 💻 Development
 
-- **[git](../../wiki/Git)** - Git branch with dynamic color changes for modified repositories
+- **[git](../../wiki/Git)** - Git branch with dynamic color for modified repos
 - **[kubernetes](../../wiki/Kubernetes)** - K8s context with interactive selectors
 - **[cloud](../../wiki/Cloud)** - Cloud provider context (AWS/GCP/Azure)
 
 ### 🔐 Security
 
-- **[smartkey](../../wiki/SmartKey)** - Hardware security key interaction detection (YubiKey, SoloKeys, Nitrokey)
+- **[smartkey](../../wiki/SmartKey)** - Hardware security key detection (YubiKey, SoloKeys, Nitrokey)
 
 ### 🎵 Media & Audio
 
-- **[audiodevices](../../wiki/AudioDevices)** - Audio device selector with keybindings (input/output device management)
-- **[microphone](../../wiki/Microphone)** - Microphone activity detection with cross-platform support
-- **[nowplaying](../../wiki/NowPlaying)** - Unified media player (Spotify, Music.app, playerctl, spt, osascript)
+- **[audiodevices](../../wiki/AudioDevices)** - Audio device selector with keybindings
+- **[microphone](../../wiki/Microphone)** - Microphone activity detection
+- **[nowplaying](../../wiki/NowPlaying)** - Unified media player (Spotify, Music.app, playerctl)
 - **[volume](../../wiki/Volume)** - Volume level
-- **[camera](../../wiki/Camera)** - Privacy-focused camera activity monitoring with visual indicators
+- **[camera](../../wiki/Camera)** - Privacy-focused camera activity monitoring
 
 ### 📦 Package Managers
 
@@ -136,13 +152,13 @@ The theme includes 25+ built-in plugins organized by category:
 
 ### 🖥️ System Info
 
-- **[battery](../../wiki/Battery)** - Battery with intelligent 3-tier thresholds and charge/time modes
+- **[battery](../../wiki/Battery)** - Battery with intelligent 3-tier thresholds
 - **[hostname](../../wiki/Hostname)** - System hostname display
 
 **Enable plugins:**
 
 ```bash
-set -g @theme_plugins 'datetime,battery,cpu,memory,git'
+set -g @powerkit_plugins 'datetime,battery,cpu,memory,git'
 ```
 
 See **[Plugin System Overview](../../wiki/Plugin-System-Overview)** for complete documentation.
@@ -155,89 +171,78 @@ See **[Plugin System Overview](../../wiki/Plugin-System-Overview)** for complete
 | **battery** | ✅ | ✅ | ✅ | Requires `acpi`/`upower` (Linux), `pmset` (macOS) |
 | **bluetooth** | ✅ | ✅ | ⚠️ | Limited battery support on macOS |
 | **brightness** | ✅ | ❌ | ✅ | Requires `brightnessctl`/`light`/`xbacklight` |
-| **camera** | ✅ | ❌ | ❌ | Requires `v4l2`/`lsof` (Linux), disabled on macOS due to privacy limitations |
+| **camera** | ✅ | ❌ | ❌ | Requires `v4l2`/`lsof` (Linux) |
 | **cloud** | ✅ | ✅ | ✅ | AWS/GCP/Azure context detection |
-| **cpu** | ✅ | ✅ | ✅ | Native support via `/proc/stat` or `vm_stat` |
+| **cpu** | ✅ | ✅ | ✅ | Native support |
 | **datetime** | ✅ | ✅ | ✅ | Universal |
 | **disk** | ✅ | ✅ | ✅ | Uses `df` command |
 | **external_ip** | ✅ | ✅ | ✅ | Requires internet connection |
 | **git** | ✅ | ✅ | ✅ | Requires git repository |
 | **hostname** | ✅ | ✅ | ✅ | Universal |
 | **kubernetes** | ✅ | ✅ | ✅ | Requires `kubectl` |
-| **loadavg** | ✅ | ✅ | ✅ | Native support via `/proc/loadavg` or `sysctl` |
-| **memory** | ✅ | ✅ | ✅ | Native support via `/proc/meminfo` or `vm_stat` |
-| **microphone** | ✅ | ❌ | ⚠️ | Requires `pactl` (Linux), disabled on macOS due to privacy limitations |
+| **loadavg** | ✅ | ✅ | ✅ | Native support |
+| **memory** | ✅ | ✅ | ✅ | Native support |
+| **microphone** | ✅ | ❌ | ⚠️ | Requires `pactl` (Linux) |
 | **network** | ✅ | ✅ | ✅ | Bandwidth monitoring |
-| **nowplaying** | ✅ | ✅ | ✅ | Auto-detects: Spotify/Music.app/playerctl/spt/osascript |
+| **nowplaying** | ✅ | ✅ | ✅ | Auto-detects: Spotify/Music.app/playerctl |
 | **packages** | ✅ | ✅ | ✅ | Auto-detects: brew/yay/apt/dnf/pacman |
-| **smartkey** | ✅ | ✅ | ❌ | Hardware security keys: YubiKey/SoloKeys/Nitrokey (requires ykman/gpg/ssh-agent) |
-| **temperature** | ✅ | ⚠️ | ⚠️ | Multiple sources: cpu/nvme/wifi/acpi/dell (see docs) |
+| **smartkey** | ✅ | ✅ | ❌ | YubiKey/SoloKeys/Nitrokey |
+| **temperature** | ✅ | ⚠️ | ⚠️ | Multiple sources available |
 | **uptime** | ✅ | ✅ | ✅ | Universal |
 | **volume** | ✅ | ✅ | ⚠️ | Linux: pactl/pamixer, macOS: osascript |
-| **vpn** | ✅ | ✅ | ⚠️ | FortiClient/WireGuard/Tailscale/OpenVPN/NetworkManager/macOS VPN |
+| **vpn** | ✅ | ✅ | ⚠️ | Multiple providers supported |
 | **weather** | ✅ | ✅ | ✅ | Requires internet connection |
 | **wifi** | ✅ | ✅ | ❌ | Linux: nmcli/iwconfig, macOS: airport |
 
-**Legend:**
-
-- ✅ Fully supported
-- ⚠️ Partial support or requires specific setup
-- ❌ Not supported
+**Legend:** ✅ Fully supported | ⚠️ Partial support | ❌ Not supported
 
 ## ⚙️ Configuration
 
 ### Global Options
 
 ```bash
-# Theme variation
-set -g @theme_variation 'night'
+# Theme selection
+set -g @powerkit_theme 'tokyo-night'
+set -g @powerkit_theme_variant 'night'
 
-# Status bar position
-set -g @theme_status_position 'bottom'
+# Transparent status bar
+set -g @powerkit_transparent 'true'
 
-# Separators
-set -g @theme_left_separator ''
-set -g @theme_right_separator ''
+# Separators (requires Nerd Font)
+set -g @powerkit_left_separator ''
+set -g @powerkit_right_separator ''
 
 # Session icon (auto-detects OS)
-set -g @theme_session_icon 'auto'
+set -g @powerkit_session_icon 'auto'
 
-# Cache management keybinding (default: Q)
-set -g @theme_plugin_cache_clear_key 'Q'
+# Cache management keybinding
+set -g @powerkit_plugin_cache_clear_key 'Q'
 ```
 
 ### Plugin Customization
 
-Each plugin supports:
-
-- **Icon** - Custom icon character
-- **Accent color** - Background color
-- **Cache TTL** - Update frequency
-- **Display conditions** - Show/hide based on thresholds
+Each plugin supports semantic color configuration:
 
 ```bash
 # Example: Customize CPU plugin
-set -g @theme_plugin_cpu_icon ''
-set -g @theme_plugin_cpu_accent_color 'red'
-set -g @theme_plugin_cpu_cache_ttl 2
+set -g @powerkit_plugin_cpu_icon ''
+set -g @powerkit_plugin_cpu_accent_color 'secondary'
+set -g @powerkit_plugin_cpu_accent_color_icon 'active'
+set -g @powerkit_plugin_cpu_cache_ttl '3'
 
-# Battery with intelligent thresholds
-set -g @theme_plugin_battery_warning_threshold '50'   # Yellow warning at 50%
-set -g @theme_plugin_battery_critical_threshold '30'  # Red critical at 30%
-
-# Hide battery when above 50%
-set -g @theme_plugin_battery_display_threshold '50'
-set -g @theme_plugin_battery_display_condition 'le'
-
-# Camera active color (when camera is on)
-set -g @theme_plugin_camera_active_color 'red'
-
-# Show CPU only when above 70%
-set -g @theme_plugin_cpu_display_threshold '70'
-set -g @theme_plugin_cpu_display_condition 'gt'
+# Threshold colors (semantic names)
+set -g @powerkit_plugin_cpu_warning_threshold '70'
+set -g @powerkit_plugin_cpu_warning_accent_color 'warning'
+set -g @powerkit_plugin_cpu_critical_threshold '90'
+set -g @powerkit_plugin_cpu_critical_accent_color 'error'
 ```
 
-**Available conditions:** `le` (≤), `lt` (<), `ge` (≥), `gt` (>), `eq` (=), `ne` (≠), `always`
+**Available semantic colors:**
+
+- `primary`, `secondary`, `accent`
+- `success`, `warning`, `error`, `info`
+- `active`, `disabled`, `hover`, `focus`
+- `background`, `surface`, `text`, `border`
 
 Learn more:
 
@@ -250,27 +255,28 @@ Learn more:
 ```bash
 # ~/.tmux.conf
 
-# Theme variation
-set -g @theme_variation 'night'
+# Theme selection
+set -g @powerkit_theme 'tokyo-night'
+set -g @powerkit_theme_variant 'night'
 
 # Auto-detect OS icon
-set -g @theme_session_icon 'auto'
+set -g @powerkit_session_icon 'auto'
 
 # Enable plugins
-set -g @theme_plugins 'datetime,weather,battery,cpu,memory,git,kubernetes,smartkey'
+set -g @powerkit_plugins 'datetime,weather,battery,cpu,memory,git,kubernetes,smartkey'
 
 # Customize datetime
-set -g @theme_plugin_datetime_format 'datetime'
+set -g @powerkit_plugin_datetime_format 'datetime'
 
 # Set weather location
-set -g @theme_plugin_weather_location 'New York'
+set -g @powerkit_plugin_weather_location 'New York'
 
 # Kubernetes with namespace
-set -g @theme_plugin_kubernetes_show_namespace 'true'
+set -g @powerkit_plugin_kubernetes_show_namespace 'true'
 
 # Load TPM
 set -g @plugin 'tmux-plugins/tpm'
-set -g @plugin 'fabioluciano/tmux-tokyo-night'
+set -g @plugin 'fabioluciano/tmux-powerkit'
 run '~/.tmux/plugins/tpm/tpm'
 ```
 
@@ -278,7 +284,7 @@ See **[Quick Start](../../wiki/Quick-Start)** for more configuration examples.
 
 ## 🙏 Credits
 
-- Color scheme inspired by [Tokyo Night](https://github.com/enkia/tokyo-night-vscode-theme) by enkia
+- Color schemes inspired by [Tokyo Night](https://github.com/enkia/tokyo-night-vscode-theme) by enkia
 - Weather data provided by [wttr.in](https://wttr.in)
 
 ## 📄 License

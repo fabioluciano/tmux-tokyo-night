@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Tokyo Night Tmux Theme is a tmux plugin that applies Tokyo Night color schemes to tmux status bars. It's distributed through TPM (Tmux Plugin Manager) and supports multiple theme variations (night, storm, moon, day) with customizable plugins for displaying system information.
+PowerKit is a modular tmux status bar framework (formerly tmux-tokyo-night). It provides 26+ plugins for displaying system information with a semantic color system that works across multiple themes. Distributed through TPM (Tmux Plugin Manager).
 
 ## Development Commands
 
@@ -12,10 +12,10 @@ Tokyo Night Tmux Theme is a tmux plugin that applies Tokyo Night color schemes t
 
 ```bash
 # Run shellcheck on all shell scripts
-shellcheck src/**/*.sh src/*.sh tmux-tokyo-night.tmux
+shellcheck src/**/*.sh src/*.sh tmux-powerkit.tmux
 ```
 
-Note: The project uses GitHub Actions to run shellcheck automatically on push/PR (see `.github/workflows/shellcheck.yml`).
+Note: The project uses GitHub Actions to run shellcheck automatically on push/PR.
 
 ### Testing
 
@@ -24,213 +24,259 @@ Manual testing is required:
 1. Install the plugin via TPM in a test tmux configuration
 2. Source the plugin: `tmux source ~/.tmux.conf`
 3. Verify visual appearance and plugin functionality
-4. Test different theme variations and plugin combinations
+4. Test different themes and plugin combinations
 
 ## Architecture
 
 ### Entry Point
 
-- `tmux-tokyo-night.tmux` - Main entry point called by TPM, immediately delegates to `src/theme.sh`
+- `tmux-powerkit.tmux` - Main entry point called by TPM, delegates to `src/theme.sh`
 
 ### Core Components
 
-**`src/defaults.sh`** - Centralized Default Values
+**`src/defaults.sh`** - Centralized Default Values (DRY/KISS)
 
-- Contains ALL default values for the theme in one place
-- Modify this file to change defaults across the entire theme
-- Uses source guard (`_DEFAULTS_LOADED`) to prevent multiple sourcing
-- Provides `get_plugin_default()` helper function
-- Variables follow naming convention: `PLUGIN_<NAME>_<OPTION>` (e.g., `PLUGIN_BATTERY_ICON`)
-- Theme core options: `THEME_DEFAULT_VARIATION`, `THEME_DEFAULT_PLUGINS`, etc.
+- Contains ALL default values in one place
+- Uses semantic color names (`secondary`, `warning`, `error`, etc.)
+- Source guard: `_POWERKIT_DEFAULTS_LOADED`
+- Helper: `get_powerkit_plugin_default(plugin, option)`
+- Variables follow: `POWERKIT_PLUGIN_<NAME>_<OPTION>` (e.g., `POWERKIT_PLUGIN_BATTERY_ICON`)
+- Base defaults reused across plugins: `_DEFAULT_ACCENT`, `_DEFAULT_WARNING`, `_DEFAULT_CRITICAL`
 
-**`src/theme.sh`** (142 lines)
+**`src/theme.sh`** - Main Orchestration
 
-- Main orchestration script that configures tmux appearance
-- Sources `defaults.sh` first for centralized default values
-- Loads the selected color palette from `src/palletes/`
-- Configures status bar, window styles, borders, and pane styles
-- Dynamically loads and executes plugins from `src/plugin/`
-- Handles plugin rendering with proper separators and colors (e.g., datetime plugin uses static rendering)
-- Sources plugins once and calls `load_plugin()` function to avoid double execution
+- Sources `defaults.sh` first
+- Loads theme from `src/themes/<theme>/<variant>.sh`
+- Configures status bar, windows, borders, panes
+- Dynamically loads plugins from `src/plugin/`
+- Handles plugin rendering with proper separators
 
-**`src/utils.sh`** (76 lines)
+**`src/utils.sh`** - Utility Functions
 
-- `get_tmux_option()` - Retrieves tmux options with fallback defaults
-- `get_os()` - Returns cached OS name (avoids repeated `uname` calls)
-- `is_macos()` / `is_linux()` - Convenience functions for OS detection
-- `generate_left_side_string()` - Creates left status bar (session info)
-- `generate_inactive_window_string()` - Creates inactive window formatting
-- `generate_active_window_string()` - Creates active window formatting
-- Handles both transparent and non-transparent status bar modes
-- Uses source guard to prevent multiple sourcing
+- `get_tmux_option(option, default)` - Retrieves tmux options with fallback
+- `get_powerkit_color(semantic_name)` - Resolves semantic color to hex
+- `load_powerkit_theme()` - Loads theme file and populates `POWERKIT_THEME_COLORS`
+- `get_os()` / `is_macos()` / `is_linux()` - OS detection (cached)
+- Status bar generation functions
 
 **`src/cache.sh`** - Caching System
 
-- `cache_init()` - Ensures cache directory exists (runs only once per session)
-- `cache_get(plugin_name, ttl)` - Returns cached value if valid (not expired)
-- `cache_set(plugin_name, value)` - Stores value in cache file
-- `cache_is_valid(plugin_name, ttl)` - Checks if cache is still valid
-- `cache_invalidate(plugin_name)` - Removes cache for a specific plugin
+- `cache_get(key, ttl)` - Returns cached value if valid
+- `cache_set(key, value)` - Stores value in cache
 - `cache_clear_all()` - Clears all cached data
-- `cache_remaining_ttl(plugin_name, ttl)` - Returns remaining seconds until expiry
-- Cache files stored in `$XDG_CACHE_HOME/tmux-tokyo-night/` (or `~/.cache/tmux-tokyo-night/`)
-- Uses source guard to prevent multiple sourcing
+- Cache location: `$XDG_CACHE_HOME/tmux-powerkit/` or `~/.cache/tmux-powerkit/`
 
-### Color Palettes
+**`src/render_plugins.sh`** - Plugin Rendering
 
-Located in `src/palletes/*.sh` (night.sh, storm.sh, moon.sh, day.sh)
+- Processes `@powerkit_plugins` option
+- Builds status-right string with separators and colors
+- Handles transparent mode
+- Resolves semantic colors via `get_powerkit_color()`
 
-- Each defines a bash associative array `PALLETE` with color keys
-- Colors reference Tokyo Night theme specifications
-- Exported globally for use by theme.sh and plugins
+**`src/plugin_bootstrap.sh`** - Plugin Bootstrap
+
+- Common initialization for all plugins
+- Sets up `ROOT_DIR`, sources utilities
+- Provides `plugin_init(name)` function
+
+### Theme System
+
+Located in `src/themes/<theme>/<variant>.sh`:
+
+```text
+src/themes/
+├── tokyo-night/
+│   ├── night.sh
+└── kiribyte/
+    └── dark.sh
+```
+
+Each theme defines a `THEME_COLORS` associative array with semantic color names:
+
+```bash
+declare -A THEME_COLORS=(
+    # Core
+    [background]="#1a1b26"
+    [text]="#c0caf5"
+    
+    # Semantic
+    [primary]="#7aa2f7"
+    [secondary]="#394b70"
+    [accent]="#bb9af7"
+    
+    # Status
+    [success]="#9ece6a"
+    [warning]="#e0af68"
+    [error]="#f7768e"
+    [info]="#7dcfff"
+    
+    # Interactive
+    [active]="#3d59a1"
+    [disabled]="#565f89"
+    # ... more colors
+)
+```
 
 ### Plugin System
 
-**Plugin Architecture:**
+**Plugin Structure (`src/plugin/*.sh`):**
 
-1. Each plugin in `src/plugin/*.sh` exports variables: `plugin_<name>_icon`, `plugin_<name>_accent_color`, `plugin_<name>_accent_color_icon`
-2. `theme.sh` iterates through enabled plugins (from `@theme_plugins` option)
-3. Plugins are rendered using wrapper scripts based on their features:
-   - **conditional_plugin.sh**: For plugins that may or may not produce output (git, kubernetes, spotify, homebrew, yay)
-   - **threshold_plugin.sh**: For plugins with display_threshold or threshold_mode (battery, cpu, memory, disk, loadavg)
-   - **static_plugin.sh**: For static plugins followed by conditional plugins (network, weather, etc.)
-   - Direct rendering: For simple plugins or when no special handling is needed
-4. For datetime: Output is pre-rendered at theme load time using tmux's strftime
+1. Source `plugin_bootstrap.sh`
+2. Call `plugin_init "name"` to set up cache key and TTL
+3. Define `plugin_get_type()` - returns `static` or `dynamic`
+4. Define `plugin_get_display_info()` - returns `visible:accent:accent_icon:icon`
+5. Define `load_plugin()` - outputs the display content
+6. Optional: `setup_keybindings()` for interactive features
 
-**Available Plugins:**
+**Example Plugin:**
 
-System Monitoring:
+```bash
+#!/usr/bin/env bash
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$ROOT_DIR/../plugin_bootstrap.sh"
 
-- `cpu.sh` - Shows CPU usage percentage (uses ps on macOS, /proc/stat on Linux)
-- `memory.sh` - Shows memory usage (percent or used/total format)
-- `loadavg.sh` - Shows system load average (1, 5, 15 min or all)
-- `disk.sh` - Shows disk usage for configurable mount point
-- `network.sh` - Shows network download/upload speeds
-- `uptime.sh` - Shows system uptime
+plugin_init "example"
 
-Development:
+plugin_get_type() { printf 'static'; }
 
-- `git.sh` - Shows git branch and status (conditional - only in git repos)
+plugin_get_display_info() {
+    echo "1:secondary:active:󰋼"
+}
 
-- `kubernetes.sh` - Shows current k8s context/namespace
+load_plugin() {
+    echo "Hello World"
+}
 
-Information:
+[[ "${BASH_SOURCE[0]}" == "${0}" ]] && load_plugin || true
+```
 
-- `datetime.sh` - Shows date/time using tmux `strftime` format
-- `hostname.sh` - Shows system hostname
-- `weather.sh` - Fetches weather from wttr.in API
+**Available Plugins (26):**
 
-Media:
+| Category | Plugins |
+|----------|---------|
+| Time | datetime |
+| System | cpu, memory, disk, loadavg, temperature, uptime, brightness |
+| Network | network, wifi, vpn, external_ip, bluetooth, weather |
+| Development | git, kubernetes, cloud |
+| Security | smartkey |
+| Media | audiodevices, microphone, nowplaying, volume, camera |
+| Packages | packages |
+| Info | battery, hostname |
 
-- `playerctl.sh` - Media player info via MPRIS (Linux only)
-- `spt.sh` - Spotify integration via spotify-tui
+### Configuration Options
 
-Package Managers:
+All options use `@powerkit_*` prefix:
 
-- `homebrew.sh` - Homebrew outdated packages count (macOS)
-- `yay.sh` - AUR helper updates (Arch Linux)
-- `battery.sh` - Shows battery status with color-coded levels
+```bash
+# Core
+@powerkit_theme              # Theme name (tokyo-night, kiribyte)
+@powerkit_theme_variant      # Variant (night, storm, moon, day, dark)
+@powerkit_plugins            # Comma-separated plugin list
+@powerkit_transparent        # true/false
 
-**Plugin Cache Configuration:**
+# Separators
+@powerkit_left_separator
+@powerkit_right_separator
 
-All cacheable plugins support a TTL (Time To Live) option:
+# Session/Window
+@powerkit_session_icon       # auto, or custom icon
+@powerkit_active_window_*
+@powerkit_inactive_window_*
 
-- `@theme_plugin_cpu_cache_ttl` - CPU cache TTL in seconds (default: 2)
-- `@theme_plugin_memory_cache_ttl` - Memory cache TTL in seconds (default: 5)
-- `@theme_plugin_loadavg_cache_ttl` - Load average cache TTL in seconds (default: 5)
-- `@theme_plugin_disk_cache_ttl` - Disk cache TTL in seconds (default: 60)
-- `@theme_plugin_network_cache_ttl` - Network cache TTL in seconds (default: 5)
-- `@theme_plugin_uptime_cache_ttl` - Uptime cache TTL in seconds (default: 60)
-- `@theme_plugin_git_cache_ttl` - Git cache TTL in seconds (default: 5)
-
-- `@theme_plugin_kubernetes_cache_ttl` - Kubernetes cache TTL in seconds (default: 30)
-- `@theme_plugin_weather_cache_ttl` - Weather cache TTL in seconds (default: 900 = 15 min)
-- `@theme_plugin_battery_cache_ttl` - Battery cache TTL in seconds (default: 30)
-- `@theme_plugin_playerctl_cache_ttl` - Playerctl cache TTL in seconds (default: 5)
-- `@theme_plugin_spt_cache_ttl` - Spotify TUI cache TTL in seconds (default: 5)
-- `@theme_plugin_homebrew_cache_ttl` - Homebrew cache TTL in seconds (default: 1800 = 30 min)
-- `@theme_plugin_yay_cache_ttl` - Yay cache TTL in seconds (default: 1800 = 30 min)
-
-### Configuration Flow
-
-1. User sets `@theme_*` options in `.tmux.conf`
-2. TPM loads `tmux-tokyo-night.tmux` which calls `src/theme.sh`
-3. `theme.sh` loads selected palette and user options
-4. Status bar strings are generated with proper separators and colors
-5. Enabled plugins are loaded and rendered in the status bar
+# Per-plugin options
+@powerkit_plugin_<name>_icon
+@powerkit_plugin_<name>_accent_color
+@powerkit_plugin_<name>_accent_color_icon
+@powerkit_plugin_<name>_cache_ttl
+@powerkit_plugin_<name>_*    # Plugin-specific options
+```
 
 ## Key Implementation Details
 
+### Semantic Color System
+
+Colors are defined semantically and resolved at runtime:
+
+1. User sets: `@powerkit_plugin_cpu_accent_color 'warning'`
+2. Theme defines: `THEME_COLORS[warning]="#e0af68"`
+3. `get_powerkit_color("warning")` returns `#e0af68`
+
+This allows:
+
+- Theme switching without reconfiguring plugins
+- Consistent colors across all plugins
+- User customization with meaningful names
+
+### Plugin Display Info Format
+
+`plugin_get_display_info()` returns: `visible:accent_color:accent_color_icon:icon`
+
+- `visible`: `1` to show, `0` to hide
+- `accent_color`: Semantic color for content background
+- `accent_color_icon`: Semantic color for icon background
+- `icon`: Icon character to display
+
+### Cache Key Format
+
+Cache files: `~/.cache/tmux-powerkit/<plugin_name>`
+
+Plugins use their name as cache key with configurable TTL.
+
 ### Transparency Support
 
-- When `@theme_transparent_status_bar` is `true`, background colors use `default` instead of palette colors
-- Requires separate inverse separator characters for proper visual appearance
+When `@powerkit_transparent` is `true`:
 
-### Plugin Rendering Strategy
-
-- **Static plugins** (datetime): Executed once at theme load, output embedded in status string
-- **Dynamic plugins** (weather, network, etc.): Executed by tmux on each status refresh via wrapper scripts
-- **Conditional plugins** (git, kubernetes, homebrew, yay, spotify): Only render when they have output
-- **Threshold plugins** (battery, cpu, memory, disk, loadavg): Support conditional display and dynamic colors based on values
-
-### Plugin Rendering Wrappers
-
-**`src/conditional_plugin.sh`**
-
-- Wraps plugins that may produce empty output (git, kubernetes, etc.)
-- Only renders the segment if the plugin outputs content
-- Dynamically determines if it's the last visible plugin by checking subsequent plugins
-- Arguments: plugin_name, accent_color, accent_color_icon, plugin_icon, white_color, bg_highlight, transparent, prev_accent, plugins_after
-
-**`src/static_plugin.sh`**
-
-- Wraps static plugins (always produce output) that are followed by conditional plugins
-- Checks if any following conditional plugins have content to determine if it's the last visible
-- Uses `any_plugin_has_content()` to check subsequent plugins at runtime
-- Arguments: plugin_name, accent_color, accent_color_icon, plugin_icon, white_color, bg_highlight, transparent, plugins_after
-
-**`src/threshold_plugin.sh`**
-
-- Wraps plugins with display threshold or dynamic color support
-- Features:
-  1. Conditional display based on value threshold (display_threshold + display_condition)
-  2. Dynamic colors based on 3-level thresholds (threshold_mode: ascending/descending)
-  3. Simple low threshold with custom icon (low_threshold + icon_low + low_accent_color)
-- Supports serialized palette for color resolution
-
-### Separator System
-
-- Left separator: Used for session/windows (flows left to right)
-- Right separator: Used for plugins (flows right to left)
-- Each plugin gets: icon separator → icon → content separator → content → end separator
-- Last plugin omits the end separator AND the trailing space
-- Separator characters (RIGHT_SEPARATOR, RIGHT_SEPARATOR_INVERSE) are stored in tmux options
+- Status bar uses `default` background
+- Inverse separators are used between plugins
+- Plugins float on transparent background
 
 ## Adding New Plugins
 
 1. Create `src/plugin/<name>.sh`
-2. Source `utils.sh` and `cache.sh` from `$ROOT_DIR/../`
-3. Export three variables: `plugin_<name>_icon`, `plugin_<name>_accent_color`, `plugin_<name>_accent_color_icon`
-4. Define a `load_plugin()` function that outputs the desired status text
-5. Add execution guard at end: `if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then load_plugin; fi`
-6. Use caching for expensive operations with `cache_get`/`cache_set`
-7. Use `is_macos()`/`is_linux()` for OS-specific logic instead of calling `uname`
-8. Add plugin name to `@theme_plugins` option in documentation
-9. Plugin will be automatically discovered and loaded by `theme.sh`
+2. Source `plugin_bootstrap.sh`
+3. Call `plugin_init "<name>"`
+4. Define required functions:
+   - `plugin_get_type()` - `static` or `dynamic`
+   - `plugin_get_display_info()` - visibility and colors
+   - `load_plugin()` - content output
+5. Add defaults to `src/defaults.sh`:
+
+   ```bash
+   POWERKIT_PLUGIN_<NAME>_ICON="..."
+   POWERKIT_PLUGIN_<NAME>_ACCENT_COLOR="$_DEFAULT_ACCENT"
+   POWERKIT_PLUGIN_<NAME>_ACCENT_COLOR_ICON="$_DEFAULT_ACCENT_ICON"
+   POWERKIT_PLUGIN_<NAME>_CACHE_TTL="..."
+   ```
+
+6. Use semantic colors from `_DEFAULT_*` variables
+7. Document in `wiki/<Name>.md`
+
+## Adding New Themes
+
+1. Create directory: `src/themes/<theme_name>/`
+2. Create variant file: `src/themes/<theme_name>/<variant>.sh`
+3. Define `THEME_COLORS` associative array with all semantic colors
+4. Export: `export THEME_COLORS`
+
+Required semantic colors:
+
+- `background`, `surface`, `text`, `border`
+- `primary`, `secondary`, `accent`
+- `success`, `warning`, `error`, `info`
+- `active`, `disabled`, `hover`, `focus`
 
 ## Performance Optimizations
 
-- **Source guards**: `utils.sh` and `cache.sh` use guards to prevent multiple parsing
-- **Cached OS detection**: `_CACHED_OS` variable set once, used by `is_macos()`/`is_linux()`
-- **Single plugin execution**: `theme.sh` sources plugins once and calls `load_plugin()`
-- **File-based caching**: Plugins cache results to reduce expensive operations
-- **Optimized commands**: e.g., CPU on macOS uses `ps` instead of slow `top -l 1`
+- **Source guards**: Prevent multiple sourcing of utilities
+- **Cached OS detection**: `_CACHED_OS` variable set once
+- **File-based caching**: Plugins cache expensive operations
+- **Single execution**: Plugins sourced once, `load_plugin()` called
+- **Semantic color caching**: Colors resolved once per render
 
 ## Important Notes
 
-- All shell scripts use `#!/usr/bin/env bash` and should be POSIX-compatible where possible
-- Color values from palette must be referenced as `${PALLETE[key]}`
-- Tmux options are read via `get_tmux_option` helper with fallback defaults
-- The `set -euxo pipefail` in theme.sh ensures strict error handling
-- Weather plugin: `jq` is optional. It is only required for auto-location detection via IP; if you provide a location via `@theme_plugin_weather_location`, the plugin works without `jq`.
-- Battery plugin contains code adapted from tmux-plugins/tmux-battery (MIT licensed)
+- All scripts use `#!/usr/bin/env bash`
+- Strict mode in render_plugins.sh: `set -euo pipefail`
+- Options read via `get_tmux_option()` with defaults from `defaults.sh`
+- Plugin colors use semantic names resolved via `get_powerkit_color()`
+- Keybindings always set up even when plugin `show='off'`
