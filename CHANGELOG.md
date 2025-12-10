@@ -1,3 +1,10 @@
+# [3.2.0](https://github.com/fabioluciano/tmux-powerkit/compare/v3.1.0...v3.2.0) (2025-12-10)
+
+
+### Features
+
+* **separators:** add rounded separator options for left and right separators ([74c11ea](https://github.com/fabioluciano/tmux-powerkit/commit/74c11ea7b4ce5ab3a28bde4e11c58d897504291a))
+
 # [3.1.0](https://github.com/fabioluciano/tmux-powerkit/compare/v3.0.1...v3.1.0) (2025-12-10)
 
 
