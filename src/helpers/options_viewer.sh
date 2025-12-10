@@ -40,11 +40,55 @@ print_header() {
 
 print_section() { echo -e "\n${BOLD}${2:-$MAGENTA}▸ ${1}${RESET}\n${DIM}─────────────────────────────────────────────────────────────────────────────${RESET}"; }
 
+# Get default value for a plugin option from defaults.sh
+get_plugin_default_value() {
+    local option="$1"
+    # Convert @powerkit_plugin_xxx to POWERKIT_PLUGIN_XXX
+    local var_name="${option#@}"
+    var_name="${var_name^^}"
+    printf '%s' "${!var_name:-}"
+}
+
+# Get description for a plugin option based on its name
+get_plugin_option_description() {
+    local option="$1"
+    local suffix="${option##*_}"
+    case "$suffix" in
+        icon|icon_*) echo "Icon/emoji" ;;
+        color) echo "Color name" ;;
+        format) echo "Display format" ;;
+        threshold) echo "Threshold value" ;;
+        ttl) echo "Cache time-to-live (seconds)" ;;
+        key) echo "Keybinding" ;;
+        width|height) echo "Popup dimension" ;;
+        length) echo "Max length" ;;
+        separator) echo "Text separator" ;;
+        *) echo "Plugin option" ;;
+    esac
+}
+
 print_option() {
     local option="$1" default="$2" possible="$3" description="$4"
     local current; current=$(tmux show-option -gqv "$option" 2>/dev/null || echo "")
+    
+    # If no default provided, try to get it from defaults.sh for plugin options
+    if [[ -z "$default" && "$option" == @powerkit_plugin_* ]]; then
+        default=$(get_plugin_default_value "$option")
+    fi
+    
+    # If no description provided, generate one based on option name
+    if [[ -z "$description" || "$description" == "Plugin option" ]] && [[ "$option" == @powerkit_plugin_* ]]; then
+        description=$(get_plugin_option_description "$option")
+    fi
+    
     printf "${GREEN}%-45s${RESET}" "$option"
-    [[ -n "$current" && "$current" != "$default" ]] && echo -e " ${YELLOW}= $current${RESET} ${DIM}(default: $default)${RESET}" || echo -e " ${DIM}= $default${RESET}"
+    if [[ -n "$current" && "$current" != "$default" ]]; then
+        echo -e " ${YELLOW}= $current${RESET} ${DIM}(default: ${default:-<empty>})${RESET}"
+    elif [[ -n "$default" ]]; then
+        echo -e " ${DIM}= $default${RESET}"
+    else
+        echo -e " ${DIM}(not set)${RESET}"
+    fi
     [[ -n "$description" ]] && echo -e "  ${DIM}↳ $description${RESET}"
     [[ -n "$possible" ]] && echo -e "  ${DIM}  Values: $possible${RESET}"
 }
@@ -57,14 +101,31 @@ print_tpm_option() {
 
 discover_plugin_options() {
     local -A plugin_options=()
+    
+    # Scan plugin files for get_tmux_option and get_cached_option calls
     while IFS= read -r file; do
         while IFS= read -r line; do
-            if [[ "$line" =~ get_tmux_option[[:space:]]+[\"\'](@powerkit_plugin_[a-zA-Z0-9_]+) ]] || \
-               [[ "$line" =~ get_cached_option[[:space:]]+[\"\'](@powerkit_plugin_[a-zA-Z0-9_]+) ]]; then
+            # Match various patterns: get_tmux_option "@opt", get_cached_option "@opt", $(get_tmux_option "@opt"
+            if [[ "$line" =~ get_tmux_option[[:space:]]*[\"\'\(]+[\"\']?(@powerkit_plugin_[a-zA-Z0-9_]+) ]] || \
+               [[ "$line" =~ get_cached_option[[:space:]]*[\"\'\(]+[\"\']?(@powerkit_plugin_[a-zA-Z0-9_]+) ]] || \
+               [[ "$line" =~ get_tmux_option[[:space:]]+\"(@powerkit_plugin_[a-zA-Z0-9_]+) ]] || \
+               [[ "$line" =~ get_cached_option[[:space:]]+\"(@powerkit_plugin_[a-zA-Z0-9_]+) ]]; then
                 plugin_options["${BASH_REMATCH[1]}"]=1
             fi
         done < "$file"
     done < <(find "$ROOT_DIR/plugin" -name "*.sh" -type f 2>/dev/null)
+    
+    # Also scan defaults.sh to discover all POWERKIT_PLUGIN_* defaults and convert to @powerkit_plugin_* format
+    if [[ -f "$ROOT_DIR/defaults.sh" ]]; then
+        while IFS= read -r line; do
+            if [[ "$line" =~ ^POWERKIT_PLUGIN_([A-Z0-9_]+)= ]]; then
+                local var_name="${BASH_REMATCH[1]}"
+                local option_name="@powerkit_plugin_${var_name,,}"
+                plugin_options["$option_name"]=1
+            fi
+        done < "$ROOT_DIR/defaults.sh"
+    fi
+    
     printf '%s\n' "${!plugin_options[@]}" | sort
 }
 
@@ -97,21 +158,46 @@ display_options() {
         [[ -z "$filter" || "$option" == *"$filter"* || "$description" == *"$filter"* ]] && print_option "$option" "$default" "$possible" "$description"
     done
     
-    # Discover and group plugin options
+    # Get list of known plugin names from plugin directory
+    local -a known_plugins=()
+    while IFS= read -r plugin_file; do
+        local pname
+        pname=$(basename "$plugin_file" .sh)
+        known_plugins+=("$pname")
+    done < <(find "$ROOT_DIR/plugin" -name "*.sh" -type f 2>/dev/null | sort)
+    
+    # Discover and group plugin options by matching against known plugin names
     local -A grouped_options=()
     while IFS= read -r option; do
         [[ -z "$option" ]] && continue
-        local temp plugin_name
+        local temp plugin_name matched=false
         temp="${option#@powerkit_plugin_}"
-        plugin_name="${temp%%_*}"
+        
+        # Try to match against known plugin names (longest match first)
+        for pname in "${known_plugins[@]}"; do
+            if [[ "$temp" == "${pname}_"* || "$temp" == "$pname" ]]; then
+                plugin_name="$pname"
+                matched=true
+                break
+            fi
+        done
+        
+        # Fallback: use first part before underscore
+        if [[ "$matched" == "false" ]]; then
+            plugin_name="${temp%%_*}"
+        fi
+        
         grouped_options["$plugin_name"]+="$option "
     done < <(discover_plugin_options)
     
     for plugin_name in $(printf '%s\n' "${!grouped_options[@]}" | sort); do
-        local has_visible=false
+        local has_visible=false display_name
+        # Convert plugin name to title case with proper formatting
+        display_name="${plugin_name//_/ }"
+        display_name="${display_name^}"
         for option in ${grouped_options[$plugin_name]}; do
             [[ -z "$filter" || "$option" == *"$filter"* ]] && {
-                [[ "$has_visible" == "false" ]] && { print_section "Theme Plugin: ${plugin_name^}" "$MAGENTA"; has_visible=true; }
+                [[ "$has_visible" == "false" ]] && { print_section "Theme Plugin: ${display_name}" "$MAGENTA"; has_visible=true; }
                 print_option "$option" "" "" "Plugin option"
             }
         done
