@@ -78,7 +78,6 @@ jobs:
           # Source utilities
           source src/utils.sh
           source src/cache.sh
-          source src/separators.sh
           
           # Test each plugin can be sourced and loaded
           for plugin in src/plugin/*.sh; do
