@@ -60,7 +60,7 @@ get_plugin_defaults() {
     
     local accent_var="POWERKIT_PLUGIN_${upper}_ACCENT_COLOR"
     local accent_icon_var="POWERKIT_PLUGIN_${upper}_ACCENT_COLOR_ICON"
-    local icon_var="POWERKIT_PLUGIN_red${upper}_ICON"
+    local icon_var="POWERKIT_PLUGIN_${upper}_ICON"
     
     printf '%s:%s:%s' "${!accent_var:-secondary}" "${!accent_icon_var:-active}" "${!icon_var:-}"
 }
@@ -101,11 +101,6 @@ clean_content() {
     printf '%s' "${c#MODIFIED:}"
 }
 
-# Icon without extra padding (spacing controlled in template)
-add_pad() {
-    printf '%s' "$1"
-}
-
 # =============================================================================
 # Main
 # =============================================================================
@@ -117,6 +112,66 @@ IFS=';' read -ra CONFIGS <<< "$PLUGINS_CONFIG"
 for config in "${CONFIGS[@]}"; do
     [[ -z "$config" ]] && continue
     
+    # Handle external plugins (format: EXTERNAL|icon|content|accent|accent_icon|ttl)
+    if [[ "$config" == EXTERNAL\|* ]]; then
+        IFS='|' read -r _ cfg_icon content cfg_accent cfg_accent_icon cfg_ttl <<< "$config"
+        [[ -z "$content" ]] && continue
+        
+        # Generate cache key from content (command)
+        cache_key="external_$(echo "$content" | md5sum | cut -d' ' -f1)"
+        cfg_ttl="${cfg_ttl:-0}"
+        
+        # Try cache first if TTL > 0
+        if [[ "$cfg_ttl" -gt 0 ]]; then
+            cached_content=$(cache_get "$cache_key" "$cfg_ttl" 2>/dev/null) || cached_content=""
+            if [[ -n "$cached_content" ]]; then
+                content="$cached_content"
+            else
+                # Execute shell commands in content
+                # Supports: #(command), $(command)
+                cmd=""
+                if [[ "$content" =~ ^\#\(.*\)$ ]]; then
+                    cmd="${content:2:-1}"
+                    content=$(eval "$cmd" 2>/dev/null) || content=""
+                elif [[ "$content" =~ ^\$\(.*\)$ ]]; then
+                    cmd="${content:2:-1}"
+                    content=$(eval "$cmd" 2>/dev/null) || content=""
+                elif [[ "$content" == *'#{'*'}'* ]]; then
+                    content=$(tmux display-message -p "$content" 2>/dev/null) || content=""
+                fi
+                # Cache the result
+                [[ -n "$content" ]] && cache_set "$cache_key" "$content" 2>/dev/null
+            fi
+        else
+            # No cache - execute directly
+            cmd=""
+            if [[ "$content" =~ ^\#\(.*\)$ ]]; then
+                cmd="${content:2:-1}"
+                content=$(eval "$cmd" 2>/dev/null) || content=""
+            elif [[ "$content" =~ ^\$\(.*\)$ ]]; then
+                cmd="${content:2:-1}"
+                content=$(eval "$cmd" 2>/dev/null) || content=""
+            elif [[ "$content" == *'#{'*'}'* ]]; then
+                content=$(tmux display-message -p "$content" 2>/dev/null) || content=""
+            fi
+        fi
+        
+        # Skip if content is empty after execution
+        [[ -z "$content" ]] && continue
+        
+        # Resolve colors
+        cfg_accent=$(get_color "$cfg_accent")
+        cfg_accent_icon=$(get_color "$cfg_accent_icon")
+        
+        NAMES+=("external")
+        CONTENTS+=("$content")
+        ACCENTS+=("$cfg_accent")
+        ACCENT_ICONS+=("$cfg_accent_icon")
+        ICONS+=("$cfg_icon")
+        continue
+    fi
+    
+    # Parse config - format: name:accent:accent_icon:icon:type
     IFS=':' read -r name cfg_accent cfg_accent_icon cfg_icon plugin_type <<< "$config"
     
     plugin_script="${CURRENT_DIR}/plugin/${name}.sh"
@@ -177,25 +232,21 @@ total=${#NAMES[@]}
 output=""
 prev_accent=""
 
-# Pre-compute padded separators
-RIGHT_SEP=$(add_pad "$RIGHT_SEPARATOR")
-RIGHT_SEP_INV=$(add_pad "$RIGHT_SEPARATOR_INVERSE")
-
 for ((i=0; i<total; i++)); do
     content="${CONTENTS[$i]}"
     accent="${ACCENTS[$i]}"
     accent_icon="${ACCENT_ICONS[$i]}"
-    icon=$(add_pad "${ICONS[$i]}")
+    icon="${ICONS[$i]}"
     
     # Separators
     if [[ $i -eq 0 ]]; then
         # First plugin: use left rounded separator
         sep_start="#[fg=${accent_icon},bg=${STATUS_BG}]${LEFT_SEPARATOR_ROUNDED}#[none]"
     else
-        sep_start="#[fg=${prev_accent},bg=${accent_icon}]${RIGHT_SEP}#[none]"
+        sep_start="#[fg=${prev_accent},bg=${accent_icon}]${RIGHT_SEPARATOR}#[none]"
     fi
     
-    sep_mid="#[fg=${accent_icon},bg=${accent}]${RIGHT_SEP}#[none]"
+    sep_mid="#[fg=${accent_icon},bg=${accent}]${RIGHT_SEPARATOR}#[none]"
     
     # Build output - consistent spacing: " ICON SEP TEXT "
     output+="${sep_start}#[fg=${TEXT_COLOR},bg=${accent_icon},bold]${icon} ${sep_mid}"

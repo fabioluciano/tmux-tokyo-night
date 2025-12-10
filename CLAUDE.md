@@ -72,6 +72,9 @@ Manual testing is required:
 - Builds status-right string with separators and colors
 - Handles transparent mode
 - Resolves semantic colors via `get_powerkit_color()`
+- Handles external plugins with format: `EXTERNAL|icon|content|accent|accent_icon|ttl`
+- Executes `$(command)` and `#(command)` in external plugin content
+- Supports caching for external plugins via TTL parameter
 
 **`src/plugin_bootstrap.sh`** - Plugin Bootstrap
 
@@ -150,7 +153,7 @@ load_plugin() {
 [[ "${BASH_SOURCE[0]}" == "${0}" ]] && load_plugin || true
 ```
 
-**Available Plugins (26):**
+**Available Plugins (26+):**
 
 | Category | Plugins |
 |----------|---------|
@@ -162,6 +165,7 @@ load_plugin() {
 | Media | audiodevices, microphone, nowplaying, volume, camera |
 | Packages | packages |
 | Info | battery, hostname |
+| External | `external()` - integrate external tmux plugins |
 
 ### Configuration Options
 
@@ -190,6 +194,23 @@ All options use `@powerkit_*` prefix:
 @powerkit_plugin_<name>_cache_ttl
 @powerkit_plugin_<name>_*    # Plugin-specific options
 ```
+
+### External Plugins
+
+Integrate external tmux plugins with PowerKit styling:
+
+```bash
+# Format: external("icon"|"content"|"accent"|"accent_icon"|"ttl")
+external("🐏"|"$(~/.../ram_percentage.sh)"|"warning"|"warning-strong"|"30")
+```
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| icon | Yes | - | Nerd Font icon |
+| content | Yes | - | `$(command)` or `#(command)` to execute |
+| accent | No | secondary | Background color for content |
+| accent_icon | No | active | Background color for icon |
+| ttl | No | 0 | Cache duration in seconds |
 
 ## Key Implementation Details
 
