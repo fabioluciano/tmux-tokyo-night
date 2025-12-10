@@ -34,7 +34,7 @@ toggle_microphone_mute() {
     fi
     
     if pactl set-source-mute "$default_source" toggle 2>/dev/null; then
-        rm -f "${XDG_CACHE_HOME:-$HOME/.cache}/tmux-tokyo-night/microphone.cache" 2>/dev/null
+        rm -f "${XDG_CACHE_HOME:-$HOME/.cache}/tmux-powerkit/microphone.cache" 2>/dev/null
         local is_muted="unmuted"
         pactl get-source-mute "$default_source" 2>/dev/null | grep -q "yes" && is_muted="muted"
         tmux display-message "Microphone $is_muted" 2>/dev/null || true

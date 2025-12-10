@@ -70,7 +70,7 @@ discover_plugin_options() {
 
 scan_tpm_plugin_options() {
     local plugin_dir="$1" plugin_name; plugin_name=$(basename "$plugin_dir")
-    [[ "$plugin_name" == "tpm" || "$plugin_name" == "tmux-tokyo-night" ]] && return
+    [[ "$plugin_name" == "tpm" || "$plugin_name" == "tmux-powerkit" ]] && return
     
     local -a options=()
     while IFS= read -r opt; do

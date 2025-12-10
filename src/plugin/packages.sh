@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$ROOT_DIR/../plugin_bootstrap.sh"
 
 plugin_init "packages"
-LOCK_DIR="${CACHE_DIR:-$HOME/.cache/tmux-tokyo-night}/packages_updating.lock"
+LOCK_DIR="${CACHE_DIR:-$HOME/.cache/tmux-powerkit}/packages_updating.lock"
 
 plugin_get_type() { printf 'static'; }
 

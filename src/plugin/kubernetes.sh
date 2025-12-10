@@ -114,7 +114,7 @@ setup_keybindings() {
     
     conn_timeout=$(get_tmux_option "@powerkit_plugin_kubernetes_connectivity_timeout" "$POWERKIT_PLUGIN_KUBERNETES_CONNECTIVITY_TIMEOUT")
     
-    cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/tmux-tokyo-night"
+    cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/tmux-powerkit"
     
     # Context selector - can switch context even if current cluster is down
     [[ -n "$ctx_key" ]] && tmux bind-key "$ctx_key" display-popup -E -w "$ctx_w" -h "$ctx_h" \

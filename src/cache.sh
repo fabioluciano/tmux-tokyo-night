@@ -8,7 +8,7 @@
 _POWERKIT_CACHE_LOADED=1
 
 # Cache directory
-CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/tmux-tokyo-night"
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/tmux-powerkit"
 
 # OS detection for stat command (reuse from utils.sh if available)
 _CACHE_IS_MACOS=""
