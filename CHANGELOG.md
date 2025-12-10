@@ -1,3 +1,10 @@
+# [3.1.0](https://github.com/fabioluciano/tmux-powerkit/compare/v3.0.1...v3.1.0) (2025-12-10)
+
+
+### Features
+
+* **options_viewer:** enhance plugin option handling with default values and descriptions ([#102](https://github.com/fabioluciano/tmux-powerkit/issues/102)) ([6767de4](https://github.com/fabioluciano/tmux-powerkit/commit/6767de4e30c32321ea127d938b22a78682685d48))
+
 ## [3.0.1](https://github.com/fabioluciano/tmux-powerkit/compare/v3.0.0...v3.0.1) (2025-12-10)
 
 
