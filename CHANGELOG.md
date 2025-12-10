@@ -1,3 +1,47 @@
+# [3.0.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.16.1...v3.0.0) (2025-12-10)
+
+
+* refactor(core)!: project rename, plugin/theme system overhaul, and configuration interface update ([#100](https://github.com/fabioluciano/tmux-tokyo-night/issues/100)) ([984ce88](https://github.com/fabioluciano/tmux-tokyo-night/commit/984ce88cf7b2a75a0f4477ce9377d4d7bbf07dd2))
+
+
+### BREAKING CHANGES
+
+* Project Renaming:
+- tmux-tokyo-night → tmux-powerkit
+- Main script renamed: tmux-tokyo-night.tmux → tmux-powerkit.tmux
+- All references, variables, and options migrated to the new name
+
+Complete plugin system refactor:
+- Old plugin rendering and initialization pipeline removed
+- New modular system for plugin initialization, configuration, and rendering
+- Plugins now use a unified interface for options, colors, and types
+- Added new conditional display options (e.g., display_condition, display_threshold)
+- Plugins now support dynamic hiding based on state (e.g., battery 100% and charging)
+
+New semantic theme and color architecture:
+- PowerKit Theme Mapping implemented: themes now use universal semantic names (accent, warning, error, etc.)
+- Added alternative themes (e.g., kiribyte, tokyo-night)
+- Colors and styles are now resolved dynamically via utility functions
+
+Major changes to tmux configuration:
+- tmux options migrated to new @powerkit_* prefix
+-  New status bar layouts: support for single/double layout, separators, and final formats
+- Help and option viewer keybindings are now configurable and modular
+- Appearance, borders, messages, and status bar options now use the theme system
+
+Documentation update and restructuring:
+- Wiki submodule updated with complete option tables for all plugins
+- Migration documentation, examples, and plugin behavior reviewed
+- ew options documented: conditional display, state-based hiding, custom thresholds
+
+Utility function removal and simplification:
+- utils.sh rewritten to follow KISS/DRY, removing old and duplicate functions
+- Color, OS detection, and tmux option getter functions are now universal and centralized
+
+Impact: Full breaking change: old configurations, scripts, and themes are incompatible Users must migrate all options to the new @powerkit_* standard Old plugins, custom themes, and automations may not work without adaptation
+
+This refactor prepares the project for extensibility, modularity, and standardization, but requires manual migration of existing configurations and scripts.
+
 ## [2.16.1](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.16.0...v2.16.1) (2025-12-04)
 
 
