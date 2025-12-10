@@ -20,6 +20,10 @@ CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Manages window number display and styling
 # =============================================================================
 
+add_pad() {
+    printf '%s' "$1"
+}
+
 # Get window index colors based on window state
 get_window_index_colors() {
     local window_state="$1"  # "active" or "inactive"
@@ -41,10 +45,16 @@ create_window_index_segment() {
     local index_colors=$(get_window_index_colors "$window_state")
     local text_color=$(get_powerkit_color 'text')
     
+    # Importa add_pad se não existir
+    if ! declare -f add_pad &>/dev/null; then
+        . "$CURRENT_DIR/render_plugins.sh"
+    fi
+    local padded_index
+    padded_index=$(add_pad "#I")
     if [[ "$window_state" == "active" ]]; then
-        echo "#[${index_colors},fg=${text_color},bold]#I"
+        echo "#[${index_colors},fg=${text_color},bold] ${padded_index} "
     else
-        echo "#[${index_colors},fg=${text_color}]#I"
+        echo "#[${index_colors},fg=${text_color}] ${padded_index} "
     fi
 }
 

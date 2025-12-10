@@ -101,12 +101,7 @@ clean_content() {
 }
 
 # Icon without extra padding (spacing controlled in template)
-pad_icon() {
-    printf '%s' "$1"
-}
-
-# Separator without extra padding
-pad_separator() {
+add_pad() {
     printf '%s' "$1"
 }
 
@@ -182,14 +177,14 @@ output=""
 prev_accent=""
 
 # Pre-compute padded separators
-RIGHT_SEP=$(pad_separator "$RIGHT_SEPARATOR")
-RIGHT_SEP_INV=$(pad_separator "$RIGHT_SEPARATOR_INVERSE")
+RIGHT_SEP=$(add_pad "$RIGHT_SEPARATOR")
+RIGHT_SEP_INV=$(add_pad "$RIGHT_SEPARATOR_INVERSE")
 
 for ((i=0; i<total; i++)); do
     content="${CONTENTS[$i]}"
     accent="${ACCENTS[$i]}"
     accent_icon="${ACCENT_ICONS[$i]}"
-    icon=$(pad_icon "${ICONS[$i]}")
+    icon=$(add_pad "${ICONS[$i]}")
     
     # Separators
     if [[ $i -eq 0 ]]; then
@@ -205,7 +200,7 @@ for ((i=0; i<total; i++)); do
     sep_mid="#[fg=${accent_icon},bg=${accent}]${RIGHT_SEP}#[none]"
     
     # Build output - consistent spacing: " ICON SEP TEXT "
-    output+="${sep_start}#[fg=${TEXT_COLOR},bg=${accent_icon},bold] ${icon} ${sep_mid}"
+    output+="${sep_start}#[fg=${TEXT_COLOR},bg=${accent_icon},bold]${icon} ${sep_mid}"
     
     if [[ $i -eq $((total-1)) ]]; then
         output+="#[fg=${TEXT_COLOR},bg=${accent}] ${content} "

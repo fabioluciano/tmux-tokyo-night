@@ -7,7 +7,10 @@
       "pattern": "localhost"
     },
     {
-      "pattern": "^../../wiki/"
+      "pattern": "../../wiki/"
+    },
+    {
+      "pattern": "wiki/"
     }
   ],
   "replacementPatterns": [

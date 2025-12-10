@@ -24,7 +24,7 @@ get_percentage() {
         local bat=$(upower -e 2>/dev/null | grep -E 'battery|DisplayDevice' | tail -1)
         [[ -n "$bat" ]] && upower -i "$bat" 2>/dev/null | awk '/percentage:/ {gsub(/%/, ""); print $2}'
     elif cmd termux-battery-status; then
-        termux-battery-status 2>/dev/null | jq -r '.percentage' 2>/dev/null
+        { termux-battery-status | jq -r '.percentage'; } 2>/dev/null
     elif cmd apm; then
         apm -l 2>/dev/null | tr -d '%'
     fi
@@ -43,7 +43,7 @@ is_charging() {
         local bat=$(upower -e 2>/dev/null | grep -E 'battery|DisplayDevice' | tail -1)
         [[ -n "$bat" ]] && upower -i "$bat" 2>/dev/null | grep -qiE "state:\s*(charging|fully-charged)"
     elif cmd termux-battery-status; then
-        termux-battery-status 2>/dev/null | jq -r '.status' 2>/dev/null | grep -qi "^charging$"
+        { termux-battery-status | jq -r '.status' | grep -qi "^charging$"; } 2>/dev/null
     else
         return 1
     fi
@@ -61,9 +61,9 @@ has_battery() {
         local bat=$(upower -e 2>/dev/null | grep -E 'BAT|battery' | grep -v DisplayDevice | head -1)
         [[ -n "$bat" ]] && upower -i "$bat" 2>/dev/null | grep -q "power supply.*yes"
     elif cmd termux-battery-status; then
-        termux-battery-status 2>/dev/null &>/dev/null
+        termux-battery-status &>/dev/null
     elif cmd apm; then
-        apm -l 2>/dev/null &>/dev/null
+        apm -l &>/dev/null
     else
         return 1
     fi

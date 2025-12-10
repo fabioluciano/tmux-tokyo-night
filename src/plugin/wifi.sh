@@ -181,6 +181,7 @@ load_plugin() {
     show_signal=$(get_cached_option "@powerkit_plugin_wifi_show_signal" "$POWERKIT_PLUGIN_WIFI_SHOW_SIGNAL")
     
     [[ "$show_ip" == "true" ]] && display_text=$(get_wifi_ip)
+    [[ -z "$display_text" && "$show_ssid" == "true" ]] && display_text="$ssid"
     [[ -z "$display_text" ]] && display_text="$ssid"
     
     [[ "$show_signal" == "true" && -n "$display_text" ]] && result="${display_text} (${signal}%)" || result="$display_text"

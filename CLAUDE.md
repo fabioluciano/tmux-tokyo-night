@@ -83,7 +83,7 @@ Manual testing is required:
 
 Located in `src/themes/<theme>/<variant>.sh`:
 
-```
+```text
 src/themes/
 ├── tokyo-night/
 │   ├── night.sh
@@ -202,6 +202,7 @@ Colors are defined semantically and resolved at runtime:
 3. `get_powerkit_color("warning")` returns `#e0af68`
 
 This allows:
+
 - Theme switching without reconfiguring plugins
 - Consistent colors across all plugins
 - User customization with meaningful names
@@ -224,6 +225,7 @@ Plugins use their name as cache key with configurable TTL.
 ### Transparency Support
 
 When `@powerkit_transparent` is `true`:
+
 - Status bar uses `default` background
 - Inverse separators are used between plugins
 - Plugins float on transparent background
@@ -238,12 +240,14 @@ When `@powerkit_transparent` is `true`:
    - `plugin_get_display_info()` - visibility and colors
    - `load_plugin()` - content output
 5. Add defaults to `src/defaults.sh`:
+
    ```bash
    POWERKIT_PLUGIN_<NAME>_ICON="..."
    POWERKIT_PLUGIN_<NAME>_ACCENT_COLOR="$_DEFAULT_ACCENT"
    POWERKIT_PLUGIN_<NAME>_ACCENT_COLOR_ICON="$_DEFAULT_ACCENT_ICON"
    POWERKIT_PLUGIN_<NAME>_CACHE_TTL="..."
    ```
+
 6. Use semantic colors from `_DEFAULT_*` variables
 7. Document in `wiki/<Name>.md`
 
@@ -255,6 +259,7 @@ When `@powerkit_transparent` is `true`:
 4. Export: `export THEME_COLORS`
 
 Required semantic colors:
+
 - `background`, `surface`, `text`, `border`
 - `primary`, `secondary`, `accent`
 - `success`, `warning`, `error`, `info`

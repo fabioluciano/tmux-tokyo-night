@@ -238,12 +238,14 @@ set -g @powerkit_plugin_cpu_critical_accent_color 'error'
 ```
 
 **Available semantic colors:**
+
 - `primary`, `secondary`, `accent`
 - `success`, `warning`, `error`, `info`
 - `active`, `disabled`, `hover`, `focus`
 - `background`, `surface`, `text`, `border`
 
 Learn more:
+
 - **[Global Configuration](../../wiki/Global-Configuration)**
 - **[Custom Colors & Theming](../../wiki/Custom-Colors-Theming)**
 - **[Performance & Caching](../../wiki/Performance-Caching)**

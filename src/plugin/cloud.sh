@@ -129,7 +129,7 @@ get_cloud_context() {
     providers=$(get_tmux_option "@powerkit_plugin_cloud_providers" "$POWERKIT_PLUGIN_CLOUD_PROVIDERS")
     [[ "$providers" == "all" ]] && providers="aws,gcp,azure"
     
-    local detected_provider="" ctx=""
+    local ctx=""
     local results=() provider_list=()
     
     for provider in ${providers//,/ }; do
