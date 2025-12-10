@@ -1,3 +1,10 @@
+## [3.0.1](https://github.com/fabioluciano/tmux-powerkit/compare/v3.0.0...v3.0.1) (2025-12-10)
+
+
+### Bug Fixes
+
+* update references from tmux-tokyo-night to tmux-powerkit in configuration and scripts ([#101](https://github.com/fabioluciano/tmux-powerkit/issues/101)) ([a3e644b](https://github.com/fabioluciano/tmux-powerkit/commit/a3e644b91bc4c7f65a772eec671bfa4cdb782552))
+
 # [3.0.0](https://github.com/fabioluciano/tmux-tokyo-night/compare/v2.16.1...v3.0.0) (2025-12-10)
 
 
