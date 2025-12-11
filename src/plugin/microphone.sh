@@ -44,17 +44,7 @@ toggle_microphone_mute() {
     fi
 }
 
-setup_keybindings() {
-    local mute_key
-    mute_key=$(get_tmux_option "@powerkit_plugin_microphone_mute_key" "$POWERKIT_PLUGIN_MICROPHONE_MUTE_KEY")
-    
-    [[ -z "$mute_key" ]] && return
-    
-    if is_linux && command -v pactl >/dev/null 2>&1; then
-        local plugin_path="$ROOT_DIR/microphone.sh"
-        tmux bind-key "$mute_key" run-shell "source '$ROOT_DIR/../defaults.sh' && source '$ROOT_DIR/../utils.sh' && source '$plugin_path' && toggle_microphone_mute" 2>/dev/null || true
-    fi
-}
+# Keybinding removido: a maioria dos teclados possui tecla dedicada para mute
 
 detect_microphone_mute_status_linux() {
     if command -v pactl >/dev/null 2>&1; then

@@ -55,49 +55,13 @@ plugin_init() {
 # Helper Functions for Plugins
 # =============================================================================
 
-# Helper function for getting tmux options in plugins
+# Helper function for getting tmux options in plugins (alias)
 get_cached_option() {
     get_tmux_option "$@"
 }
 
-# Evaluate a display condition
-# Usage: evaluate_condition <value> <condition> <threshold>
-# Returns: 0 if condition is met, 1 otherwise
-evaluate_condition() {
-    local value="$1"
-    local condition="$2"
-    local threshold="$3"
-    
-    [[ "$condition" == "$POWERKIT_CONDITION_ALWAYS" ]] && return 0
-    [[ -z "$threshold" ]] && return 0
-    [[ -z "$value" ]] && return 0
-    
-    case "$condition" in
-        lt) [[ "$value" -lt "$threshold" ]] && return 0 ;;
-        le) [[ "$value" -le "$threshold" ]] && return 0 ;;
-        gt) [[ "$value" -gt "$threshold" ]] && return 0 ;;
-        ge) [[ "$value" -ge "$threshold" ]] && return 0 ;;
-        eq) [[ "$value" -eq "$threshold" ]] && return 0 ;;
-        ne) [[ "$value" -ne "$threshold" ]] && return 0 ;;
-    esac
-    
-    return 1
-}
-
-# Extract numeric value from content
-# Usage: extract_numeric <content>
-extract_numeric() {
-    local content="$1"
-    echo "$content" | grep -oE '[0-9]+' | head -1
-}
-
-# Build display info string
-# Usage: build_display_info <show> [accent] [accent_icon] [icon]
-build_display_info() {
-    local show="${1:-1}"
-    local accent="${2:-}"
-    local accent_icon="${3:-}"
-    local icon="${4:-}"
-    
-    printf '%s:%s:%s:%s' "$show" "$accent" "$accent_icon" "$icon"
-}
+# Note: The following functions are now in utils.sh (DRY):
+# - extract_numeric()
+# - evaluate_condition()
+# - build_display_info()
+# - get_color() (alias for get_powerkit_color)

@@ -1,6 +1,6 @@
 # ⚡ PowerKit for tmux
 
-A powerful, modular tmux status bar framework with 26+ built-in plugins for displaying system information, development tools, security monitoring, and media status. Ships with beautiful themes including Tokyo Night and Kiribyte.
+A powerful, modular tmux status bar framework with 32+ built-in plugins for displaying system information, development tools, security monitoring, and media status. Ships with beautiful themes including Tokyo Night and Kiribyte.
 
 > **📢 Note:** This project was formerly known as `tmux-tokyo-night`. See [Migration Guide](../../wiki/Migration-Guide) for upgrade instructions.
 
@@ -10,7 +10,7 @@ A powerful, modular tmux status bar framework with 26+ built-in plugins for disp
 ## ✨ Features
 
 - 🎨 **Multiple themes** - Tokyo Night (night, storm, moon, day) and Kiribyte (dark)
-- 🔌 **26+ built-in plugins** - System monitoring, development tools, security keys, media players
+- 🔌 **31+ built-in plugins** - System monitoring, development tools, security keys, media players
 - ⚡ **Performance optimized** - Intelligent caching with configurable TTL
 - 🎯 **Fully customizable** - Semantic colors, icons, formats, and separators
 - 🖥️ **Cross-platform** - macOS, Linux, and BSD support
@@ -24,7 +24,7 @@ A powerful, modular tmux status bar framework with 26+ built-in plugins for disp
 - **[Migration Guide](../../wiki/Migration-Guide)** - Upgrade from tmux-tokyo-night
 - **[Theme Variations](../../wiki/Theme-Variations)** - Explore available themes
 - **[Global Configuration](../../wiki/Global-Configuration)** - Configure status bar layout and separators
-- **[Plugin System](../../wiki/Plugin-System-Overview)** - Complete reference for all 26+ plugins
+- **[Plugin System](../../wiki/Plugin-System-Overview)** - Complete reference for all 32+ plugins
 - **[Interactive Keybindings](../../wiki/Interactive-Keybindings)** - Popup helpers and selectors
 - **[Custom Colors & Theming](../../wiki/Custom-Colors-Theming)** - Advanced customization
 - **[Performance & Caching](../../wiki/Performance-Caching)** - Optimize for your workflow
@@ -95,6 +95,7 @@ Learn more: **[Theme Variations](../../wiki/Theme-Variations)**
 | `prefix + m` | **Microphone mute toggle** - Toggle microphone mute state |
 | `prefix + K` | **Kubernetes context selector** - Switch contexts |
 | `prefix + N` | **Kubernetes namespace selector** - Switch namespaces |
+| `prefix + W` | **Terraform workspace selector** - Switch workspaces |
 | `prefix + Q` | **Cache cleaner** - Clear all plugin caches for instant refresh |
 
 ![Options Viewer](./assets/keybinding-options-viewer.gif)
@@ -108,14 +109,17 @@ The theme includes 26+ built-in plugins organized by category:
 ### 📅 Time & Date
 
 - **[datetime](../../wiki/Datetime)** - Customizable date and time display
+- **[timezones](../../wiki/Timezones)** - Display multiple time zones simultaneously
 
 ### 🌡️ System Monitoring
 
 - **[cpu](../../wiki/CPU)** - CPU usage with dynamic thresholds
+- **[gpu](../../wiki/GPU)** - GPU utilization (NVIDIA, AMD, Intel, Apple Silicon)
 - **[memory](../../wiki/Memory)** - RAM usage with format options
 - **[disk](../../wiki/Disk)** - Disk space with threshold warnings
 - **[loadavg](../../wiki/LoadAvg)** - System load average monitoring
 - **[temperature](../../wiki/Temperature)** - CPU temperature <br> <sub>(Linux only; partial support on WSL/macOS)</sub>
+- **[fan](../../wiki/Fan)** - Fan speed (RPM) monitoring
 - **[uptime](../../wiki/Uptime)** - System uptime display
 - **[brightness](../../wiki/Brightness)** - Screen brightness level
 
@@ -125,6 +129,8 @@ The theme includes 26+ built-in plugins organized by category:
 - **[wifi](../../wiki/WiFi)** - WiFi status with signal strength
 - **[vpn](../../wiki/VPN)** - VPN connection with multiple providers
 - **[external_ip](../../wiki/External_IP)** - Public IP address display
+- **[ping](../../wiki/Ping)** - Network latency monitoring
+- **[ssh](../../wiki/SSH)** - SSH session indicator
 - **[bluetooth](../../wiki/Bluetooth)** - Bluetooth devices with battery
 - **[weather](../../wiki/Weather)** - Weather with custom formats
 
@@ -133,6 +139,7 @@ The theme includes 26+ built-in plugins organized by category:
 - **[git](../../wiki/Git)** - Git branch with dynamic color for modified repos
 - **[kubernetes](../../wiki/Kubernetes)** - K8s context with interactive selectors
 - **[cloud](../../wiki/Cloud)** - Cloud provider context (AWS/GCP/Azure)
+- **[terraform](../../wiki/Terraform)** - Terraform/OpenTofu workspace with prod warnings
 
 ### 🔐 Security
 
@@ -188,6 +195,7 @@ See **[Plugin System Overview](../../wiki/Plugin-System-Overview)** for complete
 | **datetime** | ✅ | ✅ | ✅ | Universal |
 | **disk** | ✅ | ✅ | ✅ | Uses `df` command |
 | **external_ip** | ✅ | ✅ | ✅ | Requires internet connection |
+| **fan** | ✅ | ⚠️ | ✅ | Linux: hwmon, macOS: requires smctemp |
 | **git** | ✅ | ✅ | ✅ | Requires git repository |
 | **hostname** | ✅ | ✅ | ✅ | Universal |
 | **kubernetes** | ✅ | ✅ | ✅ | Requires `kubectl` |
@@ -197,8 +205,12 @@ See **[Plugin System Overview](../../wiki/Plugin-System-Overview)** for complete
 | **network** | ✅ | ✅ | ✅ | Bandwidth monitoring |
 | **nowplaying** | ✅ | ✅ | ✅ | Auto-detects: Spotify/Music.app/playerctl |
 | **packages** | ✅ | ✅ | ✅ | Auto-detects: brew/yay/apt/dnf/pacman |
+| **ping** | ✅ | ✅ | ✅ | Uses system ping command |
 | **smartkey** | ✅ | ✅ | ❌ | YubiKey/SoloKeys/Nitrokey |
+| **ssh** | ✅ | ✅ | ✅ | Detects SSH session environment |
 | **temperature** | ✅ | ⚠️ | ⚠️ | Multiple sources available |
+| **terraform** | ✅ | ✅ | ✅ | Requires terraform/tofu |
+| **timezones** | ✅ | ✅ | ✅ | Universal |
 | **uptime** | ✅ | ✅ | ✅ | Universal |
 | **volume** | ✅ | ✅ | ⚠️ | Linux: pactl/pamixer, macOS: osascript |
 | **vpn** | ✅ | ✅ | ⚠️ | Multiple providers supported |

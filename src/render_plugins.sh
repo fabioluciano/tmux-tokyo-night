@@ -45,12 +45,7 @@ LEFT_SEPARATOR_ROUNDED=$(get_tmux_option "@powerkit_left_separator_rounded" "$PO
 # Helpers
 # =============================================================================
 
-# Resolve color name to hex (from theme or pass-through)
-get_color() {
-    local name="$1"
-    [[ -z "$name" ]] && return
-    printf '%s' "${THEME_COLORS[$name]:-$name}"
-}
+# Note: get_color() is now provided by utils.sh (alias for get_powerkit_color)
 
 # Get plugin defaults from defaults.sh
 get_plugin_defaults() {
