@@ -8,7 +8,7 @@
 _POWERKIT_CACHE_LOADED=1
 
 # Cache directory
-CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/tmux-powerkit"
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/$(get_tmux_option "@powerkit_cache_directory" "${_DEFAULT_CACHE_DIRECTORY}")"
 
 # OS detection for stat command (reuse from utils.sh if available)
 _CACHE_IS_MACOS=""
@@ -31,19 +31,19 @@ cache_init() {
 cache_is_valid() {
     local cache_file="${CACHE_DIR}/${1}.cache"
     local ttl_seconds="$2"
-    
+
     [[ -f "$cache_file" ]] || return 1
-    
+
     local file_mtime current_time
     current_time=$(date +%s)
-    
+
     if [[ -n "$_CACHE_IS_MACOS" ]]; then
         file_mtime=$(stat -f "%m" "$cache_file" 2>/dev/null) || return 1
     else
         file_mtime=$(stat -c "%Y" "$cache_file" 2>/dev/null) || return 1
     fi
-    
-    (( (current_time - file_mtime) < ttl_seconds ))
+
+    (((current_time - file_mtime) < ttl_seconds))
 }
 
 # Get cached value
@@ -51,9 +51,9 @@ cache_is_valid() {
 cache_get() {
     local cache_file="${CACHE_DIR}/${1}.cache"
     local ttl_seconds="$2"
-    
+
     cache_init
-    
+
     if cache_is_valid "$1" "$ttl_seconds" && [[ -r "$cache_file" ]]; then
         printf '%s' "$(<"$cache_file")"
         return 0
@@ -65,7 +65,7 @@ cache_get() {
 # Usage: cache_set <key> <value>
 cache_set() {
     cache_init
-    printf '%s' "$2" > "${CACHE_DIR}/${1}.cache"
+    printf '%s' "$2" >"${CACHE_DIR}/${1}.cache"
 }
 
 # Invalidate cache
@@ -84,7 +84,7 @@ cache_clear_all() {
 setup_cache_keybinding() {
     local clear_key
     clear_key=$(get_tmux_option "@powerkit_cache_clear_key" "${POWERKIT_PLUGIN_CACHE_CLEAR_KEY:-Q}")
-    
+
     [[ -n "$clear_key" ]] && tmux bind-key "$clear_key" run-shell \
         "rm -rf '${CACHE_DIR:?}'/* 2>/dev/null; tmux refresh-client -S" \
         \\\; display "PowerKit cache cleared!"

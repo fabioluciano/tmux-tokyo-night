@@ -12,6 +12,9 @@ _POWERKIT_DEFAULTS_LOADED=1
 # =============================================================================
 # BASE DEFAULTS (DRY - reused across plugins)
 # =============================================================================
+#
+# Default cache directory name
+_DEFAULT_CACHE_DIRECTORY=tmux-powerkit
 
 # Default colors for all plugins (semantic names)
 _DEFAULT_ACCENT="secondary"
@@ -339,7 +342,7 @@ POWERKIT_PLUGIN_TEMPERATURE_SOURCE="cpu"
 POWERKIT_PLUGIN_TEMPERATURE_CACHE_TTL="10"
 POWERKIT_PLUGIN_TEMPERATURE_WARNING_THRESHOLD="60"
 POWERKIT_PLUGIN_TEMPERATURE_CRITICAL_THRESHOLD="80"
-POWERKIT_PLUGIN_TEMPERATURE_HIDE_BELOW_THRESHOLD=""  # Empty=show always, or set temp value (e.g. "50")
+POWERKIT_PLUGIN_TEMPERATURE_HIDE_BELOW_THRESHOLD="" # Empty=show always, or set temp value (e.g. "50")
 POWERKIT_PLUGIN_TEMPERATURE_WARNING_ACCENT_COLOR="$_DEFAULT_WARNING"
 POWERKIT_PLUGIN_TEMPERATURE_WARNING_ACCENT_COLOR_ICON="$_DEFAULT_WARNING_ICON"
 POWERKIT_PLUGIN_TEMPERATURE_CRITICAL_ACCENT_COLOR="$_DEFAULT_CRITICAL"
