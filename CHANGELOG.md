@@ -1,3 +1,10 @@
+# [3.3.0](https://github.com/fabioluciano/tmux-powerkit/compare/v3.2.0...v3.3.0) (2025-12-11)
+
+
+### Features
+
+* **packages:** add cache invalidation for package upgrades ([#103](https://github.com/fabioluciano/tmux-powerkit/issues/103)) ([becef26](https://github.com/fabioluciano/tmux-powerkit/commit/becef26b65d9d33383fbdf59a02de80aab2c2c66))
+
 # [3.2.0](https://github.com/fabioluciano/tmux-powerkit/compare/v3.1.0...v3.2.0) (2025-12-10)
 
 
