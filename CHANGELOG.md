@@ -1,3 +1,10 @@
+# [3.4.0](https://github.com/fabioluciano/tmux-powerkit/compare/v3.3.0...v3.4.0) (2025-12-11)
+
+
+### Features
+
+* **cache:** add option to custom set the cache directory inside XDG cache directory ([#104](https://github.com/fabioluciano/tmux-powerkit/issues/104)) ([686f476](https://github.com/fabioluciano/tmux-powerkit/commit/686f476fc0401265beed90ea94acfc5a1ba9b4de))
+
 # [3.3.0](https://github.com/fabioluciano/tmux-powerkit/compare/v3.2.0...v3.3.0) (2025-12-11)
 
 
