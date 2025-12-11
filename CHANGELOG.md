@@ -1,3 +1,10 @@
+# [3.5.0](https://github.com/fabioluciano/tmux-powerkit/compare/v3.4.0...v3.5.0) (2025-12-11)
+
+
+### Features
+
+* Add new plugins for system monitoring and management ([#105](https://github.com/fabioluciano/tmux-powerkit/issues/105)) ([5b86642](https://github.com/fabioluciano/tmux-powerkit/commit/5b866428071c5f13c913fe90a8dca0bb2d0d1d2e))
+
 # [3.4.0](https://github.com/fabioluciano/tmux-powerkit/compare/v3.3.0...v3.4.0) (2025-12-11)
 
 
