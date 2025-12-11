@@ -146,6 +146,10 @@ plugin_get_display_info() {
         accent=$(get_cached_option "@powerkit_plugin_wifi_disconnected_accent_color" "$POWERKIT_PLUGIN_WIFI_DISCONNECTED_ACCENT_COLOR")
         accent_icon=$(get_cached_option "@powerkit_plugin_wifi_disconnected_accent_color_icon" "$POWERKIT_PLUGIN_WIFI_DISCONNECTED_ACCENT_COLOR_ICON")
     else
+        local hide_connected
+        hide_connected=$(get_cached_option "@powerkit_plugin_wifi_hide_when_connected" "$POWERKIT_PLUGIN_WIFI_HIDE_WHEN_CONNECTED")
+        [[ "$hide_connected" == "true" ]] && { build_display_info "0" "" "" ""; return; }
+        
         local show_signal
         show_signal=$(get_cached_option "@powerkit_plugin_wifi_show_signal" "$POWERKIT_PLUGIN_WIFI_SHOW_SIGNAL")
         if [[ "$show_signal" == "true" ]]; then

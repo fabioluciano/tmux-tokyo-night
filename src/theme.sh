@@ -20,10 +20,6 @@ CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Manages window number display and styling
 # =============================================================================
 
-add_pad() {
-    printf '%s' "$1"
-}
-
 # Get window index colors based on window state
 get_window_index_colors() {
     local window_state="$1"  # "active" or "inactive"
@@ -45,16 +41,10 @@ create_window_index_segment() {
     local index_colors=$(get_window_index_colors "$window_state")
     local text_color=$(get_powerkit_color 'text')
     
-    # Importa add_pad se não existir
-    if ! declare -f add_pad &>/dev/null; then
-        . "$CURRENT_DIR/render_plugins.sh"
-    fi
-    local padded_index
-    padded_index=$(add_pad "#I")
     if [[ "$window_state" == "active" ]]; then
-        echo "#[${index_colors},fg=${text_color},bold] ${padded_index} "
+        echo "#[${index_colors},fg=${text_color},bold] #I "
     else
-        echo "#[${index_colors},fg=${text_color}] ${padded_index} "
+        echo "#[${index_colors},fg=${text_color}] #I "
     fi
 }
 
@@ -275,6 +265,19 @@ build_tmux_window_format() {
 # Manages plugin loading and status bar integration
 # =============================================================================
 
+# Parse external plugin: external(icon|content|accent|accent_icon)
+# Example: external(⚡|#{cpu_percentage}) or external(󰍛|#{ram_percentage}|warning|warning-strong)
+# Parse external plugin: external(icon|content|accent|accent_icon|ttl)
+# Example: external(⚡|#{cpu_percentage}) or external(烛|#{ram_percentage}|warning|warning-strong|30)
+parse_external_plugin() {
+    local inner="${1#external(}"
+    inner="${inner%)}"
+    inner="${inner//\"/}"  # Remove quotes if present
+    
+    IFS='|' read -r icon content accent accent_icon ttl <<< "$inner"
+    printf '%s|%s|%s|%s|%s' "$icon" "$content" "${accent:-secondary}" "${accent_icon:-active}" "${ttl:-0}"
+}
+
 # Get plugins list for single layout
 get_plugins_list() {
     local plugins=("$@")
@@ -284,30 +287,39 @@ get_plugins_list() {
     for plugin in "${plugins[@]}"; do
         [[ -z "$plugin" ]] && continue
         
-        # Check for plugin keybindings setup
-        local plugin_script="${CURRENT_DIR}/plugin/${plugin}.sh"
-        if [[ -f "$plugin_script" ]]; then
-            # Source plugin and check for keybindings function
-            # shellcheck source=/dev/null
-            if . "$plugin_script" 2>/dev/null && declare -f setup_keybindings &>/dev/null; then
-                setup_keybindings
-                unset -f setup_keybindings
-            fi
+        # Handle external plugins: external(icon|content|accent|accent_icon|ttl)
+        # Convert to standard format: EXTERNAL|icon|content|accent|accent_icon|ttl
+        if [[ "$plugin" == external\(*\) ]]; then
+            IFS='|' read -r ext_icon ext_content ext_accent ext_accent_icon ext_ttl <<< "$(parse_external_plugin "$plugin")"
+            # Use EXTERNAL prefix with | separator to pass to render_plugins.sh
+            plugin_configs+="EXTERNAL|${ext_icon}|${ext_content}|${ext_accent}|${ext_accent_icon}|${ext_ttl:-0};"
+            continue
         fi
         
         # Parse plugin format: name or name:accent:accent_icon:icon:type
         if [[ "$plugin" == *":"* ]]; then
+            # Custom format - use as-is but still check for keybindings
+            local plugin_name="${plugin%%:*}"
+            local plugin_script="${CURRENT_DIR}/plugin/${plugin_name}.sh"
+            if [[ -f "$plugin_script" ]]; then
+                # shellcheck source=/dev/null
+                if . "$plugin_script" 2>/dev/null && declare -f setup_keybindings &>/dev/null; then
+                    setup_keybindings
+                    unset -f setup_keybindings
+                fi
+            fi
             plugin_configs+="$plugin;"
         else
-            # Get plugin type from the plugin itself
-            local plugin_type="static"
+            # Simple plugin name - get type and defaults
             local plugin_script="${CURRENT_DIR}/plugin/${plugin}.sh"
+            local plugin_type="static"
+            
             if [[ -f "$plugin_script" ]]; then
-                # Source plugin and call plugin_get_type function
+                # Source plugin once for keybindings and type
                 # shellcheck source=/dev/null
-                if . "$plugin_script" 2>/dev/null && declare -f plugin_get_type &>/dev/null; then
-                    plugin_type=$(plugin_get_type)
-                    unset -f plugin_get_type
+                if . "$plugin_script" 2>/dev/null; then
+                    declare -f setup_keybindings &>/dev/null && { setup_keybindings; unset -f setup_keybindings; }
+                    declare -f plugin_get_type &>/dev/null && { plugin_type=$(plugin_get_type); unset -f plugin_get_type; }
                 fi
             fi
             
@@ -333,7 +345,6 @@ get_plugins_list() {
     
     if [[ -n "$plugin_configs" ]]; then
         # Build tmux command string that will be executed periodically
-        # Include pane_current_path to force cache invalidation when path changes
         local text_color=$(get_powerkit_color 'text')
         local status_bg=$(get_powerkit_color 'surface')
         local transparent=$(get_tmux_option "@powerkit_transparent_status_bar" "false")
@@ -345,12 +356,6 @@ get_plugins_list() {
         printf "#(RENDER_TEXT_COLOR='%s' RENDER_STATUS_BG='%s' RENDER_TRANSPARENT='%s' RENDER_PALETTE='%s' POWERKIT_DEFAULT_RIGHT_SEPARATOR='%s' POWERKIT_DEFAULT_RIGHT_SEPARATOR_INVERSE='%s' %s/render_plugins.sh '%s' 2>/dev/null || true)" \
             "$text_color" "$status_bg" "$transparent" "$palette" "$right_sep" "$right_sep_inv" "$CURRENT_DIR" "$plugin_configs"
     fi
-}
-
-# Get plugins list for double layout (second status line)
-get_plugins_list_double() {
-    # For double layout, plugins go on the second line
-    get_plugins_list "$@"
 }
 
 # Serialize PowerKit palette for render_plugins.sh
@@ -387,7 +392,7 @@ initialize_plugins() {
         
         if [[ "$powerkit_bar_layout" == "double" ]]; then
             # Double layout - plugins on second line
-            status_output=$(get_plugins_list_double "${plugins[@]}")
+            status_output=$(get_plugins_list "${plugins[@]}")
         else
             # Single layout - plugins on right side
             status_output=$(get_plugins_list "${plugins[@]}")

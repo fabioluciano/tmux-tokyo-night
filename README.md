@@ -150,6 +150,10 @@ The theme includes 26+ built-in plugins organized by category:
 
 - **[packages](../../wiki/Packages)** - Unified package manager (brew, yay, apt, dnf, pacman)
 
+### 🔌 External Plugins
+
+- **[external()](../../wiki/External-Plugins)** - Integrate external tmux plugins (tmux-cpu, tmux-ping, etc.) with PowerKit styling
+
 ### 🖥️ System Info
 
 - **[battery](../../wiki/Battery)** - Battery with intelligent 3-tier thresholds
@@ -159,6 +163,13 @@ The theme includes 26+ built-in plugins organized by category:
 
 ```bash
 set -g @powerkit_plugins 'datetime,battery,cpu,memory,git'
+```
+
+**Integrate external plugins:**
+
+```bash
+# Format: external("icon"|"command"|"accent"|"accent_icon"|"ttl")
+set -g @powerkit_plugins 'cpu,memory,external("🐏"|"$(~/.config/tmux/plugins/tmux-cpu/scripts/ram_percentage.sh)"|"warning"|"warning-strong"|"30")'
 ```
 
 See **[Plugin System Overview](../../wiki/Plugin-System-Overview)** for complete documentation.

@@ -108,17 +108,22 @@ plugin_get_display_info() {
     
     local value
     value=$(echo "$content" | grep -oE '[0-9]+' | head -1)
-    [[ -z "$value" ]] && { build_display_info "$show" "" "" ""; return; }
+    [[ -z "$value" ]] && { build_display_info "0" "" "" ""; return; }
     
-    local warning_threshold critical_threshold unit
+    local warning_threshold critical_threshold hide_below unit
     warning_threshold=$(get_cached_option "@powerkit_plugin_temperature_warning_threshold" "$POWERKIT_PLUGIN_TEMPERATURE_WARNING_THRESHOLD")
     critical_threshold=$(get_cached_option "@powerkit_plugin_temperature_critical_threshold" "$POWERKIT_PLUGIN_TEMPERATURE_CRITICAL_THRESHOLD")
+    hide_below=$(get_cached_option "@powerkit_plugin_temperature_hide_below_threshold" "$POWERKIT_PLUGIN_TEMPERATURE_HIDE_BELOW_THRESHOLD")
     unit=$(get_cached_option "@powerkit_plugin_temperature_unit" "$POWERKIT_PLUGIN_TEMPERATURE_UNIT")
     
     [[ "$unit" == "F" ]] && {
         warning_threshold=$(celsius_to_fahrenheit "$warning_threshold")
         critical_threshold=$(celsius_to_fahrenheit "$critical_threshold")
+        [[ -n "$hide_below" ]] && hide_below=$(celsius_to_fahrenheit "$hide_below")
     }
+    
+    # Hide if below threshold
+    [[ -n "$hide_below" && "$value" -lt "$hide_below" ]] && { build_display_info "0" "" "" ""; return; }
     
     if [[ "$value" -ge "$critical_threshold" ]]; then
         accent=$(get_cached_option "@powerkit_plugin_temperature_critical_accent_color" "$POWERKIT_PLUGIN_TEMPERATURE_CRITICAL_ACCENT_COLOR")
