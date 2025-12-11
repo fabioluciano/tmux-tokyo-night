@@ -3,11 +3,14 @@
 
 set -euo pipefail
 
+CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$CURRENT_DIR/../utils.sh" 2>/dev/null || . "${CURRENT_DIR%/*}/utils.sh" 2>/dev/null || true
+
 select_input_device() {
     local audio_system="" current_input=""
     local -a menu_items=() device_names=()
     
-    if [[ "$OSTYPE" == "darwin"* ]]; then
+    if is_macos; then
         command -v SwitchAudioSource &>/dev/null || { tmux display-message "❌ Install: brew install switchaudio-osx"; return 1; }
         audio_system="macos"
         current_input=$(SwitchAudioSource -c -t input 2>/dev/null || echo "")
@@ -46,7 +49,7 @@ select_output_device() {
     local audio_system="" current_output=""
     local -a menu_items=() device_names=()
     
-    if [[ "$OSTYPE" == "darwin"* ]]; then
+    if is_macos; then
         command -v SwitchAudioSource &>/dev/null || { tmux display-message "❌ Install: brew install switchaudio-osx"; return 1; }
         audio_system="macos"
         current_output=$(SwitchAudioSource -c -t output 2>/dev/null || echo "")

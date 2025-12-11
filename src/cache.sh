@@ -10,14 +10,6 @@ _POWERKIT_CACHE_LOADED=1
 # Cache directory
 CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/$(get_tmux_option "@powerkit_cache_directory" "${_DEFAULT_CACHE_DIRECTORY}")"
 
-# OS detection for stat command (reuse from utils.sh if available)
-_CACHE_IS_MACOS=""
-if [[ -n "${_CACHED_OS:-}" ]]; then
-    [[ "$_CACHED_OS" == "Darwin" ]] && _CACHE_IS_MACOS="1"
-else
-    [[ "$(uname -s)" == "Darwin" ]] && _CACHE_IS_MACOS="1"
-fi
-
 # Initialize cache directory (once per session)
 _CACHE_INIT=""
 cache_init() {
@@ -37,7 +29,7 @@ cache_is_valid() {
     local file_mtime current_time
     current_time=$(date +%s)
 
-    if [[ -n "$_CACHE_IS_MACOS" ]]; then
+    if is_macos; then
         file_mtime=$(stat -f "%m" "$cache_file" 2>/dev/null) || return 1
     else
         file_mtime=$(stat -c "%Y" "$cache_file" 2>/dev/null) || return 1
