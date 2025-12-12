@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 # Helper: options_viewer - Display all available theme options with defaults and current values
 
-set -euo pipefail
-
 CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$CURRENT_DIR/.." && pwd)"
 
@@ -17,13 +15,14 @@ TPM_PLUGINS_DIR="${TMUX_PLUGIN_MANAGER_PATH:-$HOME/.tmux/plugins}"
 [[ ! -d "$TPM_PLUGINS_DIR" && -d "$HOME/.config/tmux/plugins" ]] && TPM_PLUGINS_DIR="$HOME/.config/tmux/plugins"
 
 declare -a THEME_OPTIONS=(
-    "@powerkit_variation|night|night,storm,moon,day|Color scheme variation"
+    "@powerkit_variation|night|night|Color scheme variation"
     "@powerkit_plugins|datetime,weather|(comma-separated)|Enabled plugins"
     "@powerkit_disable_plugins|0|0,1|Disable all plugins"
     "@powerkit_transparent_status_bar|false|true,false|Transparent status bar"
     "@powerkit_bar_layout|single|single,double|Status bar layout"
     "@powerkit_status_left_length|100|(integer)|Maximum left status length"
     "@powerkit_status_right_length|250|(integer)|Maximum right status length"
+    "@powerkit_separator_style|rounded|rounded,normal|Separator style (pill or arrows)"
     "@powerkit_left_separator||Powerline|Left separator"
     "@powerkit_right_separator||Powerline|Right separator"
     "@powerkit_session_icon| |Icon/emoji|Session icon"
@@ -213,4 +212,10 @@ display_options() {
 }
 
 [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]] && { echo "Usage: $0 [filter]"; exit 0; }
-less --help 2>&1 | grep -q -- '--mouse' && display_options "${1:-}" | less -R --mouse || display_options "${1:-}" | less -R
+# Display options using temporary file to avoid pipe limitations
+output_file=$(mktemp)
+trap "rm -f '$output_file'" EXIT
+display_options "${1:-}" > "$output_file"
+less --help 2>&1 | grep -q -- '--mouse' && \
+  less -R --mouse --no-lessopen "$output_file" || \
+  less -R --no-lessopen "$output_file"

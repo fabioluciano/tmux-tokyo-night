@@ -39,6 +39,7 @@ get_previous_window_background() {
 }
 
 # Create index-to-content separator (between window number and content)
+# Right-facing separator (→): fg=previous (index), bg=next (content)
 create_index_content_separator() {
     local window_state="$1"  # "active" or "inactive"
     local separator_char=$(get_separator_char)
@@ -49,10 +50,12 @@ create_index_content_separator() {
     local index_bg=$(echo "$index_colors" | sed 's/bg=//')
     local content_bg=$(echo "$content_colors" | sed 's/bg=//')
     
-    echo "#[bg=${content_bg},fg=${index_bg}]${separator_char}"
+    # Right-facing: fg=previous (index), bg=next (content)
+    echo "#[fg=${index_bg},bg=${content_bg}]${separator_char}"
 }
 
 # Create window-to-window separator (between different windows)
+# Right-facing separator (→): fg=previous, bg=next
 create_window_separator() {
     local current_window_state="$1"  # "active" or "inactive"
     local separator_char=$(get_separator_char)
@@ -60,12 +63,16 @@ create_window_separator() {
     local current_index_colors=$(get_window_index_colors "$current_window_state")
     local current_index_bg=$(echo "$current_index_colors" | sed 's/bg=//')
     
-    echo "#[bg=${current_index_bg},fg=${previous_bg}]${separator_char}"
+    # Right-facing: fg=previous, bg=next (current index)
+    echo "#[fg=${previous_bg},bg=${current_index_bg}]${separator_char}"
 }
 
 # Create final separator (end of window list to status bar)
+# Style "rounded": pill effect with rounded separator
+# Style "normal": uses standard left separator
 create_final_separator() {
-    local separator_char=$(get_tmux_option "@powerkit_right_separator_rounded" "$POWERKIT_DEFAULT_RIGHT_SEPARATOR_ROUNDED")
+    local separator_style=$(get_tmux_option "@powerkit_separator_style" "$POWERKIT_DEFAULT_SEPARATOR_STYLE")
+    local separator_char
     local status_bg=$(get_powerkit_color 'surface')
     
     # Get window content background colors for last window detection
@@ -73,6 +80,13 @@ create_final_separator() {
     local active_content_bg=$(get_powerkit_color "$active_content_bg_option")
     local inactive_content_bg=$(get_powerkit_color 'border')
     
-    # Use color of the last window (active if last window is active, inactive otherwise)
-    echo "#{?#{==:#{session_windows},#{active_window_index}},#[fg=${active_content_bg}],#[fg=${inactive_content_bg}]}#[bg=${status_bg}]${separator_char}"
+    if [[ "$separator_style" == "rounded" ]]; then
+        separator_char=$(get_tmux_option "@powerkit_right_separator_rounded" "$POWERKIT_DEFAULT_RIGHT_SEPARATOR_ROUNDED")
+        # Pill effect: fg=window_color, bg=status_bg
+        echo "#{?#{==:#{session_windows},#{active_window_index}},#[fg=${active_content_bg}],#[fg=${inactive_content_bg}]}#[bg=${status_bg}]${separator_char}"
+    else
+        separator_char=$(get_tmux_option "@powerkit_left_separator" "$POWERKIT_DEFAULT_LEFT_SEPARATOR")
+        # Normal powerline: right-facing, fg=window_color, bg=status_bg
+        echo "#{?#{==:#{session_windows},#{active_window_index}},#[fg=${active_content_bg}],#[fg=${inactive_content_bg}]}#[bg=${status_bg}]${separator_char}"
+    fi
 }

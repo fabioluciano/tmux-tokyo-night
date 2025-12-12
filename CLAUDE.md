@@ -179,6 +179,7 @@ All options use `@powerkit_*` prefix:
 @powerkit_transparent        # true/false
 
 # Separators
+@powerkit_separator_style    # rounded (pill) or normal (arrows)
 @powerkit_left_separator
 @powerkit_right_separator
 

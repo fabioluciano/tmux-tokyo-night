@@ -40,6 +40,7 @@ PLUGINS_CONFIG="${1:-}"
 RIGHT_SEPARATOR=$(get_tmux_option "@powerkit_right_separator" "$POWERKIT_DEFAULT_RIGHT_SEPARATOR")
 RIGHT_SEPARATOR_INVERSE=$(get_tmux_option "@powerkit_right_separator_inverse" "$POWERKIT_DEFAULT_RIGHT_SEPARATOR_INVERSE")
 LEFT_SEPARATOR_ROUNDED=$(get_tmux_option "@powerkit_left_separator_rounded" "$POWERKIT_DEFAULT_LEFT_SEPARATOR_ROUNDED")
+SEPARATOR_STYLE=$(get_tmux_option "@powerkit_separator_style" "$POWERKIT_DEFAULT_SEPARATOR_STYLE")
 
 # =============================================================================
 # Helpers
@@ -233,15 +234,21 @@ for ((i=0; i<total; i++)); do
     accent_icon="${ACCENT_ICONS[$i]}"
     icon="${ICONS[$i]}"
     
-    # Separators
+    # Separators (left-facing: fg=new color, bg=previous color)
     if [[ $i -eq 0 ]]; then
-        # First plugin: use left rounded separator
-        sep_start="#[fg=${accent_icon},bg=${STATUS_BG}]${LEFT_SEPARATOR_ROUNDED}#[none]"
+        # First plugin separator
+        if [[ "$SEPARATOR_STYLE" == "rounded" ]]; then
+            # Rounded/pill effect - fg=plugin_color, bg=status_bg
+            sep_start="#[fg=${accent_icon},bg=${STATUS_BG}]${LEFT_SEPARATOR_ROUNDED}#[none]"
+        else
+            # Normal powerline - fg=plugin_color, bg=status_bg
+            sep_start="#[fg=${accent_icon},bg=${STATUS_BG}]${RIGHT_SEPARATOR}#[none]"
+        fi
     else
-        sep_start="#[fg=${prev_accent},bg=${accent_icon}]${RIGHT_SEPARATOR}#[none]"
+        sep_start="#[fg=${accent_icon},bg=${prev_accent}]${RIGHT_SEPARATOR}#[none]"
     fi
-    
-    sep_mid="#[fg=${accent_icon},bg=${accent}]${RIGHT_SEPARATOR}#[none]"
+
+    sep_mid="#[fg=${accent},bg=${accent_icon}]${RIGHT_SEPARATOR}#[none]"
     
     # Build output - consistent spacing: " ICON SEP TEXT "
     output+="${sep_start}#[fg=${TEXT_COLOR},bg=${accent_icon},bold]${icon} ${sep_mid}"
