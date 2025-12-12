@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$ROOT_DIR/../plugin_bootstrap.sh"
 
 plugin_init "weather"
+
 WEATHER_LOCATION_CACHE_KEY="weather_location"
 WEATHER_LOCATION_CACHE_TTL="3600"
 
@@ -65,9 +66,53 @@ weather_fetch() {
     printf '%s' "$weather"
 }
 
+    # Fetch only condition symbol (%c) for dynamic icon mapping
+    weather_fetch_symbol() {
+        local location="$1"
+        local unit
+        unit=$(get_cached_option "@powerkit_plugin_weather_unit" "$POWERKIT_PLUGIN_WEATHER_UNIT")
+        local url="wttr.in/"
+        [[ -n "$location" ]] && url+="$(printf '%s' "$location" | sed 's/ /%20/g; s/,/%2C/g')"
+        url+="?"
+        [[ -n "$unit" ]] && url+="${unit}&"
+        url+="format=%25c"
+        local symbol
+        symbol=$(curl -sL --connect-timeout 5 --max-time 10 "$url" 2>/dev/null)
+        symbol=$(printf '%s' "$symbol" | sed 's/%$//; s/[[:space:]]*$//')
+        command -v perl &>/dev/null && symbol=$(printf '%s' "$symbol" | perl -CS -pe 's/\x{FE0E}|\x{FE0F}//g')
+        printf '%s' "$symbol"
+    }
+
 plugin_get_display_info() {
     local content="${1:-}"
-    [[ -n "$content" && "$content" != "N/A" ]] && echo "1:::" || echo "0:::"
+    local show="0" icon="" accent="" accent_icon=""
+    [[ -n "$content" && "$content" != "N/A" ]] && show="1"
+
+    # Defaults
+    accent=$(get_cached_option "@powerkit_plugin_weather_accent_color" "$POWERKIT_PLUGIN_WEATHER_ACCENT_COLOR")
+    accent_icon=$(get_cached_option "@powerkit_plugin_weather_accent_color_icon" "$POWERKIT_PLUGIN_WEATHER_ACCENT_COLOR_ICON")
+    icon=$(get_cached_option "@powerkit_plugin_weather_icon" "$POWERKIT_PLUGIN_WEATHER_ICON")
+
+    # Optional: dynamic icon based on wttr condition symbol (%c)
+    local icon_mode
+    icon_mode=$(get_cached_option "@powerkit_plugin_weather_icon_mode" "$POWERKIT_PLUGIN_WEATHER_ICON_MODE")
+    if [[ "$show" == "1" && "$icon_mode" == "dynamic" ]]; then
+        # Always fetch the condition symbol directly from wttr, independent of the text format
+        local symbol location
+        location=$(get_cached_option "@powerkit_plugin_weather_location" "$POWERKIT_PLUGIN_WEATHER_LOCATION")
+        symbol=$(weather_fetch_symbol "$location")
+
+        # Fallback: if the fetch failed, try extracting the last token from content
+        if [[ -z "$symbol" || "$symbol" == "N/A" ]]; then
+            symbol=$(printf '%s' "$content" | awk '{print $NF}' | sed 's/%$//; s/[[:space:]]*$//')
+        fi
+
+        if [[ -n "$symbol" && "$symbol" != "N/A" ]]; then
+            icon="$symbol"
+        fi
+    fi
+
+    echo "${show}:${accent}:${accent_icon}:${icon}"
 }
 
 load_plugin() {
