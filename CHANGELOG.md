@@ -1,3 +1,10 @@
+# [3.7.0](https://github.com/fabioluciano/tmux-powerkit/compare/v3.6.0...v3.7.0) (2025-12-12)
+
+
+### Features
+
+* **weather:** add dynamic icon fetching and update weather format ([#112](https://github.com/fabioluciano/tmux-powerkit/issues/112)) ([0073530](https://github.com/fabioluciano/tmux-powerkit/commit/0073530f47252c4e201492f69e8e9006ce076e81))
+
 # [3.6.0](https://github.com/fabioluciano/tmux-powerkit/compare/v3.5.0...v3.6.0) (2025-12-12)
 
 
