@@ -57,12 +57,17 @@ POWERKIT_DEFAULT_STATUS_INTERVAL="5"
 
 # =============================================================================
 # SEPARATORS
+# Left separator (status-left/windows): right-facing (→)
+# Right separator (status-right/plugins): left-facing (←)
+# Style: "rounded" (pill effect) or "normal" (powerline arrows)
 # =============================================================================
 
-POWERKIT_DEFAULT_LEFT_SEPARATOR=$'\ue0bc'
-POWERKIT_DEFAULT_RIGHT_SEPARATOR=$'\ue0b8'
-POWERKIT_DEFAULT_LEFT_SEPARATOR_INVERSE=$'\ue0ba'
-POWERKIT_DEFAULT_RIGHT_SEPARATOR_INVERSE=$'\ue0be'
+POWERKIT_DEFAULT_SEPARATOR_STYLE="rounded"
+
+POWERKIT_DEFAULT_LEFT_SEPARATOR=$'\ue0b0'
+POWERKIT_DEFAULT_RIGHT_SEPARATOR=$'\ue0b2'
+POWERKIT_DEFAULT_LEFT_SEPARATOR_INVERSE=$'\ue0b1'
+POWERKIT_DEFAULT_RIGHT_SEPARATOR_INVERSE=$'\ue0b3'
 POWERKIT_DEFAULT_LEFT_SEPARATOR_ROUNDED=$'\ue0b6'
 POWERKIT_DEFAULT_RIGHT_SEPARATOR_ROUNDED=$'\ue0b4'
 

@@ -44,9 +44,12 @@ initialize_powerkit() {
     local powerkit_bar_layout=$(get_tmux_option "@powerkit_bar_layout" "$POWERKIT_DEFAULT_BAR_LAYOUT")
     
     if [[ "$powerkit_bar_layout" == "double" ]]; then
-        # Double layout: plugins on second line
+        # Double layout: plugins on second line (right-aligned)
         if [[ -n "$status_2" ]]; then
-            tmux set-option -g status-format[1] "$status_2"
+            # Format plugins for right alignment on second line
+            local resolved_accent_color=$(get_powerkit_color 'surface')
+            local plugins_format="#[nolist align=right range=right #{E:status-right-style}]#[push-default]${status_2}#[pop-default]#[norange bg=${resolved_accent_color}]"
+            tmux set-option -g status-format[1] "$plugins_format"
         fi
         tmux set-option -g status-right ""
     else

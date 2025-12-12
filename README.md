@@ -1,6 +1,6 @@
 # ⚡ PowerKit for tmux
 
-A powerful, modular tmux status bar framework with 32+ built-in plugins for displaying system information, development tools, security monitoring, and media status. Ships with beautiful themes including Tokyo Night and Kiribyte.
+A powerful, modular tmux status bar framework with 33+ built-in plugins for displaying system information, development tools, security monitoring, and media status. Ships with beautiful themes including Tokyo Night and Kiribyte.
 
 > **📢 Note:** This project was formerly known as `tmux-tokyo-night`. See [Migration Guide](../../wiki/Migration-Guide) for upgrade instructions.
 
@@ -10,7 +10,7 @@ A powerful, modular tmux status bar framework with 32+ built-in plugins for disp
 ## ✨ Features
 
 - 🎨 **Multiple themes** - Tokyo Night (night, storm, moon, day) and Kiribyte (dark)
-- 🔌 **31+ built-in plugins** - System monitoring, development tools, security keys, media players
+- 🔌 **33+ built-in plugins** - System monitoring, development tools, security keys, media players
 - ⚡ **Performance optimized** - Intelligent caching with configurable TTL
 - 🎯 **Fully customizable** - Semantic colors, icons, formats, and separators
 - 🖥️ **Cross-platform** - macOS, Linux, and BSD support
@@ -104,7 +104,7 @@ Learn more: **[Interactive Keybindings](../../wiki/Interactive-Keybindings)**
 
 ## 🔌 Available Plugins
 
-The theme includes 26+ built-in plugins organized by category:
+The theme includes 33+ built-in plugins organized by category:
 
 ### 📅 Time & Date
 
