@@ -1,3 +1,10 @@
+# [3.6.0](https://github.com/fabioluciano/tmux-powerkit/compare/v3.5.0...v3.6.0) (2025-12-12)
+
+
+### Features
+
+* **separators:** add customizable separator styles and update documentation ([#110](https://github.com/fabioluciano/tmux-powerkit/issues/110)) ([f7921f9](https://github.com/fabioluciano/tmux-powerkit/commit/f7921f9f071878f81d2648eaf31391f126841e70))
+
 # [3.5.0](https://github.com/fabioluciano/tmux-powerkit/compare/v3.4.0...v3.5.0) (2025-12-11)
 
 
