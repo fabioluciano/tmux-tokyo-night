@@ -1,3 +1,10 @@
+## [3.7.1](https://github.com/fabioluciano/tmux-powerkit/compare/v3.7.0...v3.7.1) (2025-12-13)
+
+
+### Bug Fixes
+
+* **cache:** add cache_init in init file ([#114](https://github.com/fabioluciano/tmux-powerkit/issues/114)) ([c42c6c7](https://github.com/fabioluciano/tmux-powerkit/commit/c42c6c7b5720caab52601cc59cf5ada790eb3250))
+
 # [3.7.0](https://github.com/fabioluciano/tmux-powerkit/compare/v3.6.0...v3.7.0) (2025-12-12)
 
 
