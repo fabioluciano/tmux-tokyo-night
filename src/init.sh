@@ -74,6 +74,10 @@ initialize_powerkit() {
 # EXECUTE INITIALIZATION 
 # =============================================================================
 
+
+# Ensure cache directory exists before checking keybinding conflicts
+cache_init
+
 # Check for keybinding conflicts before registering
 plugins_string=$(get_tmux_option "@powerkit_plugins" "$POWERKIT_DEFAULT_PLUGINS")
 check_keybinding_conflicts "$plugins_string"
